@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>探途 · WANDR — AI 智能旅行伴侣</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,900;1,400&family=Noto+Serif+SC:wght@300;400;600&family=Noto+Sans+SC:wght@300;400;500&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="lib/leaflet/leaflet.css" />
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ 导航栏 ============ -->
+<nav class="navbar" id="navbar">
+  <div class="nav-logo">
+    <span class="logo-icon"><i class="fa-solid fa-compass"></i></span>
+    <span class="logo-text">探途 <em>WANDR</em></span>
+  </div>
+  <div class="nav-links">
+    <a href="#upload" class="nav-link">AI 规划</a>
+    <a href="#mbti" class="nav-link">性格测试</a>
+    <a href="#destinations" class="nav-link">热门目的地</a>
+    <a href="#navigate" class="nav-link">景点导航</a>
+    <a href="#shares" class="nav-link">用户分享</a>
+    <a href="#diary" class="nav-link">旅行日记</a>
+  </div>
+  <div class="nav-actions">
+    <button class="btn-ghost" data-action="openUserPanel" data-tab="favorites"><i class="fa-regular fa-heart"></i> 我的收藏 <span class="nav-badge" id="favBadge" style="display:none">0</span></button>
+    <button class="btn-ghost" data-action="openUserPanel" data-tab="bookings"><i class="fa-regular fa-calendar-check"></i> 我的预定 <span class="nav-badge nav-badge-accent" id="bookBadge" style="display:none">0</span></button>
+    <button class="btn-primary" id="startBtn">开始探索</button>
+  </div>
+  <button class="hamburger" id="hamburger"><i class="fa-solid fa-bars"></i></button>
+</nav>
+
+<!-- ============ 移动端菜单 ============ -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#upload">AI 规划</a>
+  <a href="#mbti">性格测试</a>
+  <a href="#destinations">热门目的地</a>
+  <a href="#navigate">景点导航</a>
+  <a href="#shares">用户分享</a>
+  <a href="#diary">旅行日记</a>
+  <a href="javascript:void(0)" data-action="openUserPanel" data-tab="favorites">❤️ 我的收藏</a>
+  <a href="javascript:void(0)" data-action="openUserPanel" data-tab="bookings">📅 我的预定</a>
+  <a href="javascript:void(0)" data-action="openUserPanel" data-tab="diaries">📓 我的日记</a>
+</div>
+
+<!-- ============ Hero 区域 ============ -->
+<section class="hero" id="home">
+  <div class="hero-bg">
+    <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&auto=format&fit=crop&q=80" alt="hero bg" class="hero-img hero-img-1">
+    <img src="https://images.unsplash.com/photo-1533130061792-64b345e4a833?w=800&auto=format&fit=crop&q=80" alt="hero bg 2" class="hero-img hero-img-2">
+  </div>
+  <div class="hero-content">
+    <div class="hero-tag">
+      <span class="tag-dot"></span>
+      AI 驱动的旅行体验
+    </div>
+    <h1 class="hero-title">
+      探索世界<br>
+      <em>从这一刻</em><br>
+      <span class="hero-title-accent">开始</span>
+    </h1>
+    <p class="hero-desc">上传你的照片、文字或语音，让 AI 为你量身定制专属旅行方案</p>
+    <div class="hero-cta">
+      <button class="btn-hero-primary" data-action="scrollTo" data-target="#upload">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> 开始 AI 规划
+      </button>
+      <button class="btn-hero-ghost" data-action="scrollTo" data-target="#destinations">
+        <i class="fa-solid fa-play"></i> 探索目的地
+      </button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <span class="stat-num">2.8M+</span>
+        <span class="stat-label">旅行者</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-num">180+</span>
+        <span class="stat-label">目的地</span>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <span class="stat-num">98%</span>
+        <span class="stat-label">满意度</span>
+      </div>
+    </div>
+  </div>
+  <div class="hero-scroll">
+    <span>向下滚动</span>
+    <i class="fa-solid fa-chevron-down"></i>
+  </div>
+</section>
+
+<!-- ============ AI 上传规划区域 ============ -->
+<section class="upload-section" id="upload">
+  <div class="section-label">
+    <span class="label-line"></span>
+    <span>AI 智能规划</span>
+    <span class="label-line"></span>
+  </div>
+  <h2 class="section-title">上传你的<em>灵感</em>，AI 为你<br>定制专属旅行</h2>
+  <p class="section-desc">支持照片、文字描述、语音输入三种方式，AI 深度理解你的偏好与心情</p>
+
+  <div class="upload-container">
+    <!-- 上传面板 -->
+    <div class="upload-panel">
+      <!-- 上传类型选择 -->
+      <div class="upload-tabs">
+        <button class="upload-tab active" data-tab="photo">
+          <i class="fa-solid fa-image"></i>
+          <span>照片上传</span>
+        </button>
+        <button class="upload-tab" data-tab="text">
+          <i class="fa-solid fa-pen-nib"></i>
+          <span>文字描述</span>
+        </button>
+        <button class="upload-tab" data-tab="voice">
+          <i class="fa-solid fa-microphone"></i>
+          <span>语音输入</span>
+        </button>
+      </div>
+
+      <!-- 照片上传 -->
+      <div class="tab-content active" id="tab-photo">
+        <div class="photo-drop-zone" id="photoDropZone">
+          <div class="drop-icon">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+          </div>
+          <h3>拖拽照片至此处</h3>
+          <p>或点击选择文件 · 支持 JPG, PNG, WebP · 最多 4 张</p>
+          <input type="file" id="photoInput" accept="image/*" multiple hidden>
+          <button class="btn-upload-select" data-action="triggerClick" data-target="#photoInput">
+            <i class="fa-solid fa-folder-open"></i> 选择照片
+          </button>
+        </div>
+        <div class="photo-preview" id="photoPreview"></div>
+        <div class="upload-tips">
+          <i class="fa-solid fa-circle-info"></i>
+          上传照片后，智谱 GLM-4.6V 视觉模型将深度识别照片中的景色、建筑风格、自然环境等元素，推荐最相似的目的地
+        </div>
+      </div>
+
+      <!-- 文字描述 -->
+      <div class="tab-content" id="tab-text">
+        <div class="text-input-area">
+          <textarea id="textInput" placeholder="描述你理想的旅行...&#10;&#10;例如：我喜欢海边城市，想感受不同的文化，预算适中，希望有美食体验，最好不要人太多的地方...&#10;&#10;或者告诉我你的心情：最近工作压力大，想找一个安静放松的地方..." rows="8"></textarea>
+          <div class="text-tools">
+            <div class="char-count"><span id="charCount">0</span>/500</div>
+            <div class="preset-tags">
+              <span class="preset-tag" data-action="addPresetText" data-tag="海滨度假">海滨度假</span>
+              <span class="preset-tag" data-action="addPresetText" data-tag="山野徒步">山野徒步</span>
+              <span class="preset-tag" data-action="addPresetText" data-tag="文化探索">文化探索</span>
+              <span class="preset-tag" data-action="addPresetText" data-tag="美食之旅">美食之旅</span>
+              <span class="preset-tag" data-action="addPresetText" data-tag="亲子游">亲子游</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 语音输入 -->
+      <div class="tab-content" id="tab-voice">
+        <div class="voice-input-area">
+          <div class="voice-visualizer" id="voiceVisualizer">
+            <div class="voice-waves">
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <div class="voice-status" id="voiceStatus">
+            <p class="voice-hint">点击麦克风开始录音</p>
+            <p class="voice-sub">告诉 AI 你想去哪里旅行</p>
+          </div>
+          <div class="voice-controls">
+            <button class="btn-record" id="recordBtn" data-action="toggleRecording">
+              <i class="fa-solid fa-microphone" id="recordIcon"></i>
+            </button>
+            <div class="voice-timer" id="voiceTimer">00:00</div>
+          </div>
+          <div class="voice-transcript" id="voiceTranscript">
+            <p class="transcript-label"><i class="fa-solid fa-align-left"></i> 识别文字：</p>
+            <p class="transcript-text" id="transcriptText">等待录音...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 偏好设置 -->
+      <div class="preference-section">
+        <h4 class="pref-title"><i class="fa-solid fa-sliders"></i> 旅行偏好</h4>
+        <div class="pref-grid">
+          <div class="pref-group">
+            <label>出行时间</label>
+            <select id="travelTime">
+              <option>3-5 天</option>
+              <option>1 周</option>
+              <option>2 周</option>
+              <option>1 个月+</option>
+            </select>
+          </div>
+          <div class="pref-group">
+            <label>预算范围</label>
+            <select id="budget">
+              <option>经济实惠 (¥2000以下)</option>
+              <option>适中 (¥2000-8000)</option>
+              <option>舒适 (¥8000-20000)</option>
+              <option>豪华 (¥20000+)</option>
+            </select>
+          </div>
+          <div class="pref-group">
+            <label>出行方式</label>
+            <div class="travel-type-btns">
+              <button class="type-btn active" data-type="solo"><i class="fa-solid fa-person"></i> 独旅</button>
+              <button class="type-btn" data-type="couple"><i class="fa-solid fa-heart"></i> 情侣</button>
+              <button class="type-btn" data-type="family"><i class="fa-solid fa-house-user"></i> 家庭</button>
+              <button class="type-btn" data-type="friends"><i class="fa-solid fa-people-group"></i> 朋友</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DeepSeek API Key 配置（文字分析） -->
+      <div class="api-key-section" id="apiKeySection">
+        <div class="api-key-toggle" data-action="toggleApiKeyInput">
+          <i class="fa-solid fa-key"></i>
+          <span>配置 DeepSeek API Key（文字分析用）</span>
+          <i class="fa-solid fa-chevron-down" id="apiKeyChevron"></i>
+        </div>
+        <div class="api-key-input-wrap" id="apiKeyInputWrap" style="display:none">
+          <div class="api-key-field">
+            <input type="password" id="deepseekApiKey" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxx" class="api-key-input">
+            <button class="api-key-save-btn" data-action="saveApiKey" title="保存">
+              <i class="fa-solid fa-check"></i>
+            </button>
+            <button class="api-key-toggle-vis" data-action="toggleApiKeyVisibility" title="显示/隐藏">
+              <i class="fa-solid fa-eye" id="apiKeyEye"></i>
+            </button>
+          </div>
+          <div class="api-key-hint">
+            <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">
+              <i class="fa-solid fa-external-link-alt"></i> 获取 API Key
+            </a>
+            <span class="api-key-status" id="apiKeyStatus"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- OpenAI API Key 配置（GPT 日记生成） -->
+      <div class="api-key-section" id="openaiKeySection">
+        <div class="api-key-toggle" data-action="toggleOpenAIKeyInput">
+          <i class="fa-solid fa-robot"></i>
+          <span>配置 OpenAI API Key（GPT 日记生成用）</span>
+          <i class="fa-solid fa-chevron-down" id="openaiKeyChevron"></i>
+        </div>
+        <div class="api-key-input-wrap" id="openaiKeyInputWrap" style="display:none">
+          <div class="api-key-field">
+            <input type="password" id="openaiApiKey" placeholder="OpenAI API Key，如 sk-proj-xxxxxxxxxxxxx" class="api-key-input">
+            <button class="api-key-save-btn" data-action="saveOpenAIKey" title="保存">
+              <i class="fa-solid fa-check"></i>
+            </button>
+            <button class="api-key-toggle-vis" data-action="toggleOpenAIKeyVisibility" title="显示/隐藏">
+              <i class="fa-solid fa-eye" id="openaiKeyEye"></i>
+            </button>
+          </div>
+          <div class="api-key-hint">
+            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">
+              <i class="fa-solid fa-external-link-alt"></i> 获取 OpenAI API Key
+            </a>
+            <span class="api-key-status" id="openaiKeyStatus"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 智谱 GLM-4.6V API Key 配置（图片分析） -->
+      <div class="api-key-section" id="zhipuKeySection">
+        <div class="api-key-toggle" data-action="toggleZhipuKeyInput">
+          <i class="fa-solid fa-camera-retro"></i>
+          <span>配置智谱 GLM-4.6V API Key（图片分析用）</span>
+          <i class="fa-solid fa-chevron-down" id="zhipuKeyChevron"></i>
+        </div>
+        <div class="api-key-input-wrap" id="zhipuKeyInputWrap" style="display:none">
+          <div class="api-key-field">
+            <input type="password" id="zhipuApiKey" placeholder="智谱 API Key，如：xxxxxxxxxxxxxxxxxxxx.xxxxxxxxx" class="api-key-input">
+            <button class="api-key-save-btn" data-action="saveZhipuKey" title="保存">
+              <i class="fa-solid fa-check"></i>
+            </button>
+            <button class="api-key-toggle-vis" data-action="toggleZhipuKeyVisibility" title="显示/隐藏">
+              <i class="fa-solid fa-eye" id="zhipuKeyEye"></i>
+            </button>
+          </div>
+          <div class="api-key-hint">
+            <a href="https://bigmodel.cn/usercenter/proj-mgmt/apikeys" target="_blank" rel="noopener">
+              <i class="fa-solid fa-external-link-alt"></i> 获取智谱 API Key
+            </a>
+            <span class="api-key-status" id="zhipuKeyStatus"></span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-analyze" id="analyzeBtn" data-action="startAnalysis">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>AI 智能分析推荐</span>
+      </button>
+    </div>
+
+    <!-- AI 分析结果面板 -->
+    <div class="result-panel" id="resultPanel">
+      <div class="result-placeholder" id="resultPlaceholder">
+        <div class="placeholder-icon">
+          <i class="fa-solid fa-map-location-dot"></i>
+        </div>
+        <h3>等待 AI 分析</h3>
+        <p>上传内容后，AI 将为你生成个性化旅行推荐</p>
+      </div>
+      <div class="result-content" id="resultContent" style="display:none">
+        <div class="result-header">
+          <div class="result-badge"><i class="fa-solid fa-sparkles"></i> AI 推荐结果</div>
+          <div class="ai-confidence">匹配度 <strong id="matchScore">96%</strong></div>
+        </div>
+
+        <!-- AI 如何理解你的需求 -->
+        <div class="ai-analysis-section" id="aiAnalysisSection" style="display:none">
+          <div class="ai-analysis-header">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span>AI 如何理解你的需求</span>
+          </div>
+          <div class="ai-analysis-body" id="aiAnalysisBody"></div>
+        </div>
+
+        <div class="recommended-dest" id="recommendedDest">
+          <!-- 动态填充 -->
+        </div>
+        <div class="itinerary-preview" id="itineraryPreview">
+          <!-- 动态填充 -->
+        </div>
+
+        <!-- API 调用详情 -->
+        <div class="api-details-section" id="apiDetailsSection" style="display:none">
+          <div class="api-details-header" data-action="toggleApiDetails">
+            <i class="fa-solid fa-code"></i>
+            <span>API 调用详情</span>
+            <i class="fa-solid fa-chevron-down" id="apiDetailsChevron"></i>
+          </div>
+          <div class="api-details-body" id="apiDetailsBody" style="display:none">
+            <div class="api-detail-row">
+              <span class="api-detail-label"><i class="fa-solid fa-robot"></i> 模型</span>
+              <span class="api-detail-value" id="apiModel">—</span>
+            </div>
+            <div class="api-detail-row">
+              <span class="api-detail-label"><i class="fa-solid fa-token"></i> 输入 Token</span>
+              <span class="api-detail-value" id="apiPromptTokens">—</span>
+            </div>
+            <div class="api-detail-row">
+              <span class="api-detail-label"><i class="fa-solid fa-pen-fancy"></i> 输出 Token</span>
+              <span class="api-detail-value" id="apiCompletionTokens">—</span>
+            </div>
+            <div class="api-detail-row">
+              <span class="api-detail-label"><i class="fa-solid fa-coins"></i> 总 Token</span>
+              <span class="api-detail-value" id="apiTotalTokens">—</span>
+            </div>
+            <div class="api-detail-row">
+              <span class="api-detail-label"><i class="fa-solid fa-clock"></i> 响应时间</span>
+              <span class="api-detail-value" id="apiResponseTime">—</span>
+            </div>
+            <div class="api-detail-row">
+              <span class="api-detail-label"><i class="fa-solid fa-circle-check"></i> 调用状态</span>
+              <span class="api-detail-value api-status-ok" id="apiStatus">成功</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="result-actions">
+          <button class="btn-save-plan" data-action="savePlan"><i class="fa-regular fa-bookmark"></i> 保存方案</button>
+          <button class="btn-view-detail" data-action="showDetailModal"><i class="fa-solid fa-route"></i> 查看详细行程</button>
+        </div>
+      </div>
+      <!-- 加载动画 + 思考链展示 -->
+      <div class="analyzing-overlay" id="analyzingOverlay" style="display:none">
+        <div class="ai-loading">
+          <div class="ai-orb">
+            <div class="orb-ring"></div>
+            <div class="orb-ring orb-ring-2"></div>
+            <div class="orb-core"><i class="fa-solid fa-brain"></i></div>
+          </div>
+          <p class="loading-text" id="loadingText">正在分析你的偏好...</p>
+          <div class="loading-steps" id="loadingSteps">
+            <div class="load-step active"><i class="fa-solid fa-check"></i> 解析内容</div>
+            <div class="load-step"><i class="fa-solid fa-check"></i> 匹配目的地</div>
+            <div class="load-step"><i class="fa-solid fa-check"></i> 生成行程</div>
+          </div>
+          <!-- 思考链展示区 -->
+          <div class="reasoning-section" id="reasoningSection" style="display:none">
+            <div class="reasoning-header" data-action="toggleReasoning">
+              <i class="fa-solid fa-lightbulb"></i>
+              <span>AI 思考过程</span>
+              <i class="fa-solid fa-chevron-down" id="reasoningChevron"></i>
+            </div>
+            <div class="reasoning-body" id="reasoningBody" style="display:none">
+              <div class="reasoning-content" id="reasoningContent"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MBTI 性格测试 ============ -->
+<section class="mbti-section" id="mbti">
+  <div class="mbti-bg-deco"></div>
+  <div class="section-label">
+    <span class="label-line"></span>
+    <span>性格旅行</span>
+    <span class="label-line"></span>
+  </div>
+  <h2 class="section-title">MBTI <em>性格测试</em><br>找到专属你的旅行方式</h2>
+  <p class="section-desc">16 种性格，16 种旅行风格 — 5 分钟测试，发现最适合你的目的地</p>
+
+  <!-- 测试入口 -->
+  <div class="mbti-entry" id="mbtiEntry">
+    <div class="mbti-types-preview">
+      <!-- 分析家 Analysts -->
+      <div class="mbti-type-chip analyst" data-action="selectMbtiType" data-type="INTJ" title="点击直接查看 INTJ 建筑师的旅行推荐"><span>INTJ</span><span>建筑师</span></div>
+      <div class="mbti-type-chip analyst" data-action="selectMbtiType" data-type="INTP" title="点击直接查看 INTP 逻辑学家的旅行推荐"><span>INTP</span><span>逻辑学家</span></div>
+      <div class="mbti-type-chip analyst" data-action="selectMbtiType" data-type="ENTJ" title="点击直接查看 ENTJ 指挥官的旅行推荐"><span>ENTJ</span><span>指挥官</span></div>
+      <div class="mbti-type-chip analyst" data-action="selectMbtiType" data-type="ENTP" title="点击直接查看 ENTP 辩论家的旅行推荐"><span>ENTP</span><span>辩论家</span></div>
+      <!-- 外交家 Diplomats -->
+      <div class="mbti-type-chip diplomat" data-action="selectMbtiType" data-type="INFJ" title="点击直接查看 INFJ 提倡者的旅行推荐"><span>INFJ</span><span>提倡者</span></div>
+      <div class="mbti-type-chip diplomat" data-action="selectMbtiType" data-type="INFP" title="点击直接查看 INFP 调停者的旅行推荐"><span>INFP</span><span>调停者</span></div>
+      <div class="mbti-type-chip diplomat" data-action="selectMbtiType" data-type="ENFJ" title="点击直接查看 ENFJ 主人公的旅行推荐"><span>ENFJ</span><span>主人公</span></div>
+      <div class="mbti-type-chip diplomat" data-action="selectMbtiType" data-type="ENFP" title="点击直接查看 ENFP 竞选者的旅行推荐"><span>ENFP</span><span>竞选者</span></div>
+      <!-- 守护者 Sentinels -->
+      <div class="mbti-type-chip sentinel" data-action="selectMbtiType" data-type="ISTJ" title="点击直接查看 ISTJ 物流师的旅行推荐"><span>ISTJ</span><span>物流师</span></div>
+      <div class="mbti-type-chip sentinel" data-action="selectMbtiType" data-type="ISFJ" title="点击直接查看 ISFJ 守护者的旅行推荐"><span>ISFJ</span><span>守护者</span></div>
+      <div class="mbti-type-chip sentinel" data-action="selectMbtiType" data-type="ESTJ" title="点击直接查看 ESTJ 总经理的旅行推荐"><span>ESTJ</span><span>总经理</span></div>
+      <div class="mbti-type-chip sentinel" data-action="selectMbtiType" data-type="ESFJ" title="点击直接查看 ESFJ 执政官的旅行推荐"><span>ESFJ</span><span>执政官</span></div>
+      <!-- 探险家 Explorers -->
+      <div class="mbti-type-chip explorer" data-action="selectMbtiType" data-type="ISTP" title="点击直接查看 ISTP 鉴赏家的旅行推荐"><span>ISTP</span><span>鉴赏家</span></div>
+      <div class="mbti-type-chip explorer" data-action="selectMbtiType" data-type="ISFP" title="点击直接查看 ISFP 探险家的旅行推荐"><span>ISFP</span><span>探险家</span></div>
+      <div class="mbti-type-chip explorer" data-action="selectMbtiType" data-type="ESTP" title="点击直接查看 ESTP 企业家的旅行推荐"><span>ESTP</span><span>企业家</span></div>
+      <div class="mbti-type-chip explorer" data-action="selectMbtiType" data-type="ESFP" title="点击直接查看 ESFP 表演者的旅行推荐"><span>ESFP</span><span>表演者</span></div>
+    </div>
+    <button class="btn-start-mbti" data-action="startMbtiTest">
+      <i class="fa-solid fa-brain"></i>
+      开始测试，发现你的旅行性格
+      <i class="fa-solid fa-arrow-right"></i>
+    </button>
+    <p class="mbti-entry-note">共 20 题 · 约 3-5 分钟 · 结果即时生成</p>
+  </div>
+
+  <!-- 测试问卷 -->
+  <div class="mbti-quiz" id="mbtiQuiz" style="display:none">
+    <!-- 进度条 -->
+    <div class="mbti-progress-wrap">
+      <div class="mbti-progress-bar">
+        <div class="mbti-progress-fill" id="mbtiProgressFill"></div>
+      </div>
+      <span class="mbti-progress-text" id="mbtiProgressText">1 / 20</span>
+    </div>
+
+    <!-- 问题卡片 -->
+    <div class="mbti-question-card" id="mbtiQuestionCard">
+      <div class="mbti-q-num" id="mbtiQNum">问题 1</div>
+      <div class="mbti-q-text" id="mbtiQText">加载问题中...</div>
+      <div class="mbti-options" id="mbtiOptions">
+        <button class="mbti-opt" id="mbtiOptA" data-action="answerMbtiA">
+          <span class="opt-letter">A</span>
+          <span class="opt-text" id="mbtiOptAText"></span>
+        </button>
+        <button class="mbti-opt" id="mbtiOptB" data-action="answerMbtiB">
+          <span class="opt-letter">B</span>
+          <span class="opt-text" id="mbtiOptBText"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 维度说明 -->
+    <div class="mbti-dims">
+      <span class="dim-badge" id="dimBadge">E vs I</span>
+      <span class="dim-label" id="dimLabel">外向 vs 内向</span>
+    </div>
+
+    <button class="btn-mbti-back" data-action="prevMbtiQ" id="mbtiBackBtn" style="display:none">
+      <i class="fa-solid fa-arrow-left"></i> 上一题
+    </button>
+  </div>
+
+  <!-- 测试结果 -->
+  <div class="mbti-result" id="mbtiResult" style="display:none">
+    <div class="mbti-result-inner">
+      <!-- 结果头部 -->
+      <div class="mbti-result-header">
+        <div class="mbti-type-badge" id="mbtiTypeBadge">
+          <span class="type-code" id="mbtiTypeCode">INFP</span>
+          <span class="type-name" id="mbtiTypeName">调停者</span>
+        </div>
+        <div class="mbti-type-desc" id="mbtiTypeDesc"></div>
+        <div class="mbti-scores" id="mbtiScores"></div>
+      </div>
+
+      <!-- 旅行风格 -->
+      <div class="mbti-travel-style">
+        <h3><i class="fa-solid fa-suitcase-rolling"></i> 你的旅行风格</h3>
+        <div class="travel-style-grid" id="travelStyleGrid"></div>
+      </div>
+
+      <!-- 推荐目的地 -->
+      <div class="mbti-destinations">
+        <h3><i class="fa-solid fa-map-location-dot"></i> 为你推荐的目的地</h3>
+        <div class="mbti-dest-cards" id="mbtiDestCards"></div>
+      </div>
+
+      <!-- 旅行小贴士 -->
+      <div class="mbti-tips">
+        <h3><i class="fa-solid fa-lightbulb"></i> 旅行小贴士</h3>
+        <ul class="mbti-tips-list" id="mbtiTipsList"></ul>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="mbti-result-actions">
+        <button class="btn-mbti-restart" data-action="restartMbti">
+          <i class="fa-solid fa-rotate-left"></i> 重新测试
+        </button>
+        <button class="btn-mbti-plan" data-action="goToPlanning">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> 用 AI 规划旅行
+        </button>
+        <button class="btn-mbti-share" data-action="shareMbtiResult">
+          <i class="fa-solid fa-share-nodes"></i> 分享结果
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 热门目的地 ============ -->
+<section class="destinations-section" id="destinations">
+  <div class="dest-header">
+    <div>
+      <div class="section-label left">
+        <span class="label-line"></span>
+        <span>热门目的地</span>
+      </div>
+      <h2 class="section-title left">探索<em>最受欢迎</em>的<br>旅行目的地</h2>
+    </div>
+    <div class="dest-filter">
+      <button class="filter-btn active" data-filter="recommended">推荐</button>
+      <button class="filter-btn" data-filter="nature">自然</button>
+      <button class="filter-btn" data-filter="culture">文化</button>
+      <button class="filter-btn" data-filter="beach">海滨</button>
+      <button class="filter-btn" data-filter="city">城市</button>
+    </div>
+  </div>
+
+  <div class="destinations-grid" id="destinationsGrid"></div>
+</section>
+
+<!-- ============ 景点导航 ============ -->
+<section class="navigate-section" id="navigate">
+  <div class="navigate-inner">
+    <div class="navigate-left">
+      <div class="section-label left">
+        <span class="label-line"></span>
+        <span>智能导航</span>
+      </div>
+      <h2 class="section-title left">精准导航，<em>轻松抵达</em><br>每一处胜景</h2>
+      <p class="nav-desc">集成高德、百度地图，一键规划最优路线，实时显示交通状况，智能避堵</p>
+
+      <!-- 模式切换 -->
+      <div class="nav-mode-switch">
+        <button class="nav-panel-tab active" data-action="switchNavPanelMode" data-panel="single">导入行程</button>
+        <button class="nav-panel-tab" data-action="switchNavPanelMode" data-panel="route">多点路线规划</button>
+      </div>
+
+      <!-- 导入行程面板 -->
+      <div class="nav-panel" id="singleNavPanel">
+        <div class="nav-import-section" id="navImportSection">
+          <button class="btn-import-fav" data-action="openImportFromFavorites">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span class="btn-import-title">从收藏导入 AI 行程</span>
+            <span class="btn-import-desc">将 AI 生成的行程一键导入导航，按天规划路线</span>
+          </button>
+          <button class="btn-import-fav secondary" data-action="openSavedRoutes">
+            <i class="fa-solid fa-map-location-dot"></i>
+            <span class="btn-import-title">已保存的路线规划</span>
+            <span class="btn-import-desc">查看和管理之前保存的多点路线规划方案</span>
+          </button>
+        </div>
+
+        <!-- 内联日期选择器（替代模态框） -->
+        <div class="day-picker-inline" id="dayPickerInline" style="display:none"></div>
+
+        <div class="spot-list" id="spotList"></div>
+      </div>
+
+      <!-- 多点路线规划面板 -->
+      <div class="nav-panel" id="routePlanPanel" style="display:none">
+        <div class="route-plan-hint">
+          <i class="fa-solid fa-route"></i> 输入多个地址，一键规划最优路线
+        </div>
+
+        <!-- 地址列表 -->
+        <div class="route-address-list" id="routeAddressList">
+          <div class="route-addr-row" data-type="origin">
+            <span class="route-addr-tag origin">起点</span>
+            <input type="text" class="route-addr-input" placeholder="输入起点地址..." oninput="searchRouteAddress(this)">
+            <div class="route-addr-suggestions" style="display:none"></div>
+          </div>
+          <div class="route-addr-row" data-type="destination">
+            <span class="route-addr-tag dest">终点</span>
+            <input type="text" class="route-addr-input" placeholder="输入终点地址..." oninput="searchRouteAddress(this)">
+            <div class="route-addr-suggestions" style="display:none"></div>
+          </div>
+        </div>
+
+        <button class="btn-add-waypoint" data-action="addRouteWaypoint">
+          <i class="fa-solid fa-plus"></i> 添加途经点
+        </button>
+
+        <!-- 规划选项 -->
+        <div class="route-options">
+          <label class="route-opt-item">
+            <input type="checkbox" id="optimizeOrder">
+            <span>优化途经点顺序</span>
+          </label>
+          <div class="route-opt-strategy">
+            <span>策略</span>
+            <label class="route-opt-item"><input type="radio" name="routeStrategy" value="time" checked><span>时间优先</span></label>
+            <label class="route-opt-item"><input type="radio" name="routeStrategy" value="distance"><span>路程优先</span></label>
+            <label class="route-opt-item"><input type="radio" name="routeStrategy" value="smooth"><span>顺利程度</span></label>
+            <label class="route-opt-item"><input type="radio" name="routeStrategy" value="cost"><span>花费价格</span></label>
+          </div>
+        </div>
+
+        <button class="btn-start-route" data-action="startRoutePlanning" id="startRouteBtn">
+          <i class="fa-solid fa-play"></i> 开始规划
+        </button>
+
+        <!-- 结果摘要 -->
+        <div class="route-result-summary" id="routeSummary" style="display:none">
+          <div class="route-summary-row">
+            <i class="fa-solid fa-road"></i>
+            <span>总距离：<strong id="routePlanDist">-</strong></span>
+          </div>
+          <div class="route-summary-row">
+            <i class="fa-solid fa-clock"></i>
+            <span>预计时间：<strong id="routePlanTime">-</strong></span>
+          </div>
+          <div class="route-summary-row">
+            <i class="fa-solid fa-coins"></i>
+            <span>过路费：<strong id="routePlanToll">-</strong></span>
+          </div>
+          <div class="route-summary-actions">
+            <button class="btn-save-route" data-action="saveRoutePlan">保存路线</button>
+            <button class="btn-clear-route" data-action="clearRoutePlan">清除路线</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="navigate-right">
+      <div class="map-container" id="mapContainer">
+        <div class="map-top">
+          <div id="leafletMap"></div>
+          <div class="map-style-bar" id="mapStyleBar">
+            <button class="map-style-btn light active" data-style="light" title="浅色底图"></button>
+            <button class="map-style-btn dark" data-style="dark" title="深色底图"></button>
+          </div>
+        </div>
+
+      </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 用户分享 ============ -->
+<section class="shares-section" id="shares">
+  <div class="section-label">
+    <span class="label-line"></span>
+    <span>用户分享</span>
+    <span class="label-line"></span>
+  </div>
+  <h2 class="section-title">分享你的<em>旅途故事</em><br>发现更多精彩</h2>
+  <p class="section-desc">记录旅行心得、分享真实感受，和志同道合的旅行者一起交流</p>
+
+  <!-- 操作栏 -->
+  <div class="shares-toolbar">
+    <div class="shares-search">
+      <i class="fa-solid fa-search"></i>
+      <input type="text" id="sharesSearch" placeholder="搜索目的地或关键词...">
+      <button class="search-clear-btn" id="sharesSearchClear" style="display:none" data-action="clearSharesSearch"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <button class="btn-publish-share" data-action="openPublishModal">
+      <i class="fa-solid fa-feather-pointed"></i> 发布分享
+    </button>
+  </div>
+
+  <!-- 分享卡片轮播 -->
+  <div class="shares-carousel" id="sharesCarousel">
+    <button class="carousel-nav carousel-prev" id="carouselPrev" aria-label="上一个分享" data-action="carouselPrev">
+      <i class="fa-solid fa-chevron-left"></i>
+    </button>
+    <div class="shares-carousel-stage" id="sharesCarouselStage">
+      <!-- 背景卡片堆叠层 -->
+      <div class="carousel-bg-cards" id="carouselBgCards"></div>
+      <!-- 当前活跃卡片 -->
+      <div class="shares-carousel-track" id="sharesCarouselTrack">
+        <!-- 动态填充 -->
+      </div>
+    </div>
+    <button class="carousel-nav carousel-next" id="carouselNext" aria-label="下一个分享" data-action="carouselNext">
+      <i class="fa-solid fa-chevron-right"></i>
+    </button>
+  </div>
+
+  <!-- 指示器 & 计数器 -->
+  <div class="carousel-indicators" id="carouselIndicators">
+    <div class="carousel-dots" id="carouselDots"></div>
+    <div class="carousel-counter" id="carouselCounter"></div>
+  </div>
+
+  <!-- 发布/编辑分享弹窗 -->
+  <div class="share-modal-overlay" id="shareModalOverlay">
+    <div class="share-modal">
+      <div class="share-modal-header">
+        <h3><i class="fa-solid fa-feather-pointed"></i> <span id="shareModalTitle">发布旅行分享</span></h3>
+        <button class="share-modal-close" data-action="closeShareModal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="share-modal-body">
+        <div class="share-form-group">
+          <label>目的地 <span class="required">*</span></label>
+          <input type="text" id="shareDest" placeholder="你去过的旅行目的地..." maxlength="30">
+        </div>
+        <div class="share-form-group">
+          <label>标题</label>
+          <input type="text" id="shareTitle" placeholder="给你的分享起个标题吧~" maxlength="60">
+        </div>
+        <div class="share-form-group">
+          <label>评分</label>
+          <div class="share-rating-input" id="shareRatingInput">
+            <i class="fa-regular fa-star" data-star="1"></i>
+            <i class="fa-regular fa-star" data-star="2"></i>
+            <i class="fa-regular fa-star" data-star="3"></i>
+            <i class="fa-regular fa-star" data-star="4"></i>
+            <i class="fa-regular fa-star" data-star="5"></i>
+          </div>
+        </div>
+        <div class="share-form-group">
+          <label>你的分享 <span class="required">*</span></label>
+          <textarea id="shareContent" placeholder="写下你的旅行心得、感受和评价...&#10;&#10;可以包括：景色、美食、住宿、交通、花费、小贴士等" rows="6" maxlength="2000"></textarea>
+          <span class="share-char-count" id="shareCharCount">0/2000</span>
+        </div>
+        <div class="share-form-group">
+          <label>标签</label>
+          <div class="share-tags-input-wrap">
+            <input type="text" id="shareTagInput" placeholder="添加标签后按回车..." maxlength="10">
+            <div class="share-tags-list" id="shareTagsList"></div>
+          </div>
+        </div>
+        <div class="share-form-group">
+          <label>照片 <span class="photo-hint">（最多6张，单张不超过5MB）</span></label>
+          <div class="share-photo-upload-area" id="sharePhotoUploadArea">
+            <label class="share-photo-add-btn" for="sharePhotoInput">
+              <i class="fa-solid fa-camera"></i>
+              <span>添加照片</span>
+            </label>
+            <input type="file" id="sharePhotoInput" accept="image/*" multiple hidden>
+            <div class="share-photo-grid" id="sharePhotoGrid"></div>
+          </div>
+        </div>
+      </div>
+      <div class="share-modal-footer">
+        <button class="btn-cancel-share" data-action="closeShareModal">取消</button>
+        <button class="btn-submit-share" data-action="submitShare">发布分享</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 照片灯箱 -->
+  <div class="photo-lightbox" id="photoLightbox">
+    <button class="lightbox-close" data-action="closeLightbox"><i class="fa-solid fa-xmark"></i></button>
+    <button class="lightbox-prev" data-action="lightboxPrev"><i class="fa-solid fa-chevron-left"></i></button>
+    <img id="lightboxImg" src="" alt="">
+    <button class="lightbox-next" data-action="lightboxNext"><i class="fa-solid fa-chevron-right"></i></button>
+  </div>
+</section>
+
+<!-- ============ 旅行日记生成 ============ -->
+<section class="video-section diary-section" id="diary">
+  <div class="video-bg">
+    <img src="https://images.unsplash.com/photo-1488085061387-422e29b40080?w=1600&auto=format&fit=crop&q=80" alt="diary bg">
+    <div class="video-overlay"></div>
+  </div>
+  <div class="video-content">
+    <div class="section-label white">
+      <span class="label-line white"></span>
+      <span>旅行日记</span>
+      <span class="label-line white"></span>
+    </div>
+    <h2 class="section-title white">把你的<em>旅行记忆</em><br>拼贴成精美手帐</h2>
+    <p class="section-desc white">上传旅行照片，写下旅行故事，一键生成拼贴风旅行日记，可下载保存</p>
+
+    <div class="video-generator diary-generator">
+      <div class="video-upload-area diary-editor">
+        <div class="diary-photo-upload" id="diaryPhotoUpload">
+          <i class="fa-solid fa-images"></i>
+          <h4>导入旅行照片</h4>
+          <p>支持多选，最多 12 张，照片将自动拼贴排版</p>
+          <input type="file" id="diaryPhotoInput" accept="image/*" multiple hidden>
+          <button class="btn-video-upload" data-action="triggerClick" data-target="#diaryPhotoInput">
+            <i class="fa-solid fa-plus"></i> 选择照片
+          </button>
+          <div class="diary-photo-grid" id="diaryPhotoGrid"></div>
+        </div>
+
+        <div class="diary-form">
+          <h4><i class="fa-solid fa-pen-fancy"></i> 日记内容</h4>
+          <div class="diary-form-item">
+            <label>日记标题</label>
+            <input type="text" id="diaryTitle" class="diary-input" placeholder="例如：南丫岛小旅行">
+          </div>
+          <div class="diary-form-item">
+            <label>旅行日期</label>
+            <input type="date" id="diaryDate" class="diary-input">
+          </div>
+          <div class="diary-form-item">
+            <label>日记风格</label>
+            <div class="style-select">
+              <button class="style-btn active" data-diary-style="fresh" data-action="selectDiaryStyle">
+                <i class="fa-solid fa-book-open"></i> 清新手帐
+              </button>
+              <button class="style-btn" data-diary-style="collage" data-action="selectDiaryStyle">
+                <i class="fa-solid fa-layer-group"></i> 美式拼贴
+              </button>
+              <button class="style-btn" data-diary-style="retro" data-action="selectDiaryStyle">
+                <i class="fa-solid fa-film"></i> 复古胶片
+              </button>
+            </div>
+          </div>
+          <div class="diary-form-item">
+            <label>旅行故事 / 碎碎念</label>
+            <textarea id="diaryContent" class="diary-textarea" rows="5" placeholder="写下你的旅行故事、心情、美食发现、小插曲...
+例如：海风吹来带着咸咸的味道，没什么计划，就是很舒服～"></textarea>
+          </div>
+          <div class="diary-form-item">
+            <label>旅行标签（用空格分隔）</label>
+            <input type="text" id="diaryTags" class="diary-input" placeholder="看海 发呆 放空 徒步">
+          </div>
+        </div>
+      </div>
+
+      <div class="video-preview-area diary-preview-wrap">
+        <div class="diary-preview-box" id="diaryPreviewBox">
+          <div class="diary-placeholder" id="diaryPlaceholder">
+            <div class="vp-icon"><i class="fa-solid fa-book-open-reader"></i></div>
+            <p>日记预览将在生成后显示</p>
+          </div>
+          <div class="diary-generating" id="diaryGenerating" style="display:none">
+            <div class="gen-animation">
+              <div class="film-strip">
+                <span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+            <p class="gen-text" id="diaryGenText">正在拼贴你的旅行日记...</p>
+            <div class="gen-progress">
+              <div class="gen-bar" id="diaryGenBar"></div>
+            </div>
+            <p class="gen-step" id="diaryGenStep">排版照片...</p>
+          </div>
+          <!-- 日记渲染目标(模板模式) -->
+          <div class="diary-result" id="diaryResult" style="display:none">
+            <div class="diary-canvas-wrap" id="diaryCanvasWrap">
+              <div class="diary-canvas" id="diaryCanvas"></div>
+            </div>
+          </div>
+          <!-- AI 生成的日记图片 -->
+          <div class="diary-result diary-ai-result" id="diaryAIResult" style="display:none">
+            <div class="diary-ai-image-wrap" id="diaryAIImageWrap">
+              <img id="diaryAIImage" src="" alt="AI生成的旅行手帐" style="display:none">
+              <div class="diary-ai-loading" id="diaryAILoading">
+                <div class="ai-loading-spinner"></div>
+                <p>AI 正在为你绘制旅行手帐...</p>
+                <p class="ai-loading-hint">预计需要 10-30 秒</p>
+              </div>
+              <div class="diary-ai-error" id="diaryAIError" style="display:none">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <p id="diaryAIErrorMsg">生成失败</p>
+                <button class="btn-retry-ai" data-action="generateDiaryAI">重试</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="video-actions diary-actions">
+          <div class="diary-action-row">
+            <button class="btn-generate-ai" data-action="generateDiaryAI" id="btnGenerateDiaryAI">
+              <i class="fa-solid fa-robot"></i>
+              <span>GPT 生成手帐</span>
+            </button>
+            <button class="btn-generate-video" data-action="generateDiary" id="btnGenerateDiary">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>快速拼贴</span>
+            </button>
+          </div>
+          <div class="video-result-actions" id="diaryResultActions" style="display:none">
+            <button class="btn-download-video" data-action="downloadDiary">
+              <i class="fa-solid fa-download"></i> 下载图片
+            </button>
+            <button class="btn-share-video" data-action="saveDiary">
+              <i class="fa-solid fa-bookmark"></i> 保存到记录
+            </button>
+            <button class="btn-regen-video" data-action="generateDiary">
+              <i class="fa-solid fa-rotate"></i> 重新生成
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Footer ============ -->
+<footer class="footer">
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="nav-logo">
+        <span class="logo-icon"><i class="fa-solid fa-compass"></i></span>
+        <span class="logo-text">探途 <em>WANDR</em></span>
+      </div>
+      <p>AI 驱动的智能旅行平台，让每一次旅行都成为专属体验</p>
+      <div class="social-links">
+        <a href="#"><i class="fa-brands fa-weixin"></i></a>
+        <a href="#"><i class="fa-brands fa-weibo"></i></a>
+        <a href="#"><i class="fa-brands fa-tiktok"></i></a>
+        <a href="#"><i class="fa-solid fa-rss"></i></a>
+      </div>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <h5>功能</h5>
+        <a href="#upload">AI 旅行规划</a>
+        <a href="#destinations">热门目的地</a>
+        <a href="#navigate">景点导航</a>
+        <a href="#shares">用户分享</a>
+        <a href="#diary">旅行日记</a>
+      </div>
+      <div class="footer-col">
+        <h5>支持</h5>
+        <a href="#">使用帮助</a>
+        <a href="#">隐私政策</a>
+        <a href="#">服务条款</a>
+        <a href="#">联系我们</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 探途 WANDR · AI 智能旅行平台 · 让旅行更美好</p>
+  </div>
+</footer>
+
+<!-- ============ 预定 Modal ============ -->
+<div class="modal-overlay booking-modal-overlay" id="bookingModal" data-action="closeBookingOverlay">
+  <div class="booking-modal-content">
+    <button class="modal-close" data-action="closeBookingModal"><i class="fa-solid fa-xmark"></i></button>
+    <div class="booking-modal-left">
+      <img src="" id="bookingDestImg" alt="目的地图片" class="booking-dest-img">
+      <div class="booking-dest-overlay">
+        <div class="booking-dest-name" id="bookingDestName">张家界</div>
+        <div class="booking-dest-sub" id="bookingDestSub">湖南 · 世界自然遗产</div>
+        <div class="booking-dest-price" id="bookingDestPrice">从 ¥880/人</div>
+      </div>
+    </div>
+    <div class="booking-modal-right">
+      <h3 class="booking-modal-title"><i class="fa-solid fa-calendar-check"></i> 立即预定</h3>
+      <div class="booking-form">
+        <!-- ========== 飞猪产品列表面板（自动加载） ========== -->
+        <div class="flyai-product-panel" id="flyaiProductPanel">
+          <div class="flyai-panel-header">
+            <i class="fa-solid fa-list-check"></i> 为您找到以下旅行团产品
+          </div>
+
+          <!-- 筛选 & 排序栏 -->
+          <div class="flyai-filter-bar" id="flyaiFilterBar">
+            <div class="flyai-filter-tabs">
+              <button class="flyai-filter-tab active" data-filter="all">全部</button>
+              <button class="flyai-filter-tab" data-filter="跟团游">跟团游</button>
+              <button class="flyai-filter-tab" data-filter="自由行">自由行</button>
+            </div>
+            <div class="flyai-sort-wrap">
+              <label><i class="fa-solid fa-sort"></i>
+                <select id="flyaiSortSelect" class="flyai-sort-select">
+                  <option value="default">推荐排序</option>
+                  <option value="price_asc">价格从低到高</option>
+                  <option value="price_desc">价格从高到低</option>
+                  <option value="rating_desc">评分最高</option>
+                  <option value="sales_desc">销量最多</option>
+                  <option value="days_asc">天数最少</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div class="flyai-product-list" id="flyaiProductList">
+            <!-- 动态填充 -->
+          </div>
+        </div>
+
+        <p class="booking-tip" style="margin-top:16px"><i class="fa-solid fa-shield-halved"></i> 点击「查看详情」跳转飞猪官方平台完成预订</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 用户中心面板（收藏+预定） ============ -->
+<div class="user-panel-overlay" id="userPanelOverlay" data-action="closeUserPanelOverlay">
+  <div class="user-panel" id="userPanel">
+    <!-- 面板头部 -->
+    <div class="user-panel-header">
+      <div class="user-panel-tabs">
+        <button class="panel-tab active" id="favTab" data-action="switchPanelTab" data-tab="favorites">
+          <i class="fa-solid fa-heart"></i> 我的收藏
+          <span class="panel-tab-count" id="favCount">0</span>
+        </button>
+        <button class="panel-tab" id="bookTab" data-action="switchPanelTab" data-tab="bookings">
+          <i class="fa-solid fa-calendar-check"></i> 我的预定
+          <span class="panel-tab-count" id="bookCount">0</span>
+        </button>
+        <button class="panel-tab" id="diaryTab" data-action="switchPanelTab" data-tab="diaries">
+          <i class="fa-solid fa-book"></i> 我的日记
+          <span class="panel-tab-count" id="diaryCount">0</span>
+        </button>
+      </div>
+      <button class="user-panel-close" data-action="closeUserPanel"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- 收藏内容 -->
+    <div class="panel-content" id="panelFavorites">
+      <div class="panel-empty" id="favEmpty">
+        <div class="panel-empty-icon"><i class="fa-regular fa-heart"></i></div>
+        <p>还没有收藏任何目的地</p>
+        <span>点击目的地卡片上的 ❤ 即可收藏</span>
+      </div>
+      <div class="panel-list" id="favList"></div>
+    </div>
+
+    <!-- 预定内容 -->
+    <div class="panel-content" id="panelBookings" style="display:none">
+      <div class="panel-empty" id="bookEmpty">
+        <div class="panel-empty-icon"><i class="fa-regular fa-calendar-check"></i></div>
+        <p>还没有预定任何行程</p>
+        <span>点击目的地卡片上的「立即预定」开始旅程</span>
+      </div>
+      <div class="panel-list" id="bookList"></div>
+    </div>
+
+    <!-- 日记内容 -->
+    <div class="panel-content" id="panelDiaries" style="display:none">
+      <div class="panel-empty" id="diaryEmpty">
+        <div class="panel-empty-icon"><i class="fa-regular fa-book"></i></div>
+        <p>还没有保存旅行日记</p>
+        <span>在「旅行日记」板块生成并保存你的第一本手帐</span>
+      </div>
+      <div class="panel-list diary-panel-list" id="diaryList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 详细行程 Modal ============ -->
+<div class="modal-overlay" id="detailModal" data-action="closeModalOverlay">
+  <div class="modal-content">
+    <button class="modal-close" data-action="closeDetailModal"><i class="fa-solid fa-xmark"></i></button>
+    <div class="modal-header">
+      <h3>AI 定制行程方案</h3>
+      <div class="modal-dest" id="modalDestName">三亚 · 海南</div>
+    </div>
+    <div class="modal-body">
+      <div class="itinerary-days" id="itineraryDays">
+        <!-- 动态生成 -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-save" data-action="savePlan"><i class="fa-regular fa-bookmark"></i> 保存行程</button>
+      <button class="btn-modal-navigate" id="modalNavBtn" data-action="navigateCurrentDest"><i class="fa-solid fa-location-dot"></i> 导航前往</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 目的地详情页 ============ -->
+<div class="dest-detail-overlay" id="destDetailOverlay" data-action="closeDestDetailOverlay">
+  <div class="dest-detail-container" id="destDetailContainer">
+    <!-- 顶部大图 -->
+    <div class="dest-detail-hero" id="destDetailHero">
+      <img src="" alt="" id="destDetailHeroImg" class="dest-detail-hero-img">
+      <div class="dest-detail-hero-overlay">
+        <div class="dest-detail-hero-info">
+          <h1 id="destDetailName">张家界</h1>
+          <p id="destDetailSub">湖南 · 世界自然遗产</p>
+          <div class="dest-detail-hero-meta">
+            <span class="dest-detail-rating" id="destDetailRating"><i class="fa-solid fa-star"></i> 4.9</span>
+            <span class="dest-detail-price" id="destDetailPrice">从 ¥880/人</span>
+          </div>
+        </div>
+        <div class="dest-detail-hero-actions">
+          <button class="dest-detail-fav-btn" id="destDetailFavBtn" data-action="toggleDestDetailFav"><i class="fa-regular fa-heart"></i> 收藏</button>
+          <button class="dest-detail-book-btn" data-action="bookDestDetail"><i class="fa-solid fa-calendar-plus"></i> 立即预定</button>
+          <button class="dest-detail-nav-btn" data-action="navDestDetail"><i class="fa-solid fa-location-dot"></i> 导航</button>
+        </div>
+      </div>
+      <button class="dest-detail-close" data-action="closeDestDetail"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Tab 导航 -->
+    <div class="dest-detail-tabs" id="destDetailTabs">
+      <button class="dest-detail-tab active" data-tab="history" data-action="switchDestTab" data-tab="history"><i class="fa-solid fa-scroll"></i> 历史故事</button>
+      <button class="dest-detail-tab" data-tab="food" data-action="switchDestTab" data-tab="food"><i class="fa-solid fa-bowl-food"></i> 地方美食</button>
+      <button class="dest-detail-tab" data-tab="heritage" data-action="switchDestTab" data-tab="heritage"><i class="fa-solid fa-masks-theater"></i> 非遗文化</button>
+      <button class="dest-detail-tab" data-tab="landmarks" data-action="switchDestTab" data-tab="landmarks"><i class="fa-solid fa-landmark-dome"></i> 特色地标</button>
+      <button class="dest-detail-tab" data-tab="routes" data-action="switchDestTab" data-tab="routes"><i class="fa-solid fa-route"></i> 旅行路线</button>
+    </div>
+
+    <!-- Tab 内容区 -->
+    <div class="dest-detail-body" id="destDetailBody">
+      <!-- 由JS动态渲染 -->
+    </div>
+  </div>
+</div>
+
+<!-- ============ 通知提示 ============ -->
+<div class="toast" id="toast"></div>
+
+<script src="lib/leaflet/leaflet.js"></script>
+<script src="lib/html2canvas/html2canvas.min.js"></script>
+<script src="china-destinations-data.js"></script>
+<script src="china-all-spots-data.js"></script>
+<!-- WANDR 模块化 JS -->
+<script src="js/wandr-core.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/api-key-manager.js"></script>
+<script src="js/toast-anim.js"></script>
+<script src="js/fav-manager.js"></script>
+<script src="script.js"></script>
+</body>
+</html>

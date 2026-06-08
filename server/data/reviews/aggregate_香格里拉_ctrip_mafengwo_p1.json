@@ -1,0 +1,29 @@
+{
+  "timestamp": 1780647149142,
+  "value": {
+    "spotName": "香格里拉",
+    "score": "4.5",
+    "total": "0条",
+    "platforms": {
+      "ctrip": {
+        "id": "",
+        "score": "4.5",
+        "count": 0,
+        "reviews": []
+      }
+    },
+    "reviews": [],
+    "insight": {
+      "pros": [
+        "暂无游客评价"
+      ],
+      "cons": [
+        "暂无负面评价"
+      ],
+      "keywords": []
+    },
+    "keywords": [],
+    "timestamp": 1780647149140,
+    "realData": false
+  }
+}

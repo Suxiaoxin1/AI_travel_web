@@ -1,0 +1,36 @@
+[
+  {
+    "id": "WDRMPZ0IXYJ",
+    "fliggyOrderId": "FJMPZ0IXYI",
+    "destName": "九寨沟",
+    "productName": "九寨沟旅游高铁往返双动车四川成都黄龙三日游纯玩3天2晚跟团游",
+    "type": "跟团游",
+    "contactName": "苏贤标",
+    "contactPhone": "13242105042",
+    "startDate": "2026-06-27",
+    "days": 3,
+    "people": 1,
+    "totalPrice": "¥2,246",
+    "status": "cancelled",
+    "payUrl": null,
+    "createdAt": "2026-06-04T04:46:08.507Z",
+    "updatedAt": "2026-06-04T04:46:17.130Z"
+  },
+  {
+    "id": "WDRMPYZ6WK0",
+    "fliggyOrderId": "FJMPYZ6WK0",
+    "destName": "乌镇",
+    "productName": "热门目的地 5 日标准团",
+    "type": "跟团游",
+    "contactName": "苏贤标",
+    "contactPhone": "13242105042",
+    "startDate": "2026-06-05",
+    "days": 5,
+    "people": 1,
+    "totalPrice": "¥1,980",
+    "status": "cancelled",
+    "payUrl": null,
+    "createdAt": "2026-06-04T04:08:47.190Z",
+    "updatedAt": "2026-06-04T04:09:03.399Z"
+  }
+]

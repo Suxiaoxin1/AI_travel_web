@@ -1,0 +1,140 @@
+- generic [active] [ref=e1]:
+  - heading "🧪 MBTI API 流程测试" [level=1] [ref=e2]
+  - paragraph [ref=e3]: 测试范围：Loading 显示 · API 成功渲染 · API 失败降级 · 直接选择 / 问卷测试
+  - generic [ref=e4]:
+    - generic [ref=e5]: API Key 状态：
+    - generic [ref=e6]: 未配置
+    - generic [ref=e7]: Mock 模式：
+    - generic [ref=e8]: 已启用
+  - generic [ref=e9]:
+    - heading " 测试场景" [level=2] [ref=e10]:
+      - generic [ref=e11]: 
+      - text: 测试场景
+    - heading "场景一：直接选择类型（selectMbtiType）" [level=3] [ref=e12]
+    - generic [ref=e13]:
+      - button " 直接选择 · API 调用成功 验证" [ref=e14] [cursor=pointer]:
+        - generic [ref=e15]: 
+        - text: 直接选择 · API 调用成功
+        - generic [ref=e16]: 验证
+      - button " 直接选择 · 无 API Key 降级 降级" [ref=e17] [cursor=pointer]:
+        - generic [ref=e18]: 
+        - text: 直接选择 · 无 API Key 降级
+        - generic [ref=e19]: 降级
+      - button " 直接选择 · API 返回 401 降级" [ref=e20] [cursor=pointer]:
+        - generic [ref=e21]: 
+        - text: 直接选择 · API 返回 401
+        - generic [ref=e22]: 降级
+      - button " 直接选择 · API 返回 500 降级" [ref=e23] [cursor=pointer]:
+        - generic [ref=e24]: 
+        - text: 直接选择 · API 返回 500
+        - generic [ref=e25]: 降级
+      - button " 直接选择 · 网络超时 降级" [ref=e26] [cursor=pointer]:
+        - generic [ref=e27]: 
+        - text: 直接选择 · 网络超时
+        - generic [ref=e28]: 降级
+    - separator [ref=e29]
+    - heading "场景二：问卷测试（showMbtiResult）" [level=3] [ref=e30]
+    - generic [ref=e31]:
+      - button " 问卷测试 · API 调用成功 验证" [ref=e32] [cursor=pointer]:
+        - generic [ref=e33]: 
+        - text: 问卷测试 · API 调用成功
+        - generic [ref=e34]: 验证
+      - button " 问卷测试 · 无 API Key 降级 降级" [ref=e35] [cursor=pointer]:
+        - generic [ref=e36]: 
+        - text: 问卷测试 · 无 API Key 降级
+        - generic [ref=e37]: 降级
+      - button " 问卷测试 · JSON 解析失败 降级" [ref=e38] [cursor=pointer]:
+        - generic [ref=e39]: 
+        - text: 问卷测试 · JSON 解析失败
+        - generic [ref=e40]: 降级
+    - separator [ref=e41]
+    - heading "批量操作" [level=3] [ref=e42]
+    - generic [ref=e43]:
+      - button " 🚀 运行全部测试 一键" [ref=e44] [cursor=pointer]:
+        - generic [ref=e45]: 
+        - text: 🚀 运行全部测试
+        - generic [ref=e46]: 一键
+      - button " 清空日志 清理" [ref=e47] [cursor=pointer]:
+        - generic [ref=e48]: 
+        - text: 清空日志
+        - generic [ref=e49]: 清理
+      - button " 重置全部状态 还原" [ref=e50] [cursor=pointer]:
+        - generic [ref=e51]: 
+        - text: 重置全部状态
+        - generic [ref=e52]: 还原
+  - generic [ref=e53]:
+    - generic [ref=e54]:
+      - generic [ref=e55]: "0"
+      - generic [ref=e56]: 总测试数
+    - generic [ref=e57]:
+      - generic [ref=e58]: "0"
+      - generic [ref=e59]: 通过
+    - generic [ref=e60]:
+      - generic [ref=e61]: "0"
+      - generic [ref=e62]: 失败
+  - generic [ref=e63]:
+    - heading "📋 测试日志" [level=3] [ref=e64]
+    - generic [ref=e65]:
+      - generic [ref=e66]: "--:--等待测试开始..."
+      - generic [ref=e67]: 17:18:53🧪 MBTI API 测试套件已就绪
+      - generic [ref=e68]: 17:18:53Mock 模式已启用 · 点击上方按钮开始测试
+      - generic [ref=e69]: 17:18:53所有 API 调用将被 Mock 拦截，不会发送真实请求
+  - generic [ref=e70]:
+    - heading "👁️ 实时渲染预览（最后一条测试的结果）" [level=3] [ref=e71]
+    - generic [ref=e72]:
+      - generic [ref=e73]:
+        - generic [ref=e74]:
+          - generic [ref=e75] [cursor=pointer]:
+            - generic [ref=e76]: INTJ
+            - generic [ref=e77]: 建筑师
+          - generic [ref=e78] [cursor=pointer]:
+            - generic [ref=e79]: INTP
+            - generic [ref=e80]: 逻辑学家
+          - generic [ref=e81] [cursor=pointer]:
+            - generic [ref=e82]: ENTJ
+            - generic [ref=e83]: 指挥官
+          - generic [ref=e84] [cursor=pointer]:
+            - generic [ref=e85]: ENTP
+            - generic [ref=e86]: 辩论家
+          - generic [ref=e87] [cursor=pointer]:
+            - generic [ref=e88]: INFJ
+            - generic [ref=e89]: 提倡者
+          - generic [ref=e90] [cursor=pointer]:
+            - generic [ref=e91]: INFP
+            - generic [ref=e92]: 调停者
+          - generic [ref=e93] [cursor=pointer]:
+            - generic [ref=e94]: ENFJ
+            - generic [ref=e95]: 主人公
+          - generic [ref=e96] [cursor=pointer]:
+            - generic [ref=e97]: ENFP
+            - generic [ref=e98]: 竞选者
+          - generic [ref=e99] [cursor=pointer]:
+            - generic [ref=e100]: ISTJ
+            - generic [ref=e101]: 物流师
+          - generic [ref=e102] [cursor=pointer]:
+            - generic [ref=e103]: ISFJ
+            - generic [ref=e104]: 守护者
+          - generic [ref=e105] [cursor=pointer]:
+            - generic [ref=e106]: ESTJ
+            - generic [ref=e107]: 总经理
+          - generic [ref=e108] [cursor=pointer]:
+            - generic [ref=e109]: ESFJ
+            - generic [ref=e110]: 执政官
+          - generic [ref=e111] [cursor=pointer]:
+            - generic [ref=e112]: ISTP
+            - generic [ref=e113]: 鉴赏家
+          - generic [ref=e114] [cursor=pointer]:
+            - generic [ref=e115]: ISFP
+            - generic [ref=e116]: 探险家
+          - generic [ref=e117] [cursor=pointer]:
+            - generic [ref=e118]: ESTP
+            - generic [ref=e119]: 企业家
+          - generic [ref=e120] [cursor=pointer]:
+            - generic [ref=e121]: ESFP
+            - generic [ref=e122]: 表演家
+        - button " 开始测试，发现你的旅行性格 " [ref=e123] [cursor=pointer]:
+          - generic [ref=e124]: 
+          - text: 开始测试，发现你的旅行性格
+          - generic [ref=e125]: 
+        - paragraph [ref=e126]: 共 20 题 · 约 3-5 分钟 · 结果即时生成
+      - text:     

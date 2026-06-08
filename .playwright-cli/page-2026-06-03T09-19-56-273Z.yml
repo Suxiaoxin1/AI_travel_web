@@ -1,0 +1,266 @@
+- generic [ref=e1]:
+  - heading "🧪 MBTI API 流程测试" [level=1] [ref=e2]
+  - paragraph [ref=e3]: 测试范围：Loading 显示 · API 成功渲染 · API 失败降级 · 直接选择 / 问卷测试
+  - generic [ref=e4]:
+    - generic [ref=e5]: API Key 状态：
+    - generic [ref=e6]: 未配置
+    - generic [ref=e7]: Mock 模式：
+    - generic [ref=e8]: 已启用
+  - generic [ref=e9]:
+    - heading " 测试场景" [level=2] [ref=e10]:
+      - generic [ref=e11]: 
+      - text: 测试场景
+    - heading "场景一：直接选择类型（selectMbtiType）" [level=3] [ref=e12]
+    - generic [ref=e13]:
+      - button " 直接选择 · API 调用成功 验证" [ref=e14] [cursor=pointer]:
+        - generic [ref=e15]: 
+        - text: 直接选择 · API 调用成功
+        - generic [ref=e16]: 验证
+      - button " 直接选择 · 无 API Key 降级 降级" [ref=e17] [cursor=pointer]:
+        - generic [ref=e18]: 
+        - text: 直接选择 · 无 API Key 降级
+        - generic [ref=e19]: 降级
+      - button " 直接选择 · API 返回 401 降级" [ref=e20] [cursor=pointer]:
+        - generic [ref=e21]: 
+        - text: 直接选择 · API 返回 401
+        - generic [ref=e22]: 降级
+      - button " 直接选择 · API 返回 500 降级" [ref=e23] [cursor=pointer]:
+        - generic [ref=e24]: 
+        - text: 直接选择 · API 返回 500
+        - generic [ref=e25]: 降级
+      - button " 直接选择 · 网络超时 降级" [ref=e26] [cursor=pointer]:
+        - generic [ref=e27]: 
+        - text: 直接选择 · 网络超时
+        - generic [ref=e28]: 降级
+    - separator [ref=e29]
+    - heading "场景二：问卷测试（showMbtiResult）" [level=3] [ref=e30]
+    - generic [ref=e31]:
+      - button " 问卷测试 · API 调用成功 验证" [ref=e32] [cursor=pointer]:
+        - generic [ref=e33]: 
+        - text: 问卷测试 · API 调用成功
+        - generic [ref=e34]: 验证
+      - button " 问卷测试 · 无 API Key 降级 降级" [ref=e35] [cursor=pointer]:
+        - generic [ref=e36]: 
+        - text: 问卷测试 · 无 API Key 降级
+        - generic [ref=e37]: 降级
+      - button " 问卷测试 · JSON 解析失败 降级" [ref=e38] [cursor=pointer]:
+        - generic [ref=e39]: 
+        - text: 问卷测试 · JSON 解析失败
+        - generic [ref=e40]: 降级
+    - separator [ref=e41]
+    - heading "批量操作" [level=3] [ref=e42]
+    - generic [ref=e43]:
+      - button " 🚀 运行全部测试 一键" [active] [ref=e44] [cursor=pointer]:
+        - generic [ref=e45]: 
+        - text: 🚀 运行全部测试
+        - generic [ref=e46]: 一键
+      - button " 清空日志 清理" [ref=e47] [cursor=pointer]:
+        - generic [ref=e48]: 
+        - text: 清空日志
+        - generic [ref=e49]: 清理
+      - button " 重置全部状态 还原" [ref=e50] [cursor=pointer]:
+        - generic [ref=e51]: 
+        - text: 重置全部状态
+        - generic [ref=e52]: 还原
+  - generic [ref=e53]:
+    - generic [ref=e54]:
+      - generic [ref=e55]: "27"
+      - generic [ref=e56]: 总测试数
+    - generic [ref=e57]:
+      - generic [ref=e58]: "27"
+      - generic [ref=e59]: 通过
+    - generic [ref=e60]:
+      - generic [ref=e61]: "0"
+      - generic [ref=e62]: 失败
+  - generic [ref=e63]:
+    - heading "📋 测试日志" [level=3] [ref=e64]
+    - generic [ref=e65]:
+      - generic [ref=e66]: "--:--等待测试开始..."
+      - generic [ref=e67]: 17:18:53🧪 MBTI API 测试套件已就绪
+      - generic [ref=e68]: 17:18:53Mock 模式已启用 · 点击上方按钮开始测试
+      - generic [ref=e69]: 17:18:53所有 API 调用将被 Mock 拦截，不会发送真实请求
+      - generic [ref=e127]: 17:19:52🚀 ===== 开始运行全部测试 =====
+      - generic [ref=e128]: "17:19:52🔬 开始测试: select_api_success"
+      - generic [ref=e129]: 17:19:52[Toast] AI 已为 INTJ（建筑师）生成专属旅行推荐 ✨
+      - generic [ref=e130]: 17:19:53✅ PASS — 直接选择 API 成功 → AI 徽标显示
+      - generic [ref=e131]: 17:19:53✅ PASS — 直接选择 API 成功 → 无降级横幅
+      - generic [ref=e132]: 17:19:53✅ PASS — 直接选择 API 成功 → 类型代码 INTJ
+      - generic [ref=e133]: 17:19:53✅ PASS — 直接选择 API 成功 → 类型名称 建筑师
+      - generic [ref=e134]: 17:19:53✅ PASS — 直接选择 API 成功 → 描述非空
+      - generic [ref=e135]: 17:19:53✅ PASS — 直接选择 API 成功 → 维度分数条(4条)
+      - generic [ref=e136]: 17:19:53✅ PASS — 直接选择 API 成功 → 目的地卡片(≥3)
+      - generic [ref=e137]: 17:19:53✅ PASS — 直接选择 API 成功 → 风格标签(≥4)
+      - generic [ref=e138]: 17:19:53✅ PASS — 直接选择 API 成功 → 旅行贴士(≥3)
+      - generic [ref=e139]: 17:19:53✅ 直接选择 API 成功 全部验证通过
+      - generic [ref=e140]: "17:19:53🔬 开始测试: select_no_api_key"
+      - generic [ref=e141]: 17:19:53✅ PASS — 直接选择 无 Key → 降级横幅显示
+      - generic [ref=e142]: 17:19:53✅ PASS — 直接选择 无 Key → 无 AI 徽标
+      - generic [ref=e143]: 17:19:53✅ PASS — 直接选择 无 Key → 降级后仍显示 INFP
+      - generic [ref=e144]: 17:19:53✅ PASS — 直接选择 无 Key → 降级数据 目的地(≥3)
+      - generic [ref=e145]: 17:19:53✅ PASS — 直接选择 无 Key → 降级数据 贴士(≥3)
+      - generic [ref=e146]: 17:19:53✅ 直接选择 无 API Key 降级验证通过
+      - generic [ref=e147]: "17:19:53🔬 开始测试: select_api_401"
+      - generic [ref=e148]: 17:19:54✅ PASS — 直接选择 401 → 降级横幅显示
+      - generic [ref=e149]: 17:19:54✅ PASS — 直接选择 401 → 无 AI 徽标
+      - generic [ref=e150]: 17:19:54✅ 直接选择 API 401 降级验证通过
+      - generic [ref=e151]: "17:19:54🔬 开始测试: select_api_500"
+      - generic [ref=e152]: 17:19:54✅ PASS — 直接选择 500 → 降级横幅显示
+      - generic [ref=e153]: 17:19:54✅ PASS — 直接选择 500 → 无 AI 徽标
+      - generic [ref=e154]: 17:19:54✅ 直接选择 API 500 降级验证通过
+      - generic [ref=e155]: "17:19:55🔬 开始测试: select_network_error"
+      - generic [ref=e156]: 17:19:55✅ PASS — 直接选择 网络错误 → 降级横幅显示
+      - generic [ref=e157]: 17:19:55✅ PASS — 直接选择 网络错误 → 无 AI 徽标
+      - generic [ref=e158]: 17:19:55✅ 直接选择 网络超时 降级验证通过
+      - generic [ref=e159]: "17:19:55🔬 开始测试: quiz_api_success"
+      - generic [ref=e160]: 17:19:55[Toast] 测试完成！AI 已为 ENFP（竞选者）生成专属旅行推荐 ✨
+      - generic [ref=e161]: 17:19:55✅ PASS — 问卷测试 API 成功 → AI 徽标显示
+      - generic [ref=e162]: 17:19:55✅ PASS — 问卷测试 API 成功 → 无降级横幅
+      - generic [ref=e163]: 17:19:55✅ PASS — 问卷测试 API 成功 → 类型代码 ENFP
+      - generic [ref=e164]: 17:19:55✅ PASS — 问卷测试 API 成功 → 维度分数条(4条)
+      - generic [ref=e165]: 17:19:55✅ PASS — 问卷测试 API 成功 → 目的地卡片(≥3)
+      - generic [ref=e166]: 17:19:55✅ PASS — 问卷测试 API 成功 → 风格标签(≥4)
+      - generic [ref=e167]: 17:19:55✅ PASS — 问卷测试 API 成功 → 维度分数精确计算
+      - generic [ref=e168]: 17:19:55✅ 问卷测试 API 成功 全部验证通过
+      - generic [ref=e169]: "17:19:56🔬 开始测试: quiz_no_api_key"
+      - generic [ref=e170]: 17:19:56[Toast] 测试完成！你是 ISTJ 检查官
+  - generic [ref=e70]:
+    - heading "👁️ 实时渲染预览（最后一条测试的结果）" [level=3] [ref=e71]
+    - generic [ref=e72]:
+      - generic [ref=e73]:
+        - generic [ref=e74]:
+          - generic [ref=e75] [cursor=pointer]:
+            - generic [ref=e76]: INTJ
+            - generic [ref=e77]: 建筑师
+          - generic [ref=e78] [cursor=pointer]:
+            - generic [ref=e79]: INTP
+            - generic [ref=e80]: 逻辑学家
+          - generic [ref=e81] [cursor=pointer]:
+            - generic [ref=e82]: ENTJ
+            - generic [ref=e83]: 指挥官
+          - generic [ref=e84] [cursor=pointer]:
+            - generic [ref=e85]: ENTP
+            - generic [ref=e86]: 辩论家
+          - generic [ref=e87] [cursor=pointer]:
+            - generic [ref=e88]: INFJ
+            - generic [ref=e89]: 提倡者
+          - generic [ref=e90] [cursor=pointer]:
+            - generic [ref=e91]: INFP
+            - generic [ref=e92]: 调停者
+          - generic [ref=e93] [cursor=pointer]:
+            - generic [ref=e94]: ENFJ
+            - generic [ref=e95]: 主人公
+          - generic [ref=e96] [cursor=pointer]:
+            - generic [ref=e97]: ENFP
+            - generic [ref=e98]: 竞选者
+          - generic [ref=e99] [cursor=pointer]:
+            - generic [ref=e100]: ISTJ
+            - generic [ref=e101]: 物流师
+          - generic [ref=e102] [cursor=pointer]:
+            - generic [ref=e103]: ISFJ
+            - generic [ref=e104]: 守护者
+          - generic [ref=e105] [cursor=pointer]:
+            - generic [ref=e106]: ESTJ
+            - generic [ref=e107]: 总经理
+          - generic [ref=e108] [cursor=pointer]:
+            - generic [ref=e109]: ESFJ
+            - generic [ref=e110]: 执政官
+          - generic [ref=e111] [cursor=pointer]:
+            - generic [ref=e112]: ISTP
+            - generic [ref=e113]: 鉴赏家
+          - generic [ref=e114] [cursor=pointer]:
+            - generic [ref=e115]: ISFP
+            - generic [ref=e116]: 探险家
+          - generic [ref=e117] [cursor=pointer]:
+            - generic [ref=e118]: ESTP
+            - generic [ref=e119]: 企业家
+          - generic [ref=e120] [cursor=pointer]:
+            - generic [ref=e121]: ESFP
+            - generic [ref=e122]: 表演家
+        - button " 开始测试，发现你的旅行性格 " [ref=e123] [cursor=pointer]:
+          - generic [ref=e124]: 
+          - text: 开始测试，发现你的旅行性格
+          - generic [ref=e125]: 
+        - paragraph [ref=e126]: 共 20 题 · 约 3-5 分钟 · 结果即时生成
+      - text: 
+      - generic [ref=e172]:
+        - generic [ref=e173]:
+          - generic [ref=e174]: 
+          - generic [ref=e175]: AI 服务暂不可用 · 已展示本地推荐数据
+          - generic "API_KEY_MISSING" [ref=e176]: 原因：未配置 API Key
+        - generic [ref=e177]:
+          - generic [ref=e178]:
+            - generic [ref=e179]: ISTJ
+            - generic [ref=e180]: 检查官
+          - generic [ref=e181]: "[本地数据] 检查官型旅行者描述。踏实可靠、注重细节、尊重传统、做事有条不紊"
+          - generic [ref=e182]:
+            - generic [ref=e183]:
+              - generic [ref=e184]:
+                - generic [ref=e185]: E 外向
+                - generic [ref=e186]: I 内向
+              - generic [ref=e189]: I 63%
+            - generic [ref=e190]:
+              - generic [ref=e191]:
+                - generic [ref=e192]: S 感觉
+                - generic [ref=e193]: N 直觉
+              - generic [ref=e196]: S 50%
+            - generic [ref=e197]:
+              - generic [ref=e198]:
+                - generic [ref=e199]: T 思考
+                - generic [ref=e200]: F 情感
+              - generic [ref=e203]: T 75%
+            - generic [ref=e204]:
+              - generic [ref=e205]:
+                - generic [ref=e206]: J 计划
+                - generic [ref=e207]: P 随性
+              - generic [ref=e210]: J 63%
+        - generic [ref=e211]:
+          - heading " 你的旅行风格" [level=3] [ref=e212]:
+            - generic [ref=e213]: 
+            - text: 你的旅行风格
+          - generic [ref=e214]:
+            - generic [ref=e215]:
+              - generic [ref=e216]: 
+              - generic [ref=e217]: 探索发现
+            - generic [ref=e218]:
+              - generic [ref=e219]: 
+              - generic [ref=e220]: 自然风光
+            - generic [ref=e221]:
+              - generic [ref=e222]: 
+              - generic [ref=e223]: 文化古迹
+            - generic [ref=e224]:
+              - generic [ref=e225]: 
+              - generic [ref=e226]: 美食之旅
+        - generic [ref=e227]:
+          - heading " 为你推荐的目的地" [level=3] [ref=e228]:
+            - generic [ref=e229]: 
+            - text: 为你推荐的目的地
+          - generic [ref=e230]:
+            - generic [ref=e231] [cursor=pointer]:
+              - img "本地·推荐一" [ref=e232]
+              - generic [ref=e233]: 90% 匹配
+              - generic [ref=e234]:
+                - generic [ref=e235]: 本地·推荐一
+                - generic [ref=e236]: 推荐原因一
+            - generic [ref=e237] [cursor=pointer]:
+              - img "本地·推荐二" [ref=e238]
+              - generic [ref=e239]: 85% 匹配
+              - generic [ref=e240]:
+                - generic [ref=e241]: 本地·推荐二
+                - generic [ref=e242]: 推荐原因二
+            - generic [ref=e243] [cursor=pointer]:
+              - img "本地·推荐三" [ref=e244]
+              - generic [ref=e245]: 80% 匹配
+              - generic [ref=e246]:
+                - generic [ref=e247]: 本地·推荐三
+                - generic [ref=e248]: 推荐原因三
+        - generic [ref=e249]:
+          - heading " 旅行小贴士" [level=3] [ref=e250]:
+            - generic [ref=e251]: 
+            - text: 旅行小贴士
+          - list [ref=e252]:
+            - listitem [ref=e253]: 💡 本地提示一
+            - listitem [ref=e254]: 💡 本地提示二
+            - listitem [ref=e255]: 💡 本地提示三
+        - button " 重新测试" [ref=e257] [cursor=pointer]:
+          - generic [ref=e258]: 
+          - text: 重新测试
