@@ -5369,6 +5369,49 @@ select.booking-input { cursor: pointer; }
 }
 .diary-form { color: #fff; }
 .diary-form h4 { color: #fff; font-size: 0.88rem; margin-bottom: 16px; display: flex; align-items: center; gap: 6px; }
+
+/* diary-form 内的 API Key 配置适配 */
+.diary-form .api-key-section {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  margin-bottom: 20px;
+}
+.diary-form .api-key-toggle {
+  color: rgba(255,255,255,0.7);
+  font-size: 0.8rem;
+  padding: 6px 0;
+}
+.diary-form .api-key-toggle:hover { color: #fff; }
+.diary-form .api-key-toggle i:first-child { color: #f4a261; }
+.diary-form .api-key-input {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.15);
+  color: #fff;
+}
+.diary-form .api-key-input::placeholder { color: rgba(255,255,255,0.35); }
+.diary-form .api-key-input:focus { border-color: rgba(255,255,255,0.4); }
+.diary-form .api-key-save-btn,
+.diary-form .api-key-toggle-vis {
+  background: rgba(255,255,255,0.1);
+  border-color: rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.7);
+}
+.diary-form .api-key-save-btn:hover {
+  background: var(--clr-primary);
+  border-color: var(--clr-primary);
+  color: #fff;
+}
+.diary-form .api-key-toggle-vis:hover {
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+}
+.diary-form .api-key-hint a {
+  color: rgba(255,255,255,0.6);
+}
+.diary-form .api-key-hint a:hover {
+  color: #fff;
+}
 .diary-form-item { margin-bottom: 18px; }
 .diary-form-item label { display: block; color: rgba(255,255,255,0.6); font-size: 0.78rem; margin-bottom: 8px; }
 .diary-input, .diary-textarea {

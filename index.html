@@ -248,31 +248,7 @@
         </div>
       </div>
 
-      <!-- OpenAI API Key 配置（GPT 日记生成） -->
-      <div class="api-key-section" id="openaiKeySection">
-        <div class="api-key-toggle" data-action="toggleOpenAIKeyInput">
-          <i class="fa-solid fa-robot"></i>
-          <span>配置 OpenAI API Key（GPT 日记生成用）</span>
-          <i class="fa-solid fa-chevron-down" id="openaiKeyChevron"></i>
-        </div>
-        <div class="api-key-input-wrap" id="openaiKeyInputWrap" style="display:none">
-          <div class="api-key-field">
-            <input type="password" id="openaiApiKey" placeholder="OpenAI API Key，如 sk-proj-xxxxxxxxxxxxx" class="api-key-input">
-            <button class="api-key-save-btn" data-action="saveOpenAIKey" title="保存">
-              <i class="fa-solid fa-check"></i>
-            </button>
-            <button class="api-key-toggle-vis" data-action="toggleOpenAIKeyVisibility" title="显示/隐藏">
-              <i class="fa-solid fa-eye" id="openaiKeyEye"></i>
-            </button>
-          </div>
-          <div class="api-key-hint">
-            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">
-              <i class="fa-solid fa-external-link-alt"></i> 获取 OpenAI API Key
-            </a>
-            <span class="api-key-status" id="openaiKeyStatus"></span>
-          </div>
-        </div>
-      </div>
+
 
       <!-- 智谱 GLM-4.6V API Key 配置（图片分析） -->
       <div class="api-key-section" id="zhipuKeySection">
@@ -817,6 +793,32 @@
         </div>
 
         <div class="diary-form">
+          <!-- OpenAI API Key 配置（GPT 日记生成） -->
+          <div class="api-key-section diary-api-key" id="openaiKeySection">
+            <div class="api-key-toggle" data-action="toggleOpenAIKeyInput">
+              <i class="fa-solid fa-robot"></i>
+              <span>配置 OpenAI API Key（GPT 日记生成用）</span>
+              <i class="fa-solid fa-chevron-down" id="openaiKeyChevron"></i>
+            </div>
+            <div class="api-key-input-wrap" id="openaiKeyInputWrap" style="display:none">
+              <div class="api-key-field">
+                <input type="password" id="openaiApiKey" placeholder="OpenAI API Key，如 sk-proj-xxxxxxxxxxxxx" class="api-key-input">
+                <button class="api-key-save-btn" data-action="saveOpenAIKey" title="保存">
+                  <i class="fa-solid fa-check"></i>
+                </button>
+                <button class="api-key-toggle-vis" data-action="toggleOpenAIKeyVisibility" title="显示/隐藏">
+                  <i class="fa-solid fa-eye" id="openaiKeyEye"></i>
+                </button>
+              </div>
+              <div class="api-key-hint">
+                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">
+                  <i class="fa-solid fa-external-link-alt"></i> 获取 OpenAI API Key
+                </a>
+                <span class="api-key-status" id="openaiKeyStatus"></span>
+              </div>
+            </div>
+          </div>
+
           <h4><i class="fa-solid fa-pen-fancy"></i> 日记内容</h4>
           <div class="diary-form-item">
             <label>日记标题</label>
