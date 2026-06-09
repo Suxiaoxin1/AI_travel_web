@@ -6,3 +6,5 @@ Thumbs.db
 *.local
 dist/
 .cache/
+.playwright-cli/
+.workbuddy/

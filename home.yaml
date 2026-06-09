@@ -1,0 +1,114 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e5]: 
+      - generic [ref=e6]:
+        - text: 探途
+        - emphasis [ref=e7]: WANDR
+    - generic [ref=e8]:
+      - link "AI 规划" [ref=e9] [cursor=pointer]:
+        - /url: "#/ai-plan"
+      - link "性格测试" [ref=e10] [cursor=pointer]:
+        - /url: "#/mbti"
+      - link "热门目的地" [ref=e11] [cursor=pointer]:
+        - /url: "#/destinations"
+      - link "景点导航" [ref=e12] [cursor=pointer]:
+        - /url: "#/navigate"
+      - link "用户分享" [ref=e13] [cursor=pointer]:
+        - /url: "#/shares"
+      - link "旅行日记" [ref=e14] [cursor=pointer]:
+        - /url: "#/diary"
+    - generic [ref=e15]:
+      - button " 我的收藏" [ref=e16] [cursor=pointer]:
+        - generic [ref=e17]: 
+        - text: 我的收藏
+      - button " 我的预定" [ref=e18] [cursor=pointer]:
+        - generic [ref=e19]: 
+        - text: 我的预定
+      - button "开始探索" [ref=e20] [cursor=pointer]
+    - text: 
+  - generic [ref=e22]:
+    - generic [ref=e23]:
+      - img "hero bg" [ref=e24]
+      - img "hero bg 2" [ref=e25]
+    - generic [ref=e26]:
+      - generic [ref=e27]: AI 驱动的旅行体验
+      - heading "探索世界 从这一刻 开始" [level=1] [ref=e29]:
+        - text: 探索世界
+        - emphasis [ref=e30]: 从这一刻
+        - text: 开始
+      - paragraph [ref=e31]: 上传你的照片、文字或语音，让 AI 为你量身定制专属旅行方案
+      - generic [ref=e32]:
+        - button " 开始 AI 规划" [ref=e33] [cursor=pointer]:
+          - generic [ref=e34]: 
+          - text: 开始 AI 规划
+        - button " 探索目的地" [ref=e35] [cursor=pointer]:
+          - generic [ref=e36]: 
+          - text: 探索目的地
+      - generic [ref=e37]:
+        - generic [ref=e38]:
+          - generic [ref=e39]: 2.8M+
+          - text: 旅行者
+        - generic [ref=e41]:
+          - generic [ref=e42]: 180+
+          - text: 目的地
+        - generic [ref=e44]:
+          - generic [ref=e45]: 98%
+          - text: 满意度
+    - generic [ref=e46]:
+      - generic [ref=e47]: 向下滚动
+      - generic [ref=e48]: 
+  - contentinfo [ref=e49]:
+    - generic [ref=e50]:
+      - generic [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e54]: 
+          - generic [ref=e55]:
+            - text: 探途
+            - emphasis [ref=e56]: WANDR
+        - paragraph [ref=e57]: AI 驱动的智能旅行平台，让每一次旅行都成为专属体验
+        - generic [ref=e58]:
+          - link "" [ref=e59] [cursor=pointer]:
+            - /url: "#"
+            - generic [ref=e60]: 
+          - link "" [ref=e61] [cursor=pointer]:
+            - /url: "#"
+            - generic [ref=e62]: 
+          - link "" [ref=e63] [cursor=pointer]:
+            - /url: "#"
+            - generic [ref=e64]: 
+          - link "" [ref=e65] [cursor=pointer]:
+            - /url: "#"
+            - generic [ref=e66]: 
+      - generic [ref=e67]:
+        - generic [ref=e68]:
+          - heading "功能" [level=5] [ref=e69]
+          - link "AI 旅行规划" [ref=e70] [cursor=pointer]:
+            - /url: "#/ai-plan"
+          - link "热门目的地" [ref=e71] [cursor=pointer]:
+            - /url: "#/destinations"
+          - link "景点导航" [ref=e72] [cursor=pointer]:
+            - /url: "#/navigate"
+          - link "用户分享" [ref=e73] [cursor=pointer]:
+            - /url: "#/shares"
+          - link "旅行日记" [ref=e74] [cursor=pointer]:
+            - /url: "#/diary"
+        - generic [ref=e75]:
+          - heading "支持" [level=5] [ref=e76]
+          - link "使用帮助" [ref=e77] [cursor=pointer]:
+            - /url: "#"
+          - link "隐私政策" [ref=e78] [cursor=pointer]:
+            - /url: "#"
+          - link "服务条款" [ref=e79] [cursor=pointer]:
+            - /url: "#"
+          - link "联系我们" [ref=e80] [cursor=pointer]:
+            - /url: "#"
+    - paragraph [ref=e82]: © 2026 探途 WANDR · AI 智能旅行平台 · 让旅行更美好
+  - text:     
+  - generic [ref=e85]:
+    - heading " 详细行程方案" [level=3] [ref=e86]:
+      - generic [ref=e87]: 
+      - text: 详细行程方案
+    - button "" [ref=e88] [cursor=pointer]:
+      - generic [ref=e89]: 
+  - text:          

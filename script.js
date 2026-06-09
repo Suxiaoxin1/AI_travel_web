@@ -3195,7 +3195,7 @@ function importToRoutePlan() {
 // ============ 用户分享 API 客户端 ============
 const SHARES_API = (() => {
   if (window.location.port === '') return '/api';
-  return 'http://localhost:3000/api';
+  return 'http://localhost:3001/api';
 })();
 
 /** 获取所有分享 */
@@ -4018,7 +4018,7 @@ async function generateDiaryAI() {
   const tagsStr = document.getElementById('diaryTags')?.value.trim();
   const tags = tagsStr ? tagsStr.split(/\s+/).filter(t => t) : [];
 
-  const API_BASE = window.location.port === '' ? '/api' : 'http://localhost:3000/api';
+  const API_BASE = window.location.port === '' ? '/api' : 'http://localhost:3001/api';
 
   try {
     // —— 阶段 1：调用 GPT-4o 生成日记 HTML ——
@@ -5575,11 +5575,11 @@ async function cancelBooking(idx) {
 // ============================================================
 // 飞猪 AI 开放平台集成模块 (FlyAI Integration)
 // ============================================================
-// 后端代理地址：默认同源 /api，开发时可改为 http://localhost:3000/api
+// 后端代理地址：默认同源 /api，开发时可改为 http://localhost:3001/api
 const FLYAI_API = (() => {
   // 自动检测：如果页面在同源服务器上运行，用相对路径；否则用 localhost
   if (window.location.port === '') return '/api';      // 生产模式 (同源)
-  return 'http://localhost:3000/api';                    // 开发模式
+  return 'http://localhost:3001/api';                    // 开发模式
 })();
 
 /** 是否启用真实预定模式（飞猪API）— 始终开启 */
