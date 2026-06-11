@@ -1,0 +1,14 @@
+{
+  "name": "wandr-travel",
+  "version": "1.0.0",
+  "description": "探途 WANDR - AI 驱动的旅行规划网站",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "postinstall": "cd server && npm install"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -16,7 +16,6 @@
     "express-validator": "^7.0.1",
     "node-cache": "^5.1.2",
     "p-limit": "^4.0.0",
-    "playwright": "^1.60.0",
     "uuid": "^11.0.0",
     "winston": "^3.11.0"
   }
