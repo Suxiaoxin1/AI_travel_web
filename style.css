@@ -5755,7 +5755,7 @@ select.booking-input { cursor: pointer; }
 .diary-canvas {
   width: 480px;
   min-height: 820px;
-  background: #fdf6e3;
+  background: transparent;
   position: relative;
   overflow: visible;
   transform-origin: top center;
