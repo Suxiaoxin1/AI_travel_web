@@ -140,12 +140,17 @@ async function generateDiaryAI() {
     updateGenStatus('正在嵌入旅行照片...', 50);
 
     let diaryHTML = result.html;
-    // 替换 GPT 返回的照片 src 占位符 {{PHOTO_N}} 为真实图片 URL
-    // GPT 应已生成完整的照片 HTML（含相框、旋转、阴影等样式），只把 src 留成占位符
+    // 替换 DeepSeek 返回的照片 src 占位符为真实图片 URL
+    // DeepSeek 可能用 1-based（{{PHOTO_1}}）或 0-based（{{PHOTO_0}}），两种都处理
     for (let i = 0; i < _diaryPhotos.length; i++) {
-      const placeholder = new RegExp(`\\{\\{PHOTO_${i}\\}\\}`, 'g');
-      diaryHTML = diaryHTML.replace(placeholder, _diaryPhotos[i]);
+      const reZero = new RegExp(`\\{\\{PHOTO_${i}\\}\\}`, 'g');
+      const reOne  = new RegExp(`\\{\\{PHOTO_${i + 1}\\}\\}`, 'g');
+      diaryHTML = diaryHTML.replace(reZero, _diaryPhotos[i]).replace(reOne, _diaryPhotos[i]);
     }
+    // 安全兜底：仍未替换的 {{PHOTO_任意数字}} 用占位图替代（避免 404）
+    diaryHTML = diaryHTML.replace(/\{\{PHOTO_\d+\}\}/g,
+      'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150"><rect fill="#eee" width="200" height="150"/><text x="100" y="80" text-anchor="middle" fill="#999" font-size="14">📷</text></svg>')
+    );
 
     // 包裹完整结构
     _currentDiaryHTML = `<div class="diary-page" id="diaryPage">${diaryHTML}</div>`;

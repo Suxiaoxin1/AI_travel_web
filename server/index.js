@@ -244,7 +244,7 @@ function buildStylePrompt(style, ctx) {
 【技术规则 —— 必须遵守】
 - 所有CSS必须内联在 style 属性中，不使用 class 引用（前端用 html2canvas 渲染）
 - 不使用任何外部资源（图片、字体CDN）
-- 照片 img 标签 src 必须设为 {{PHOTO_N}}（如 <img src="{{PHOTO_N}}">），前端会替换为真实URL
+- 照片 img 标签 src 必须设为 {{PHOTO_1}}、{{PHOTO_2}} 等（编号从1开始），如 <img src="{{PHOTO_1}}">，前端会替换为真实URL
 - 不要输出 <html>, <head>, <body> 等外层标签，只输出手帐内部HTML代码片段
 - 页面固定宽度480px，高度填满且不低于820px（9:16竖版比例），CSS padding: 20px 16px
 - 使用 position:relative 或 absolute 实现层叠，不能用 CSS Grid / clip-path / mix-blend-mode / filter
@@ -254,7 +254,7 @@ function buildStylePrompt(style, ctx) {
   // — 照片渲染指导（根据 photoCount 动态生成）—
   function photoGuide(count, frameStyle) {
     if (count === 0) return '无照片，请用CSS/SVG绘制旅行主题装饰插画填充照片区';
-    return `共${count}张照片。每张用 <img src="{{PHOTO_N}}"> 嵌入，外面用样式div包裹。${frameStyle}`;
+    return `共${count}张照片，编号1-${count}。第1张用 <img src="{{PHOTO_1}}">，第2张用 <img src="{{PHOTO_2}}"> 以此类推，外面用样式div包裹。${frameStyle}`;
   }
 
   // ============ 风格1：复古胶片 vintage ============
