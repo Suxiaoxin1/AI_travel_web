@@ -154,8 +154,9 @@ async function generateDiaryAI() {
     updateGenStatus('正在合成最终手帐图片...', 70);
 
     // 创建一个离屏容器，不影响页面布局
+    // 不固定宽度，让内容自适应，避免手帐排版被裁剪
     const offScreen = document.createElement('div');
-    offScreen.style.cssText = 'position:fixed;left:-9999px;top:0;width:480px;z-index:-1;';
+    offScreen.style.cssText = 'position:fixed;left:-9999px;top:0;max-width:800px;overflow:visible;z-index:-1;';
     offScreen.innerHTML = _currentDiaryHTML;
     document.body.appendChild(offScreen);
 
@@ -323,17 +324,29 @@ function downloadDiary() {
   if (!page) { showToast('请先生成日记'); return; }
   showToast(T.diaryDownloading);
 
-  html2canvas(page, { scale: 3, useCORS: true, backgroundColor: null, logging: false })
-    .then(canvas => {
+  // 离屏克隆避免容器 overflow:hidden 裁剪
+  const clone = page.cloneNode(true);
+  const offScreen = document.createElement('div');
+  offScreen.style.cssText = 'position:fixed;left:-9999px;top:0;max-width:800px;overflow:visible;z-index:-1;';
+  offScreen.appendChild(clone);
+  document.body.appendChild(offScreen);
+
+  // 等待字体和图片渲染
+  setTimeout(async () => {
+    try {
+      const canvas = await html2canvas(clone, { scale: 3, useCORS: true, backgroundColor: null, logging: false });
+      document.body.removeChild(offScreen);
       const link = document.createElement('a');
       link.download = `旅行日记_${document.getElementById('diaryTitle')?.value?.trim() || 'untitled'}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
       showToast(T.diaryDownloaded);
-    }).catch(err => {
+    } catch (err) {
+      document.body.removeChild(offScreen);
       console.error(err);
       showToast('下载失败，请重试');
-    });
+    }
+  }, 300);
 }
 
 // ---------- 保存日记到本地 ----------
@@ -370,8 +383,17 @@ async function saveDiary() {
     if (!page) { showToast('请先生成日记'); return; }
 
     if (typeof html2canvas === 'function') {
-      html2canvas(page, { scale: 3, useCORS: true, backgroundColor: null, logging: false })
-        .then(async canvas => {
+      // 离屏克隆避免预览容器 overflow:hidden 裁剪
+      const clone = page.cloneNode(true);
+      const offScreen = document.createElement('div');
+      offScreen.style.cssText = 'position:fixed;left:-9999px;top:0;max-width:800px;overflow:visible;z-index:-1;';
+      offScreen.appendChild(clone);
+      document.body.appendChild(offScreen);
+
+      setTimeout(async () => {
+        try {
+          const canvas = await html2canvas(clone, { scale: 3, useCORS: true, backgroundColor: null, logging: false });
+          document.body.removeChild(offScreen);
           const thumb = await compressDataUrl(canvas.toDataURL('image/jpeg', 0.6), 400, 0.5);
           const diaries = getDiaries();
           diaries.unshift({
@@ -388,10 +410,12 @@ async function saveDiary() {
           refreshDiaryBadge();
           renderDiaryList();
           console.log('[saveDiary] template diary saved, count=', diaries.length);
-        }).catch(err => {
+        } catch (err) {
+          document.body.removeChild(offScreen);
           console.error('[saveDiary] html2canvas error:', err);
           showToast('保存失败，请重试');
-        });
+        }
+      }, 300);
     } else {
       // html2canvas 未加载，直接保存 HTML（没有缩略图）
       console.warn('[saveDiary] html2canvas not loaded, saving without thumbnail');
