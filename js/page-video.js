@@ -154,9 +154,9 @@ async function generateDiaryAI() {
     updateGenStatus('正在合成最终手帐图片...', 70);
 
     // 创建一个离屏容器，不影响页面布局
-    // 不固定宽度，让内容自适应，避免手帐排版被裁剪
+    // 不设宽度上限，让内容完全展开，避免任何 overflow:hidden 导致裁剪
     const offScreen = document.createElement('div');
-    offScreen.style.cssText = 'position:fixed;left:-9999px;top:0;max-width:800px;overflow:visible;z-index:-1;';
+    offScreen.style.cssText = 'position:fixed;left:-9999px;top:0;width:auto;overflow:visible;z-index:-1;';
     offScreen.innerHTML = _currentDiaryHTML;
     document.body.appendChild(offScreen);
 
@@ -179,12 +179,33 @@ async function generateDiaryAI() {
         .map(img => new Promise(r => { img.onload = img.onerror = r; }))
     );
 
+    // 强制所有子元素 overflow:visible，防止 DeepSeek 生成的内部容器裁剪内容
+    const originalOverflows = new Map();
+    originalOverflows.set(page, page.style.overflow);
+    page.style.overflow = 'visible';
+    page.querySelectorAll('*').forEach(el => {
+      const computed = window.getComputedStyle(el);
+      if (computed.overflow !== 'visible' || computed.overflowX !== 'visible' || computed.overflowY !== 'visible') {
+        originalOverflows.set(el, el.style.cssText);
+        el.style.overflow = 'visible';
+        el.style.overflowX = 'visible';
+        el.style.overflowY = 'visible';
+      }
+    });
+
     const compositeCanvas = await html2canvas(page, {
       scale: 3,
       useCORS: true,
       backgroundColor: null,
       logging: false,
     });
+
+    // 恢复原始 overflow 样式
+    originalOverflows.forEach((orig, el) => {
+      if (orig !== undefined && orig !== '') el.style.overflow = orig;
+      else el.style.removeProperty('overflow');
+    });
+
     _diaryFinalImageUrl = compositeCanvas.toDataURL('image/png');
 
     // 清理离屏容器
@@ -327,9 +348,20 @@ function downloadDiary() {
   // 离屏克隆避免容器 overflow:hidden 裁剪
   const clone = page.cloneNode(true);
   const offScreen = document.createElement('div');
-  offScreen.style.cssText = 'position:fixed;left:-9999px;top:0;max-width:800px;overflow:visible;z-index:-1;';
+  offScreen.style.cssText = 'position:fixed;left:-9999px;top:0;width:auto;overflow:visible;z-index:-1;';
   offScreen.appendChild(clone);
   document.body.appendChild(offScreen);
+
+  // 强制所有子元素 overflow:visible，防止内部容器裁剪
+  clone.style.overflow = 'visible';
+  clone.querySelectorAll('*').forEach(el => {
+    const computed = window.getComputedStyle(el);
+    if (computed.overflow !== 'visible' || computed.overflowX !== 'visible' || computed.overflowY !== 'visible') {
+      el.style.overflow = 'visible';
+      el.style.overflowX = 'visible';
+      el.style.overflowY = 'visible';
+    }
+  });
 
   // 等待字体和图片渲染
   setTimeout(async () => {
@@ -386,9 +418,20 @@ async function saveDiary() {
       // 离屏克隆避免预览容器 overflow:hidden 裁剪
       const clone = page.cloneNode(true);
       const offScreen = document.createElement('div');
-      offScreen.style.cssText = 'position:fixed;left:-9999px;top:0;max-width:800px;overflow:visible;z-index:-1;';
+      offScreen.style.cssText = 'position:fixed;left:-9999px;top:0;width:auto;overflow:visible;z-index:-1;';
       offScreen.appendChild(clone);
       document.body.appendChild(offScreen);
+
+      // 强制所有子元素 overflow:visible
+      clone.style.overflow = 'visible';
+      clone.querySelectorAll('*').forEach(el => {
+        const computed = window.getComputedStyle(el);
+        if (computed.overflow !== 'visible' || computed.overflowX !== 'visible' || computed.overflowY !== 'visible') {
+          el.style.overflow = 'visible';
+          el.style.overflowX = 'visible';
+          el.style.overflowY = 'visible';
+        }
+      });
 
       setTimeout(async () => {
         try {

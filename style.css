@@ -5770,6 +5770,7 @@ select.booking-input { cursor: pointer; }
   box-sizing: border-box;
   font-family: "STXingkai", "KaiTi", "STKaiti", "楷体", "PingFang SC", "Microsoft YaHei", cursive;
   background: #fdf6e3;
+  overflow: visible;
 }
 .diary-page * {
   box-sizing: border-box;
