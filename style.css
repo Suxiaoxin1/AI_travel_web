@@ -5757,7 +5757,7 @@ select.booking-input { cursor: pointer; }
   min-height: 820px;
   background: #fdf6e3;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   transform-origin: top center;
 }
 

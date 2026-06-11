@@ -198,11 +198,19 @@ async function generateDiaryAI() {
       }
     });
 
+    // 确保 html2canvas 捕获完整内容高度（scrollHeight 包含所有溢出内容）
+    const captureWidth = page.scrollWidth || page.offsetWidth || 480;
+    const captureHeight = page.scrollHeight || page.offsetHeight || 820;
+
     const compositeCanvas = await html2canvas(page, {
       scale: 3,
       useCORS: true,
       backgroundColor: null,
       logging: false,
+      width: captureWidth,
+      height: captureHeight,
+      windowWidth: captureWidth + 100,
+      windowHeight: captureHeight + 100,
     });
 
     // 恢复原始 overflow 样式
@@ -371,7 +379,12 @@ function downloadDiary() {
   // 等待字体和图片渲染
   setTimeout(async () => {
     try {
-      const canvas = await html2canvas(clone, { scale: 3, useCORS: true, backgroundColor: null, logging: false });
+      const cw = clone.scrollWidth || clone.offsetWidth || 480;
+      const ch = clone.scrollHeight || clone.offsetHeight || 820;
+      const canvas = await html2canvas(clone, {
+        scale: 3, useCORS: true, backgroundColor: null, logging: false,
+        width: cw, height: ch, windowWidth: cw + 100, windowHeight: ch + 100,
+      });
       document.body.removeChild(offScreen);
       const link = document.createElement('a');
       link.download = `旅行日记_${document.getElementById('diaryTitle')?.value?.trim() || 'untitled'}.png`;
@@ -440,7 +453,12 @@ async function saveDiary() {
 
       setTimeout(async () => {
         try {
-          const canvas = await html2canvas(clone, { scale: 3, useCORS: true, backgroundColor: null, logging: false });
+          const cw = clone.scrollWidth || clone.offsetWidth || 480;
+          const ch = clone.scrollHeight || clone.offsetHeight || 820;
+          const canvas = await html2canvas(clone, {
+            scale: 3, useCORS: true, backgroundColor: null, logging: false,
+            width: cw, height: ch, windowWidth: cw + 100, windowHeight: ch + 100,
+          });
           document.body.removeChild(offScreen);
           const thumb = await compressDataUrl(canvas.toDataURL('image/jpeg', 0.6), 400, 0.5);
           const diaries = getDiaries();
