@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="探途 WANDR — 景点导航，实时地图规划最优出行路线">
+  <title>景点导航 — 探途 WANDR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,900;1,400&family=Noto+Serif+SC:wght@300;400;600&family=Noto+Sans+SC:wght@300;400;500&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="style.css?v=3">
+  <style>
+    body { overflow: hidden; }
+
+    /* 导航页全屏布局 */
+    .navigate-layout {
+      position: fixed;
+      top: 68px;
+      left: 0; right: 0; bottom: 0;
+      display: flex;
+    }
+
+    /* 左侧控制面板 */
+    .nav-panel {
+      width: 380px; flex-shrink: 0;
+      background: var(--clr-white);
+      border-right: 1px solid var(--clr-border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      z-index: 10;
+      box-shadow: 4px 0 20px rgba(26,58,42,0.08);
+    }
+    .nav-panel-header {
+      padding: 20px 20px 0;
+      border-bottom: 1px solid var(--clr-border);
+    }
+    .nav-panel-header h2 {
+      font-family: var(--font-serif);
+      font-size: 1.2rem; color: var(--clr-primary);
+      margin-bottom: 12px;
+    }
+    .nav-panel-mode-tabs {
+      display: flex; gap: 4px; margin-bottom: 16px;
+    }
+    .nav-panel-tab {
+      flex: 1; padding: 8px 4px;
+      border-radius: var(--radius-sm);
+      font-size: 0.78rem; font-weight: 500;
+      border: 1.5px solid var(--clr-border);
+      background: transparent; color: var(--clr-text-light);
+      transition: var(--t-all); cursor: pointer;
+    }
+    .nav-panel-tab.active {
+      border-color: var(--clr-accent-2); background: var(--clr-accent-2); color: #fff;
+    }
+
+    /* 单点搜索面板 */
+    .nav-single-panel { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto; }
+
+    .btn-nav-locate {
+      display: flex; align-items: center; gap: 8px; justify-content: center;
+      padding: 10px; border-radius: var(--radius-sm);
+      background: var(--clr-primary); color: #fff; font-size: 0.88rem; font-weight: 500;
+      transition: var(--t-all); cursor: pointer; border: none;
+    }
+    .btn-nav-locate:hover { background: var(--clr-primary-light); }
+
+    .nav-spot-list { flex: 1; overflow-y: auto; }
+
+    /* 路线规划面板 */
+    .nav-route-panel { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto; }
+
+    .btn-add-waypoint, .btn-clear-route, .btn-plan-route, .btn-save-route {
+      padding: 10px 14px; border-radius: var(--radius-sm);
+      font-size: 0.85rem; font-weight: 500; cursor: pointer;
+      transition: var(--t-all); border: none;
+    }
+    .btn-add-waypoint { background: var(--clr-bg); border: 1.5px solid var(--clr-border); color: var(--clr-primary); }
+    .btn-add-waypoint:hover { background: var(--clr-border); }
+    .btn-plan-route { background: var(--clr-accent-2); color: #fff; flex: 1; }
+    .btn-plan-route:hover { opacity: 0.9; }
+    .btn-clear-route { background: transparent; border: 1.5px solid var(--clr-border); color: var(--clr-text-light); }
+    .btn-clear-route:hover { border-color: #ccc; }
+    .btn-save-route { background: var(--clr-primary); color: #fff; }
+    .btn-save-route:hover { background: var(--clr-primary-light); }
+
+    /* 路线策略选择 */
+    .route-strategies {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .route-strategy-label {
+      display: flex; align-items: center; gap: 4px;
+      padding: 6px 10px; border-radius: var(--radius-sm);
+      border: 1.5px solid var(--clr-border); font-size: 0.76rem;
+      cursor: pointer; transition: var(--t-all);
+      white-space: nowrap;
+    }
+    .route-strategy-label:has(input:checked) {
+      border-color: var(--clr-accent-2); background: rgba(26,58,42,0.06);
+    }
+    .route-strategy-label input[type="radio"] { display: none; }
+
+    .route-optimize-label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.82rem; color: var(--clr-text-light); cursor: pointer;
+    }
+
+    /* 路线结果摘要 */
+    .route-result-info { background: var(--clr-bg); border-radius: var(--radius-sm); padding: 12px; }
+    .route-summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center; }
+    .route-summary-item { }
+    .route-summary-label { display: block; font-size: 0.72rem; color: var(--clr-text-light); margin-bottom: 2px; }
+    .route-summary-value { display: block; font-size: 0.95rem; font-weight: 700; color: var(--clr-primary); }
+
+    /* 地图容器 */
+    #mapContainer {
+      flex: 1; position: relative; z-index: 1;
+    }
+    #leafletMap { width: 100%; height: 100%; }
+
+    /* 底图风格切换栏 */
+    /* 底部信息栏 */
+    .map-info-bar {
+      position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+      z-index: 1000; background: rgba(255,255,255,0.94);
+      border-radius: 20px; padding: 8px 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      font-size: 0.85rem; color: var(--clr-primary);
+      font-weight: 500; white-space: nowrap;
+    }
+    .map-info-bar i { margin-right: 6px; color: var(--clr-accent-2); }
+
+    /* 地图加载提示 */
+    .map-loading-hint {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      z-index: 1000; background: rgba(255,255,255,0.9);
+      padding: 10px 20px; border-radius: var(--radius-sm);
+      font-size: 0.85rem; color: var(--clr-text-light);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    /* 响应式：移动端地图在下，面板在上滚动 */
+    @media (max-width: 768px) {
+      body { overflow: auto; }
+      .navigate-layout { position: static; flex-direction: column; height: auto; }
+      .nav-panel { width: 100%; border-right: none; border-bottom: 1px solid var(--clr-border); max-height: 420px; }
+      #mapContainer { height: 55vw; min-height: 260px; }
+      .map-style-bar { top: 6px; right: 6px; }
+    }
+  </style>
+</head>
+<body>
+<a class="skip-link" href="#leafletMap">跳至主内容</a>
+
+<!-- ============ 导航栏 ============ -->
+<nav class="navbar" id="navbar">
+  <div class="nav-logo">
+    <a href="index.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+      <span class="logo-icon"><i class="fa-solid fa-compass"></i></span>
+      <span class="logo-text">探途 <em>WANDR</em></span>
+    </a>
+  </div>
+  <div class="nav-links">
+    <a href="ai-plan.html" class="nav-link">AI 规划</a>
+    <a href="mbti.html" class="nav-link">性格测试</a>
+    <a href="destinations.html" class="nav-link">热门目的地</a>
+    <a href="navigate.html" class="nav-link">景点导航</a>
+    <a href="reviews.html" class="nav-link">口碑评价</a>
+    <a href="video.html" class="nav-link">旅行日记</a>
+  </div>
+  <div class="nav-actions">
+    <button class="btn-ghost" data-action="openUserPanel" data-tab="favorites"><i class="fa-regular fa-heart"></i> 我的收藏 <span class="nav-badge" id="favBadge" style="display:none">0</span></button>
+    <button class="btn-ghost" data-action="openUserPanel" data-tab="bookings"><i class="fa-regular fa-calendar-check"></i> 我的预定 <span class="nav-badge nav-badge-accent" id="bookBadge" style="display:none">0</span></button>
+    <a href="ai-plan.html" class="btn-primary" style="text-decoration:none;">开始探索</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="打开导航菜单" aria-expanded="false" aria-controls="mobileMenu"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="ai-plan.html">AI 规划</a>
+  <a href="mbti.html">性格测试</a>
+  <a href="destinations.html">热门目的地</a>
+  <a href="navigate.html">景点导航</a>
+  <a href="reviews.html">口碑评价</a>
+  <a href="video.html">旅行日记</a>
+  <a href="javascript:void(0)" data-action="openUserPanel" data-tab="favorites" data-close="mobileMenu">❤️ 我的收藏</a>
+  <a href="javascript:void(0)" data-action="openUserPanel" data-tab="bookings" data-close="mobileMenu">📅 我的预定</a>
+  <a href="javascript:void(0)" data-action="openUserPanel" data-tab="diaries" data-close="mobileMenu">📓 我的日记</a>
+</div>
+
+<!-- ============ 全屏导航布局 ============ -->
+<div class="navigate-layout" id="navigate">
+
+  <!-- 左侧面板 -->
+  <div class="nav-panel">
+    <div class="nav-panel-header">
+      <h2><i class="fa-solid fa-location-dot" style="color:var(--clr-accent-2)"></i> 景点导航</h2>
+      <div class="nav-panel-mode-tabs">
+        <button class="nav-panel-tab" data-action="switchNavPanelMode" data-panel="import">
+          <i class="fa-solid fa-file-import"></i> 导入行程
+        </button>
+        <button class="nav-panel-tab active" data-action="switchNavPanelMode" data-panel="single">
+          <i class="fa-solid fa-map-pin"></i> 行程路线
+        </button>
+        <button class="nav-panel-tab" data-action="switchNavPanelMode" data-panel="route">
+          <i class="fa-solid fa-route"></i> 路线调整
+        </button>
+      </div>
+    </div>
+
+    <!-- 单点搜索面板 -->
+    <div class="nav-single-panel" id="singleNavPanel">
+      <button class="btn-nav-locate" data-action="navigateCurrentDest">
+        <i class="fa-solid fa-location-crosshairs"></i> 在高德 / 腾讯地图中打开
+      </button>
+      <!-- 景点列表（JS 渲染） -->
+      <div class="nav-spot-list" id="spotList"></div>
+    </div>
+
+    <!-- 路线规划面板 -->
+    <div class="nav-route-panel" id="routePlanPanel" style="display:none">
+      <!-- 地址输入列表 -->
+      <div class="route-address-list" id="routeAddressList">
+        <!-- 起点 -->
+        <div class="route-addr-row" data-type="origin">
+          <span class="route-addr-tag origin">起点</span>
+          <input type="text" class="route-addr-input" placeholder="输入起点地址（留空使用当前位置）" oninput="searchRouteAddress(this)">
+          <div class="route-addr-suggestions" style="display:none"></div>
+        </div>
+        <!-- 终点 -->
+        <div class="route-addr-row" data-type="destination">
+          <span class="route-addr-tag dest">终点</span>
+          <input type="text" class="route-addr-input" placeholder="输入目的地地址" oninput="searchRouteAddress(this)">
+          <div class="route-addr-suggestions" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- 添加途经点 -->
+      <button class="btn-add-waypoint" data-action="addRouteWaypoint">
+        <i class="fa-solid fa-plus"></i> 添加途经点
+      </button>
+
+      <!-- 路线策略 -->
+      <div class="route-strategies">
+        <label class="route-strategy-label">
+          <input type="radio" name="routeStrategy" value="time" checked>
+          <span>⏱ 时间优先</span>
+        </label>
+        <label class="route-strategy-label">
+          <input type="radio" name="routeStrategy" value="distance">
+          <span>📏 路程优先</span>
+        </label>
+        <label class="route-strategy-label">
+          <input type="radio" name="routeStrategy" value="smooth">
+          <span>🛤 顺利优先</span>
+        </label>
+        <label class="route-strategy-label">
+          <input type="radio" name="routeStrategy" value="cost">
+          <span>💰 费用优先</span>
+        </label>
+      </div>
+
+      <!-- 顺序优化 -->
+      <label class="route-optimize-label">
+        <input type="checkbox" id="optimizeOrder">
+        <span>智能优化途经点顺序</span>
+      </label>
+
+      <!-- 行动按钮 -->
+      <div style="display:flex;gap:8px">
+        <button class="btn-plan-route" id="startRouteBtn" data-action="startRoutePlanning">
+          <i class="fa-solid fa-play"></i> 开始规划
+        </button>
+        <button class="btn-clear-route" data-action="clearRoutePlan">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- 路线结果摘要 -->
+      <div class="route-result-info" id="routeSummary" style="display:none">
+        <div class="route-summary-grid">
+          <div class="route-summary-item">
+            <span class="route-summary-label">总距离</span>
+            <span class="route-summary-value" id="routePlanDist">-</span>
+          </div>
+          <div class="route-summary-item">
+            <span class="route-summary-label">预计时间</span>
+            <span class="route-summary-value" id="routePlanTime">-</span>
+          </div>
+          <div class="route-summary-item">
+            <span class="route-summary-label">过路费</span>
+            <span class="route-summary-value" id="routePlanToll">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 保存 / 已保存按钮 -->
+      <div style="display:flex;gap:8px">
+        <button class="btn-save-route" data-action="saveRoutePlan" style="flex:1">
+          <i class="fa-solid fa-floppy-disk"></i> 保存路线
+        </button>
+        <button class="btn-add-waypoint" data-action="openSavedRoutes" style="flex:1">
+          <i class="fa-solid fa-folder-open"></i> 已保存路线
+        </button>
+      </div>
+    </div>
+
+    <!-- 导入行程面板 -->
+    <div class="nav-import-panel" id="navImportSection" style="display:none;padding:16px 20px">
+      <!-- 初始内容：描述 + 按钮 -->
+      <div id="importSectionContent">
+        <p style="font-size:0.9rem;color:var(--clr-text-light);margin-bottom:12px">
+          从已保存的 AI 行程收藏导入，快速规划景点游览路线
+        </p>
+        <button class="btn-plan-route" style="width:100%;margin-bottom:8px" data-action="openImportFromFavorites">
+          <i class="fa-solid fa-file-import"></i> 从收藏中导入行程
+        </button>
+        <button class="btn-add-waypoint" style="width:100%" data-action="openSavedRoutes">
+          <i class="fa-solid fa-folder-open"></i> 已保存路线
+        </button>
+      </div>
+      <!-- 内联选择器容器（与初始内容平级，可独立显示） -->
+      <div class="day-picker-inline" id="dayPickerInline" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- 右侧地图 -->
+  <div id="mapContainer">
+    <!-- Leaflet 地图画布 -->
+    <div id="leafletMap"></div>
+    <!-- 底部信息栏 -->
+    <div class="map-info-bar">
+      <span id="mapDestName">
+        <i class="fa-solid fa-map-pin"></i><span>点击景点查看位置</span>
+      </span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============ 用户中心面板 ============ -->
+<div class="user-panel-overlay" id="userPanelOverlay" data-action="closeUserPanelOverlay">
+  <div class="user-panel" id="userPanel">
+    <div class="user-panel-header">
+      <div class="user-panel-tabs">
+        <button class="panel-tab active" id="favTab" data-action="switchPanelTab" data-tab="favorites">
+          <i class="fa-solid fa-heart"></i> 我的收藏 <span class="panel-tab-count" id="favCount">0</span>
+        </button>
+        <button class="panel-tab" id="bookTab" data-action="switchPanelTab" data-tab="bookings">
+          <i class="fa-solid fa-calendar-check"></i> 我的预定 <span class="panel-tab-count" id="bookCount">0</span>
+        </button>
+        <button class="panel-tab" id="diaryTab" data-action="switchPanelTab" data-tab="diaries">
+          <i class="fa-solid fa-book"></i> 我的日记 <span class="panel-tab-count" id="diaryCount">0</span>
+        </button>
+      </div>
+      <button class="user-panel-close" data-action="closeUserPanel"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="panel-content" id="panelFavorites">
+      <div class="panel-empty" id="favEmpty"><div class="panel-empty-icon"><i class="fa-regular fa-heart"></i></div><p>还没有收藏任何目的地</p><span>点击目的地卡片上的 ❤ 即可收藏</span></div>
+      <div class="panel-list" id="favList"></div>
+    </div>
+    <div class="panel-content" id="panelBookings" style="display:none">
+      <div class="panel-empty" id="bookEmpty"><div class="panel-empty-icon"><i class="fa-regular fa-calendar-check"></i></div><p>还没有预定任何行程</p><span>点击目的地卡片上的「立即预定」开始旅程</span></div>
+      <div class="panel-list" id="bookList"></div>
+    </div>
+    <div class="panel-content" id="panelDiaries" style="display:none">
+      <div class="panel-empty" id="diaryEmpty"><div class="panel-empty-icon"><i class="fa-regular fa-book"></i></div><p>还没有保存旅行日记</p><span>在「旅行日记」板块生成并保存你的第一本手帐</span></div>
+      <div class="panel-list diary-panel-list" id="diaryList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="js/wandr-core.js?v=2"></script>
+<script src="js/i18n.js?v=2"></script>
+<script src="js/api-key-manager.js?v=2"></script>
+<script src="js/toast-anim.js?v=2"></script>
+<script src="js/fav-manager.js?v=2"></script>
+<script src="china-all-spots-data.js?v=2"></script>
+<script src="china-destinations-data.js?v=2"></script>
+<script src="js/shared.js?v=3"></script>
+<script src="js/page-navigate.js?v=7"></script>
+</body>
+</html>

@@ -15,9 +15,10 @@ const T = {
   apiKeySaved: 'API Key 已保存 ✓',
   needZhipuKey: '图片分析需要配置智谱 GLM-4.6V API Key 📷',
   needDsKey: '请先配置 DeepSeek API Key 🔑',
-  needOpenAIKey: '请输入 OpenAI API Key',
-  openAIKeySaved: 'OpenAI API Key 已保存 ✓',
-  aiNeedOpenAIKey: 'AI 手帐生成需要配置 OpenAI API Key 🤖',
+  // 日记 AI（DeepSeek）
+  aiNeedDeepSeekKey: 'AI 手帐生成需要配置 DeepSeek API Key 🤖',
+  deepseekDiaryGenerated: 'DeepSeek 手帐生成完毕！',
+  deepseekDiaryGenFailed: 'DeepSeek 生成失败，请重试',
 
   // 行程
   planSaved: '行程已保存到「我的收藏」✓',
@@ -35,11 +36,11 @@ const T = {
   diarySaved: '日记已保存到「我的记录」',
   needPhotos: '请先上传至少 1 张旅行照片',
   needTitle: '请输入日记标题',
-  aiGenerating: 'GPT 正在为你设计旅行手帐...',
-  aiGenerated: 'GPT 手帐生成完毕！',
-  aiGenFailed: 'GPT 生成失败，请重试',
-  diaryAISaved: 'GPT 手帐已保存到「我的记录」',
-  needAiContent: '请输入日记标题和内容，GPT 将为你设计手帐',
+  aiGenerating: 'AI 正在为你设计旅行手帐...',
+  aiGenerated: 'AI 手帐生成完毕！',
+  aiGenFailed: 'AI 生成失败，请重试',
+  diaryAISaved: 'AI 手帐已保存到「我的记录」',
+  needAiContent: '请输入日记标题和内容，AI 将为你设计手帐',
 
   // 分享
   linkCopied: '链接已复制到剪贴板！',

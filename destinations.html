@@ -3,16 +3,121 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="探途 WANDR — AI 驱动的智能旅行伴侣，个性化定制专属旅行方案">
-  <title>探途 · WANDR — AI 智能旅行伴侣</title>
+  <meta name="description" content="探途 WANDR — 精选国内外热门目的地，发现你的下一个旅行灵感">
+  <title>热门目的地 — 探途 WANDR</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,900;1,400&family=Noto+Serif+SC:wght@300;400;600&family=Noto+Sans+SC:wght@300;400;500&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="style.css">
+  <style>
+    .page-hero {
+      background: linear-gradient(135deg, #5a3a00 0%, #F5A623 60%, #ffc85a 100%);
+      padding: 120px 24px 64px;
+      text-align: center;
+      color: var(--clr-white);
+      position: relative;
+      overflow: hidden;
+    }
+    .page-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1400&auto=format&fit=crop&q=50') center/cover no-repeat;
+      opacity: 0.2;
+    }
+    .page-hero-inner { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; }
+    .page-hero-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 999px; padding: 6px 18px;
+      font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: rgba(255,255,255,0.95); margin-bottom: 20px;
+    }
+    .page-hero h1 { font-family: var(--font-serif); font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.2; margin-bottom: 16px; }
+    .page-hero h1 em { font-style: italic; color: #fff3a0; }
+    .page-hero p { font-size: 1.05rem; color: rgba(255,255,255,0.85); }
+
+    .dest-page-main { max-width: 1200px; margin: 0 auto; padding: 48px 24px 80px; }
+
+    /* 搜索 + 筛选栏 */
+    .dest-search-bar {
+      display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; align-items: center;
+    }
+    .dest-search-input-wrap {
+      flex: 1; min-width: 220px; position: relative;
+    }
+    .dest-search-input-wrap i {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      color: var(--clr-text-light); pointer-events: none;
+    }
+    .dest-search-input {
+      width: 100%; padding: 12px 16px 12px 42px;
+      border: 1.5px solid var(--clr-border); border-radius: var(--radius-sm);
+      font-size: 0.95rem; background: var(--clr-white);
+      transition: var(--t-all);
+    }
+    .dest-search-input:focus { border-color: var(--clr-primary); }
+
+    .dest-filter-tabs {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .dest-filter-tab {
+      padding: 8px 18px; border-radius: 999px;
+      border: 1.5px solid var(--clr-border); background: var(--clr-white);
+      font-size: 0.85rem; color: var(--clr-text-light); cursor: pointer;
+      transition: var(--t-all);
+    }
+    .dest-filter-tab:hover, .dest-filter-tab.active {
+      border-color: var(--clr-primary); background: var(--clr-primary); color: #fff;
+    }
+
+    /* 分类标题 */
+    .dest-category-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px; margin-top: 40px;
+    }
+    .dest-category-header h3 {
+      font-family: var(--font-serif); font-size: 1.4rem; color: var(--clr-primary);
+    }
+    .dest-category-header .category-count {
+      font-size: 0.85rem; color: var(--clr-text-light);
+      background: var(--clr-bg); border: 1px solid var(--clr-border);
+      padding: 3px 12px; border-radius: 999px;
+    }
+
+    /* 目的地网格容器 */
+    #destPageGrid {
+      display: grid;
+      gap: 0;
+    }
+    #destPageGrid .dest-category-group {
+      grid-column: 1 / -1;
+    }
+
+    /* 图片加载失败占位 */
+    .dest-img-fallback {
+      width: 100%;
+      height: 220px;
+      background: linear-gradient(135deg, #e8ddd5 0%, #d5c8b8 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      color: var(--clr-text-light);
+    }
+
+    /* API 图片异步加载闪烁 */
+    @keyframes imgPulse {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+    .dest-img-loading {
+      animation: imgPulse 1.5s ease-in-out infinite;
+    }
+  </style>
 </head>
 <body>
-<a class="skip-link" href="#home">跳至主内容</a>
+<a class="skip-link" href="#dest-main">跳至主内容</a>
 
 <!-- ============ 导航栏 ============ -->
 <nav class="navbar" id="navbar">
@@ -38,7 +143,6 @@
   <button class="hamburger" id="hamburger" aria-label="打开导航菜单" aria-expanded="false" aria-controls="mobileMenu"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
 </nav>
 
-<!-- ============ 移动端菜单 ============ -->
 <div class="mobile-menu" id="mobileMenu">
   <a href="ai-plan.html">AI 规划</a>
   <a href="mbti.html">性格测试</a>
@@ -51,114 +155,47 @@
   <a href="javascript:void(0)" data-action="openUserPanel" data-tab="diaries" data-close="mobileMenu">📓 我的日记</a>
 </div>
 
-<!-- ============ Hero 区域 ============ -->
-<section class="hero" id="home">
-  <div class="hero-bg">
-    <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1600&auto=format&fit=crop&q=80" alt="hero bg" class="hero-img hero-img-1" loading="eager">
-    <img src="https://images.unsplash.com/photo-1533130061792-64b345e4a833?w=800&auto=format&fit=crop&q=80" alt="hero bg 2" class="hero-img hero-img-2" loading="lazy">
-  </div>
-  <div class="hero-content">
-    <div class="hero-tag">
-      <span class="tag-dot"></span>
-      AI 驱动的旅行体验
-    </div>
-    <h1 class="hero-title">
-      探索世界<br>
-      <em>从这一刻</em><br>
-      <span class="hero-title-accent">开始</span>
-    </h1>
-    <p class="hero-desc">上传你的照片、文字或语音，让 AI 为你量身定制专属旅行方案</p>
-    <div class="hero-cta">
-      <a href="ai-plan.html" class="btn-hero-primary">
-        <i class="fa-solid fa-wand-magic-sparkles"></i> 开始 AI 规划
-      </a>
-      <a href="destinations.html" class="btn-hero-ghost">
-        <i class="fa-solid fa-play"></i> 探索目的地
-      </a>
-    </div>
-    <div class="hero-stats">
-      <div class="stat-item">
-        <span class="stat-num">2.8M+</span>
-        <span class="stat-label">旅行者</span>
-      </div>
-      <div class="stat-divider"></div>
-      <div class="stat-item">
-        <span class="stat-num">180+</span>
-        <span class="stat-label">目的地</span>
-      </div>
-      <div class="stat-divider"></div>
-      <div class="stat-item">
-        <span class="stat-num">98%</span>
-        <span class="stat-label">满意度</span>
-      </div>
-    </div>
-  </div>
-  <div class="hero-scroll">
-    <span>向下滚动</span>
-    <i class="fa-solid fa-chevron-down"></i>
+<!-- ============ 页头 ============ -->
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="page-hero-tag"><i class="fa-solid fa-map-location-dot"></i> 热门目的地</div>
+    <h1>发现下一个<br><em>旅行灵感</em></h1>
+    <p>精选国内外热门景点，筛选你心仪的风格，立即出发</p>
   </div>
 </section>
 
-<!-- ============ 六大模块入口 ============ -->
-<section class="modules-overview">
-  <div class="section-label">
-    <span class="label-line"></span>
-    <span>六大功能</span>
-    <span class="label-line"></span>
+<!-- ============ 目的地主内容 ============ -->
+<main id="dest-main">
+  <div class="dest-page-main">
+
+    <!-- 搜索 + 分类筛选 -->
+    <div class="dest-search-bar">
+      <div class="dest-search-input-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="search" class="dest-search-input" id="destSearchInput" placeholder="搜索目的地、省份…" autocomplete="off">
+      </div>
+      <div class="dest-filter-tabs" id="destFilterTabs">
+        <button class="dest-filter-tab active" data-filter="all">全部</button>
+        <button class="dest-filter-tab" data-filter="自然风光">🏔️ 自然风光</button>
+        <button class="dest-filter-tab" data-filter="历史文化">🏯 历史文化</button>
+        <button class="dest-filter-tab" data-filter="海岛度假">🏖️ 海岛度假</button>
+        <button class="dest-filter-tab" data-filter="城市打卡">🌆 城市打卡</button>
+        <button class="dest-filter-tab" data-filter="亲子游">👨‍👩‍👧 亲子游</button>
+      </div>
+    </div>
+
+    <!-- 目的地卡片网格（JS 动态渲染） -->
+    <div id="destPageGrid" class="dest-grid"></div>
+
+    <!-- 空状态 -->
+    <div id="destPageEmpty" style="display:none; text-align:center; padding:80px 24px; color:var(--clr-text-light)">
+      <i class="fa-solid fa-magnifying-glass" style="font-size:2.5rem; margin-bottom:16px; opacity:0.4"></i>
+      <p style="font-size:1.1rem">没有找到匹配的目的地</p>
+      <p style="font-size:0.9rem; margin-top:8px">试试其他关键词或筛选条件</p>
+    </div>
+
   </div>
-  <h2 class="section-title">一站式<em>智能旅行</em><br>全方位服务</h2>
-  <p class="section-desc">六大智能模块，从规划到分享，让你的旅行更轻松、更精彩</p>
-  <div class="modules-grid">
-    <a href="ai-plan.html" class="module-card">
-      <div class="module-icon" style="background:linear-gradient(135deg,#1A3A2A,#2D5A3D)">
-        <i class="fa-solid fa-wand-magic-sparkles"></i>
-      </div>
-      <h3>AI 规划</h3>
-      <p>上传照片/文字/语音，AI 智能分析推荐</p>
-      <span class="module-arrow"><i class="fa-solid fa-arrow-right"></i></span>
-    </a>
-    <a href="mbti.html" class="module-card">
-      <div class="module-icon" style="background:linear-gradient(135deg,#5882C1,#89b4fa)">
-        <i class="fa-solid fa-brain"></i>
-      </div>
-      <h3>性格测试</h3>
-      <p>MBTI 旅行性格分析，精准匹配目的地</p>
-      <span class="module-arrow"><i class="fa-solid fa-arrow-right"></i></span>
-    </a>
-    <a href="destinations.html" class="module-card">
-      <div class="module-icon" style="background:linear-gradient(135deg,#F5A623,#e09000)">
-        <i class="fa-solid fa-map-location-dot"></i>
-      </div>
-      <h3>热门目的地</h3>
-      <p>精选国内外热门景点，一键导航前往</p>
-      <span class="module-arrow"><i class="fa-solid fa-arrow-right"></i></span>
-    </a>
-    <a href="navigate.html" class="module-card">
-      <div class="module-icon" style="background:linear-gradient(135deg,#E8553E,#ff7a5a)">
-        <i class="fa-solid fa-location-dot"></i>
-      </div>
-      <h3>景点导航</h3>
-      <p>精准导航，实时规划最优出行路线</p>
-      <span class="module-arrow"><i class="fa-solid fa-arrow-right"></i></span>
-    </a>
-    <a href="reviews.html" class="module-card">
-      <div class="module-icon" style="background:linear-gradient(135deg,#4EA064,#a6e3a1)">
-        <i class="fa-solid fa-comment-dots"></i>
-      </div>
-      <h3>口碑评价</h3>
-      <p>聚合多平台真实评价，AI 提炼核心洞察</p>
-      <span class="module-arrow"><i class="fa-solid fa-arrow-right"></i></span>
-    </a>
-    <a href="video.html" class="module-card">
-      <div class="module-icon" style="background:linear-gradient(135deg,#8B5CF6,#c4b5fd)">
-        <i class="fa-solid fa-film"></i>
-      </div>
-      <h3>旅行日记</h3>
-      <p>AI 生成精美手帐日记，一键保存</p>
-      <span class="module-arrow"><i class="fa-solid fa-arrow-right"></i></span>
-    </a>
-  </div>
-</section>
+</main>
 
 <!-- ============ Footer ============ -->
 <footer class="footer">
@@ -216,9 +253,7 @@
       <h3 class="booking-modal-title"><i class="fa-solid fa-calendar-check"></i> 立即预定</h3>
       <div class="booking-form">
         <div class="flyai-product-panel" id="flyaiProductPanel">
-          <div class="flyai-panel-header">
-            <i class="fa-solid fa-list-check"></i> 为您找到以下旅行团产品
-          </div>
+          <div class="flyai-panel-header"><i class="fa-solid fa-list-check"></i> 为您找到以下旅行团产品</div>
           <div class="flyai-filter-bar" id="flyaiFilterBar">
             <div class="flyai-filter-tabs">
               <button class="flyai-filter-tab active" data-filter="all">全部</button>
@@ -246,67 +281,34 @@
   </div>
 </div>
 
-<!-- ============ 用户中心面板（收藏+预定+日记） ============ -->
+<!-- ============ 用户中心面板 ============ -->
 <div class="user-panel-overlay" id="userPanelOverlay" data-action="closeUserPanelOverlay">
   <div class="user-panel" id="userPanel">
     <div class="user-panel-header">
       <div class="user-panel-tabs">
         <button class="panel-tab active" id="favTab" data-action="switchPanelTab" data-tab="favorites">
-          <i class="fa-solid fa-heart"></i> 我的收藏
-          <span class="panel-tab-count" id="favCount">0</span>
+          <i class="fa-solid fa-heart"></i> 我的收藏 <span class="panel-tab-count" id="favCount">0</span>
         </button>
         <button class="panel-tab" id="bookTab" data-action="switchPanelTab" data-tab="bookings">
-          <i class="fa-solid fa-calendar-check"></i> 我的预定
-          <span class="panel-tab-count" id="bookCount">0</span>
+          <i class="fa-solid fa-calendar-check"></i> 我的预定 <span class="panel-tab-count" id="bookCount">0</span>
         </button>
         <button class="panel-tab" id="diaryTab" data-action="switchPanelTab" data-tab="diaries">
-          <i class="fa-solid fa-book"></i> 我的日记
-          <span class="panel-tab-count" id="diaryCount">0</span>
+          <i class="fa-solid fa-book"></i> 我的日记 <span class="panel-tab-count" id="diaryCount">0</span>
         </button>
       </div>
       <button class="user-panel-close" data-action="closeUserPanel"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <div class="panel-content" id="panelFavorites">
-      <div class="panel-empty" id="favEmpty">
-        <div class="panel-empty-icon"><i class="fa-regular fa-heart"></i></div>
-        <p>还没有收藏任何目的地</p>
-        <span>点击目的地卡片上的 ❤ 即可收藏</span>
-      </div>
+      <div class="panel-empty" id="favEmpty"><div class="panel-empty-icon"><i class="fa-regular fa-heart"></i></div><p>还没有收藏任何目的地</p><span>点击目的地卡片上的 ❤ 即可收藏</span></div>
       <div class="panel-list" id="favList"></div>
     </div>
     <div class="panel-content" id="panelBookings" style="display:none">
-      <div class="panel-empty" id="bookEmpty">
-        <div class="panel-empty-icon"><i class="fa-regular fa-calendar-check"></i></div>
-        <p>还没有预定任何行程</p>
-        <span>点击目的地卡片上的「立即预定」开始旅程</span>
-      </div>
+      <div class="panel-empty" id="bookEmpty"><div class="panel-empty-icon"><i class="fa-regular fa-calendar-check"></i></div><p>还没有预定任何行程</p><span>点击目的地卡片上的「立即预定」开始旅程</span></div>
       <div class="panel-list" id="bookList"></div>
     </div>
     <div class="panel-content" id="panelDiaries" style="display:none">
-      <div class="panel-empty" id="diaryEmpty">
-        <div class="panel-empty-icon"><i class="fa-regular fa-book"></i></div>
-        <p>还没有保存旅行日记</p>
-        <span>在「旅行日记」板块生成并保存你的第一本手帐</span>
-      </div>
+      <div class="panel-empty" id="diaryEmpty"><div class="panel-empty-icon"><i class="fa-regular fa-book"></i></div><p>还没有保存旅行日记</p><span>在「旅行日记」板块生成并保存你的第一本手帐</span></div>
       <div class="panel-list diary-panel-list" id="diaryList"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ============ 详细行程 Modal ============ -->
-<div class="modal-overlay" id="detailModal" data-action="closeModalOverlay">
-  <div class="modal-content">
-    <button class="modal-close" data-action="closeDetailModal" aria-label="关闭对话框"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
-    <div class="modal-header">
-      <h3>AI 定制行程方案</h3>
-      <div class="modal-dest" id="modalDestName">三亚 · 海南</div>
-    </div>
-    <div class="modal-body">
-      <div class="itinerary-days" id="itineraryDays"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-modal-save" data-action="savePlan"><i class="fa-regular fa-bookmark"></i> 保存行程</button>
-      <button class="btn-modal-navigate" id="modalNavBtn" data-action="navigateCurrentDest"><i class="fa-solid fa-location-dot"></i> 导航前往</button>
     </div>
   </div>
 </div>
@@ -344,15 +346,14 @@
   </div>
 </div>
 
-<!-- ============ 通知提示 ============ -->
 <div class="toast" id="toast"></div>
 
-<!-- JS 模块 -->
 <script src="js/wandr-core.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/api-key-manager.js"></script>
 <script src="js/toast-anim.js"></script>
 <script src="js/fav-manager.js"></script>
+<script src="china-destinations-data.js"></script>
 <script src="js/shared.js"></script>
 <script src="js/page-destinations.js"></script>
 </body>

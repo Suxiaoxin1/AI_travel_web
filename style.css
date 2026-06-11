@@ -1300,6 +1300,219 @@ input:focus, textarea:focus, select:focus {
 }
 .btn-import-clear:hover { border-color: #e74c3c; color: #e74c3c; }
 
+/* ============ 多天路线图例与折叠面板 ============ */
+.route-legend {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 8px 0; margin-bottom: 8px;
+  border-bottom: 1px solid var(--clr-border);
+}
+.route-legend-item {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 0.72rem; color: var(--clr-text-light);
+}
+.route-legend-swatch {
+  display: inline-block;
+  width: 18px; height: 4px; border-radius: 2px;
+  background: var(--legend-color);
+  flex-shrink: 0;
+}
+
+/* "保存全部路线"按钮 */
+.btn-save-multi-day {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--clr-primary);
+  background: transparent;
+  color: var(--clr-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.btn-save-multi-day:hover {
+  background: var(--clr-primary);
+  color: #fff;
+}
+
+/* 每日折叠面板 */
+.day-collapse-panel {
+  margin-bottom: 6px;
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: var(--t-all);
+}
+.day-collapse-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--clr-bg);
+  cursor: pointer;
+  transition: background 0.2s;
+  gap: 8px;
+}
+.day-collapse-header:hover {
+  background: var(--clr-border);
+}
+.day-collapse-header-left {
+  display: flex; align-items: center; gap: 8px;
+  flex: 1; min-width: 0;
+  flex-wrap: wrap;
+}
+.day-collapse-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.day-collapse-title {
+  font-size: 0.82rem; font-weight: 600; color: var(--clr-text);
+  white-space: nowrap;
+}
+.day-collapse-meta {
+  font-size: 0.7rem; color: var(--clr-text-light);
+  white-space: nowrap;
+}
+.day-collapse-header-right {
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
+}
+.day-plan-status {
+  font-size: 0.7rem;
+  white-space: nowrap;
+}
+.day-collapse-arrow {
+  font-size: 0.7rem; color: var(--clr-text-light);
+  transition: transform 0.2s;
+}
+.day-collapse-body {
+  padding: 8px 12px 10px;
+  border-top: 1px solid var(--clr-border);
+}
+.day-addr-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 5px 0;
+}
+.day-addr-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  color: #fff; font-size: 0.68rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.day-addr-info {
+  flex: 1; min-width: 0;
+}
+.day-addr-name {
+  font-size: 0.8rem; font-weight: 500; color: var(--clr-text);
+}
+.day-addr-detail {
+  font-size: 0.7rem; color: var(--clr-text-light);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.btn-plan-all-days:hover {
+  opacity: 0.9; transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(26,58,42,0.18);
+}
+.btn-plan-single-day:hover {
+  background: inherit; opacity: 0.85;
+}
+.btn-plan-all-days:disabled {
+  opacity: 0.6; cursor: not-allowed; transform: none;
+  box-shadow: none;
+}
+
+/* 每日折叠面板 — 新布局 */
+.day-collapse-title-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.day-collapse-subtitle {
+  font-size: 0.72rem;
+  color: var(--clr-text-light);
+  font-weight: 400;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 1px;
+}
+.day-saved-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: #27ae60;
+  background: rgba(39,174,96,0.08);
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.day-addr-list {
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 8px;
+}
+.day-addr-list::-webkit-scrollbar { width: 4px; }
+.day-addr-list::-webkit-scrollbar-thumb { background: var(--clr-border); border-radius: 2px; }
+.day-panel-actions {
+  padding-top: 8px;
+  border-top: 1px solid var(--clr-border);
+}
+
+/* 用 --day-color 变量驱动颜色 */
+.day-collapse-panel .day-collapse-dot {
+  background: var(--day-color);
+}
+.day-collapse-panel .day-addr-num {
+  background: var(--day-color);
+}
+.btn-plan-single-day {
+  width: 100%;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--day-color);
+  background: transparent;
+  color: var(--day-color);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.btn-plan-single-day:hover {
+  background: var(--day-color);
+  color: #fff;
+  opacity: 1;
+}
+.btn-load-day-route {
+  width: 100%;
+  padding: 7px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--day-color);
+  background: var(--day-color);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.btn-load-day-route:hover {
+  opacity: 0.88;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
 /* 导入地图标记 */
 .import-marker-num {
   background: var(--clr-primary); color: #fff; border-radius: 50%;
@@ -1647,22 +1860,20 @@ input:focus, textarea:focus, select:focus {
   margin-top: -3px;
 }
 
-/* 起点 - 绿色 */
-.nav-pin.origin .nav-pin-circle { background: linear-gradient(135deg, #34C759, #28A745); }
-.nav-pin.origin .nav-pin-arrow   { border-top: 12px solid #28A745; }
+/* 起点/终点/途经点 颜色由 JS 内联 style 动态控制，CSS 仅保留基本尺寸和 fallback */
+.nav-pin.origin .nav-pin-circle { background: #666; }
+.nav-pin.origin .nav-pin-arrow   { border-top: 12px solid #666; }
 
-/* 终点 - 红色 */
-.nav-pin.dest .nav-pin-circle { background: linear-gradient(135deg, #FF3B30, #DC3545); }
-.nav-pin.dest .nav-pin-arrow   { border-top: 12px solid #DC3545; }
+.nav-pin.dest .nav-pin-circle { background: #666; }
+.nav-pin.dest .nav-pin-arrow   { border-top: 12px solid #666; }
 
-/* 途经点 - 蓝色 */
 .nav-pin.waypoint .nav-pin-circle {
   width: 38px; height: 38px;
-  font-size: 0.9rem;
-  background: linear-gradient(135deg, #007AFF, #0056D9);
+  font-size: 0.78rem;
+  background: #666;
 }
 .nav-pin.waypoint .nav-pin-arrow {
-  border-top: 10px solid #0056D9; border-left-width: 8px; border-right-width: 8px;
+  border-top: 10px solid #666; border-left-width: 8px; border-right-width: 8px;
 }
 
 /* ===== 路线折线动画 ===== */
@@ -1752,47 +1963,48 @@ input:focus, textarea:focus, select:focus {
 /* 自定义 DivIcon 容器 */
 .custom-marker { display: flex; align-items: center; justify-content: center; }
 .custom-marker.hot {
-  width: 28px; height: 28px;
-  background: linear-gradient(135deg, #F5A623, #E8941C);
-  border: 2.5px solid #fff;
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.22), inset 0 -1px 3px rgba(0,0,0,0.1);
-}
-.custom-marker.hot i { transform: rotate(45deg); color: #fff; font-size: 0.6rem; }
-.custom-marker.selected {
-  width: 36px; height: 36px;
-  background: linear-gradient(135deg, #E8573E, #D14529);
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, #FF6B35, #EE5A24);
   border: 3px solid #fff;
   border-radius: 50% 50% 50% 0;
   transform: rotate(-45deg);
-  box-shadow: 0 3px 14px rgba(232,87,62,0.5);
+  box-shadow: 0 3px 10px rgba(238,90,36,0.35);
+  transition: all 0.25s ease;
+}
+.custom-marker.hot i { transform: rotate(45deg); color: #fff; font-size: 0.68rem; }
+.custom-marker.selected {
+  width: 42px; height: 42px;
+  background: linear-gradient(135deg, #E74C3C, #C0392B);
+  border: 4px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 4px 16px rgba(231,76,60,0.5);
   animation: markerPulse 1.4s ease-in-out infinite;
 }
-.custom-marker.selected i { transform: rotate(45deg); color: #fff; font-size: 0.75rem; }
-/* 大标记：全国各省主要景点 （橙色水滴，60%大小）*/
+.custom-marker.selected i { transform: rotate(45deg); color: #fff; font-size: 0.82rem; }
+/* 大标记：全国各省主要景点 */
 .custom-marker.big {
-  width: 14px; height: 14px;
-  background: linear-gradient(135deg, #F5A623, #E8941C);
+  width: 16px; height: 16px;
+  background: linear-gradient(135deg, #FF6B35, #EE5A24);
+  border: 2px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 1px 6px rgba(238,90,36,0.3);
+}
+.custom-marker.big i { transform: rotate(45deg); color: #fff; font-size: 0.38rem; }
+/* 小标记：次级景点 */
+.custom-marker.small {
+  width: 10px; height: 10px;
+  background: #555;
   border: 1.5px solid #fff;
   border-radius: 50% 50% 50% 0;
   transform: rotate(-45deg);
-  box-shadow: 0 1px 5px rgba(245,166,35,0.35);
-}
-.custom-marker.big i { transform: rotate(45deg); color: #fff; font-size: 0.35rem; }
-/* 小标记：次级景点（黑色水滴，60%大小）*/
-.custom-marker.small {
-  width: 8px; height: 8px;
-  background: #333;
-  border: 1px solid #fff;
-  border-radius: 50% 50% 50% 0;
-  transform: rotate(-45deg);
-  box-shadow: 0 0.5px 2px rgba(0,0,0,0.2);
+  box-shadow: 0 0.5px 3px rgba(0,0,0,0.2);
 }
 .custom-marker.small i { display: none; }
 @keyframes markerPulse {
-  0%, 100% { box-shadow: 0 3px 14px rgba(232,87,62,0.5); }
-  50% { box-shadow: 0 3px 24px rgba(232,87,62,0.8); }
+  0%, 100% { box-shadow: 0 4px 16px rgba(231,76,60,0.5); }
+  50% { box-shadow: 0 4px 30px rgba(231,76,60,0.8); }
 }
 /* 省份边界 tooltip */
 .province-tooltip {
@@ -1852,7 +2064,6 @@ input:focus, textarea:focus, select:focus {
 .map-style-btn:hover { opacity: 1; transform: scale(1.08); }
 .map-style-btn.active { border-color: var(--clr-accent); opacity: 1; box-shadow: 0 0 0 2px rgba(245,166,35,0.3); }
 .map-style-btn.light { background-color: #f5f0e8; }
-.map-style-btn.dark { background-color: #1a1a2e; }
 /* 底部信息栏样式（不再遮挡地图） */
 /* ============ 用户分享 ============ */
 .shares-section {
@@ -1895,18 +2106,27 @@ input:focus, textarea:focus, select:focus {
 /* ===================== 分享卡片轮播 ===================== */
 .shares-carousel {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 24px;
+  gap: 20px;
   max-width: 780px;
   margin: 0 auto;
   padding: 20px 0 0;
   position: relative;
 }
 
+/* 舞台包装器 — 水平 flex：prev 按钮 + 舞台 + next 按钮 */
+.carousel-stage-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
 /* 舞台区域 — 容纳卡片堆叠和当前卡片 */
 .shares-carousel-stage {
   flex: 1;
+  min-width: 0;
   position: relative;
   min-height: 220px;
   max-height: 620px;
@@ -1915,6 +2135,7 @@ input:focus, textarea:focus, select:focus {
   justify-content: center;
   perspective: 1200px;
   transition: height 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  overflow: hidden;
 }
 
 /* 背景卡片堆叠层 */
@@ -2188,8 +2409,15 @@ input:focus, textarea:focus, select:focus {
   transform: scale(1.05);
 }
 .carousel-nav:active { transform: scale(0.95); }
-.carousel-prev { order: 0; }
-.carousel-next { order: 2; }
+
+/* 左右箭头 — 水平 flex 布局，自然分居卡片两侧 */
+.carousel-btn-prev,
+.carousel-btn-next {
+  position: static;
+  flex-shrink: 0;
+  align-self: center;
+}
+/* 确保按钮不会拉伸到舞台高度 */
 
 /* ===================== 指示器 ===================== */
 .carousel-indicators {
@@ -2298,6 +2526,73 @@ input:focus, textarea:focus, select:focus {
 .share-action-btn .liked-icon { display: none; }
 .share-action-btn.liked .liked-icon { display: inline; }
 .share-action-btn.liked .unliked-icon { display: none; }
+
+/* 全部评价列表卡片（扁平化） */
+.shares-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.share-list-card {
+  display: flex;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid var(--clr-border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  transition: box-shadow 0.25s, transform 0.2s;
+}
+.share-list-card:hover {
+  box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+  transform: translateY(-1px);
+}
+.share-list-card-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--clr-primary), #3a7a5a);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.9rem; flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(26,58,42,0.18);
+}
+.share-list-card-body { flex: 1; min-width: 0; }
+.share-list-card-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;
+}
+.share-list-card-user { font-weight: 700; font-size: 0.9rem; color: var(--clr-text); }
+.share-list-card-dest {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 0.72rem; color: var(--clr-primary);
+  background: rgba(26,58,42,0.06); padding: 2px 10px; border-radius: 100px;
+}
+.share-list-card-date { font-size: 0.72rem; color: var(--clr-text-light); margin-left: auto; }
+.share-list-card-title {
+  font-size: 0.95rem; font-weight: 700; color: var(--clr-text); margin-bottom: 6px;
+}
+.share-list-card-content {
+  font-size: 0.83rem; color: var(--clr-text-light); line-height: 1.6; margin-bottom: 10px;
+}
+.share-list-card-photo {
+  margin-bottom: 10px; border-radius: 10px; overflow: hidden;
+  max-height: 240px; cursor: pointer;
+}
+.share-list-card-photo img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.3s;
+}
+.share-list-card-photo:hover img { transform: scale(1.03); }
+.share-list-card-stars {
+  display: flex; gap: 2px; color: var(--clr-accent); font-size: 0.75rem; margin-bottom: 8px;
+}
+.share-list-card-tags {
+  display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px;
+}
+.share-list-card-tag {
+  background: rgba(26,58,42,0.05); color: var(--clr-primary);
+  padding: 2px 10px; border-radius: 100px; font-size: 0.7rem;
+}
+.share-list-card-actions {
+  display: flex; gap: 16px; padding-top: 10px;
+  border-top: 1px solid var(--clr-border);
+}
 
 /* 评论展开区 */
 .share-comments-section {
@@ -2573,12 +2868,14 @@ input:focus, textarea:focus, select:focus {
 @media (max-width: 900px) {
   .shares-section, .shares-section { padding: 60px 24px; }
   .shares-carousel { gap: 12px; padding: 10px 0 0; }
+  .carousel-stage-wrapper { gap: 8px; }
   .carousel-nav { width: 40px; height: 40px; font-size: 0.85rem; }
   .share-card { padding: 24px 18px 18px; }
   .share-modal { width: 95%; max-width: none; }
 }
 @media (max-width: 600px) {
   .shares-carousel { gap: 6px; }
+  .carousel-stage-wrapper { gap: 6px; }
   .shares-carousel-stage { min-height: 360px; }
   .carousel-nav { width: 34px; height: 34px; font-size: 0.75rem; }
   .share-card { padding: 20px 14px 16px; font-size: 0.85rem; }
@@ -5451,13 +5748,13 @@ select.booking-input { cursor: pointer; }
 .diary-canvas-wrap {
   width: 100%;
   max-width: 480px;
-  max-height: 720px;
+  max-height: 840px;
   overflow: auto;
   border-radius: var(--radius-md);
 }
 .diary-canvas {
   width: 480px;
-  min-height: 680px;
+  min-height: 820px;
   background: #fdf6e3;
   position: relative;
   overflow: hidden;
@@ -5467,7 +5764,7 @@ select.booking-input { cursor: pointer; }
 /* ---------- 手帐页面通用样式（GPT 生成或模板模式共用）---------- */
 .diary-page {
   width: 480px;
-  min-height: 680px;
+  min-height: 820px;
   padding: 28px 24px;
   position: relative;
   box-sizing: border-box;
@@ -5476,8 +5773,6 @@ select.booking-input { cursor: pointer; }
 }
 .diary-page * {
   box-sizing: border-box;
-  position: relative;
-  z-index: 1;
 }
 
 /* 风格底色（当 GPT 未设置背景时回退）*/
@@ -5584,6 +5879,141 @@ select.booking-input { cursor: pointer; }
   .diary-photo-grid { grid-template-columns: repeat(3, 1fr); }
   .diary-panel-list { grid-template-columns: 1fr; }
   .diary-action-row { flex-direction: column; }
+}
+
+/* ---------- 旅行日记页面（浅色主题）补充样式 ---------- */
+
+/* 生成中 - 旋转动画 */
+.diary-gen-spinner {
+  font-size: 2.5rem;
+  color: #8B5CF6;
+  margin-bottom: 16px;
+  opacity: 0.8;
+}
+
+/* 进度条 */
+.diary-progress-bar {
+  width: 260px;
+  height: 6px;
+  background: rgba(139,92,246,0.12);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 16px auto 0;
+}
+.diary-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #8B5CF6, #6d28d9);
+  border-radius: 10px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* 错误图标 */
+.diary-error-icon {
+  font-size: 2.5rem;
+  color: #e74c3c;
+  margin-bottom: 12px;
+  opacity: 0.8;
+}
+
+/* AI 错误状态容器 */
+#diaryAIError {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 错误卡片 */
+.diary-error-card {
+  text-align: center;
+  padding: 40px 32px;
+  max-width: 320px;
+}
+
+#diaryAIErrorMsg {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--clr-error, #e74c3c);
+  margin: 0 0 8px;
+}
+
+.diary-error-hint {
+  font-size: 0.8rem;
+  color: var(--clr-text-light);
+  margin: 0 0 20px;
+  line-height: 1.5;
+}
+
+/* 照片网格缩略图 */
+#diaryPhotoGrid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+#diaryPhotoGrid img.diary-photo-thumb {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--clr-border);
+}
+
+/* 模板生成结果容器 */
+#diaryResult {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+#diaryCanvas {
+  width: 100%;
+  min-height: 320px;
+  overflow: auto;
+  border-radius: var(--radius-md);
+}
+
+/* AI 图片加载区 */
+#diaryAIImage {
+  width: 100%;
+  object-fit: contain;
+  max-height: 65vh;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-medium);
+}
+
+/* 生成中状态容器 */
+#diaryGenerating {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#diaryGenerating .diary-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px;
+  text-align: center;
+}
+
+/* AI 结果容器 - 填充剩余空间并垂直居中 */
+#diaryAIResult {
+  flex: 1;
+  justify-content: center;
+  min-height: 0;
+}
+
+/* AI 加载状态 - 居中文本 */
+#diaryAILoading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--clr-text);
+  text-align: center;
 }
 
 /* ---------- AI 手帐生成 ---------- */
@@ -5737,6 +6167,89 @@ select.booking-input { cursor: pointer; }
 }
 
 /* ================================================================
+   六大模块入口区（MPA 首页改造）
+   ================================================================ */
+.modules-overview {
+  padding: 80px 6vw 100px;
+  background: var(--clr-bg);
+  text-align: center;
+}
+
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 1200px;
+  margin: 48px auto 0;
+}
+
+.module-card {
+  display: block;
+  background: var(--clr-white);
+  border-radius: var(--radius-lg, 24px);
+  padding: 32px 28px 28px;
+  text-decoration: none;
+  color: var(--clr-text);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.module-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-medium);
+}
+
+.module-card h3 {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 20px 0 10px;
+  color: var(--clr-primary);
+}
+
+.module-card p {
+  font-size: 0.9rem;
+  color: var(--clr-text-light);
+  line-height: 1.5;
+  margin: 0;
+  padding-right: 24px;
+}
+
+.module-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+  margin: 0 auto 20px;
+}
+
+.module-arrow {
+  position: absolute;
+  bottom: 20px;
+  right: 24px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--clr-primary-light);
+  transition: transform 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.module-card:hover .module-arrow {
+  transform: translateX(4px);
+  color: var(--clr-primary);
+}
+
+/* ================================================================
    全局响应式增强（P3 优化 — 新增 480px / 768px / 1024px 断点）
    ================================================================ */
 
@@ -5746,24 +6259,35 @@ select.booking-input { cursor: pointer; }
   .dest-card-large { grid-column: span 1; grid-row: span 1; }
   .hero-content h1 { font-size: 2.4rem; }
   .hero-content p { font-size: 1rem; }
+  .modules-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* —— 平板竖屏 & 大手机 (≤768px) —— */
 @media (max-width: 768px) {
   .hero-content h1 { font-size: 1.9rem; }
   .hero-img-2 { display: none; }
+  /* navbar padding 在 900px 断点已设，此处仅进一步缩小 */
   .navbar { padding: 0 16px; }
-  .nav-links { gap: 12px; }
-  .nav-links a { font-size: 0.8rem; }
+  /* ⚠️ 已删除 .nav-links / .nav-links a 规则：900px 断点已将 nav-links 隐藏，
+     768px 不应重新显示，否则在 768~900px 区间会产生矛盾 */
 
   .dest-detail-container { margin: 0; border-radius: 0; }
   .dest-detail-hero { height: 240px; }
   .dest-detail-hero-info h1 { font-size: 1.7rem; }
   .dest-detail-tabs { overflow-x: auto; }
 
+  /* 导航地图小屏补全 */
+  .navigate-inner { gap: 16px; padding: 0 4px; }
+  .map-panel { min-height: 360px; }
+
   .shares-carousel-stage { min-height: 300px; }
   .shares-carousel { gap: 8px; padding: 8px 0 0; }
+  .carousel-stage-wrapper { gap: 6px; }
   .carousel-nav { width: 38px; height: 38px; font-size: 0.8rem; }
+  .modules-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .module-card { padding: 24px 20px 20px; }
+  .module-icon { width: 48px; height: 48px; font-size: 1.15rem; border-radius: 14px; margin: 0 auto 16px; }
+  .module-card h3 { font-size: 1.1rem; }
 
   .toast { font-size: 0.82rem; padding: 10px 20px; bottom: 20px; }
 }
@@ -5771,9 +6295,11 @@ select.booking-input { cursor: pointer; }
 /* —— 小手机 (≤480px) —— */
 @media (max-width: 480px) {
   .navbar { padding: 0 10px; }
-  .nav-links { display: none; }
+  /* ⚠️ 已删除重复的 .nav-links { display: none } —— 已在 900px 断点处理 */
+  /* ⚠️ 已删除 .nav-actions 整体隐藏 —— 900px 断点已处理；小屏仅缩小 ghost 按钮 */
   .nav-actions .btn-ghost { padding: 6px 10px; font-size: 0.72rem; }
-  .hamburger { display: flex; }
+  /* 确保汉堡按钮在所有小屏尺寸可见 */
+  .hamburger { display: flex !important; align-items: center; justify-content: center; }
 
   .hero-content { padding: 0 16px; text-align: center; }
   .hero-content h1 { font-size: 1.5rem; }
@@ -5782,11 +6308,18 @@ select.booking-input { cursor: pointer; }
   .destinations-grid { grid-template-columns: 1fr; }
   .dest-card-wide { grid-column: span 1; }
 
+  /* 导航地图超小屏补全 */
+  .navigate-inner { gap: 12px; }
+  .map-panel { min-height: 300px; }
+  .route-panel { padding: 12px; }
+  .waypoint-list { max-height: 160px; overflow-y: auto; }
+
   .dest-detail-hero { height: 200px; }
   .dest-detail-hero-info h1 { font-size: 1.3rem; }
   .dest-detail-hero-overlay { padding: 16px; gap: 8px; }
 
   .shares-carousel-stage { min-height: 260px; }
+  .carousel-stage-wrapper { gap: 4px; }
   .carousel-nav { width: 32px; height: 32px; font-size: 0.7rem; }
   .share-card { padding: 16px; }
   .shares-toolbar { flex-direction: column; }
@@ -5800,6 +6333,9 @@ select.booking-input { cursor: pointer; }
 
   .toast { left: 16px; right: 16px; bottom: 16px; font-size: 0.78rem;
     text-align: center; border-radius: 10px; }
+  .modules-grid { grid-template-columns: 1fr; gap: 14px; }
+  .module-card { padding: 20px 16px; }
+  .module-card p { font-size: 0.82rem; }
 }
 
 /* —— 大屏增强 (≥1400px) —— */
@@ -5808,3 +6344,139 @@ select.booking-input { cursor: pointer; }
   .dest-card-large { grid-column: span 2; grid-row: span 2; }
   .shares-carousel-stage { max-height: 660px; }
 }
+
+/* ================================================================
+   骨架屏 Skeleton Loading（Task 2）
+   ================================================================ */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+.skeleton-card {
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--clr-bg-card, #f5f0ea);
+  box-shadow: var(--shadow-soft);
+}
+
+.skeleton-block {
+  background: linear-gradient(
+    90deg,
+    rgba(200,190,180,0.25) 25%,
+    rgba(200,190,180,0.55) 37%,
+    rgba(200,190,180,0.25) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 6px;
+}
+
+/* 目的地卡片骨架 */
+.skel-dest-img  { height: 180px; border-radius: 16px 16px 0 0; }
+.skel-dest-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.skel-dest-tag  { height: 18px; width: 55px; }
+.skel-dest-name { height: 22px; width: 75%; }
+.skel-dest-meta { height: 14px; width: 50%; }
+
+/* MBTI 推荐卡骨架 */
+.skel-mbti-img  { height: 120px; border-radius: 12px 12px 0 0; }
+.skel-mbti-body { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.skel-mbti-name { height: 18px; width: 65%; }
+.skel-mbti-desc { height: 13px; width: 85%; }
+
+/* 行程预览骨架 */
+.skel-itinerary-line {
+  height: 16px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+.skel-itinerary-line:nth-child(2) { width: 90%; }
+.skel-itinerary-line:nth-child(3) { width: 75%; }
+.skel-itinerary-line:nth-child(4) { width: 82%; }
+.skel-itinerary-line:nth-child(5) { width: 60%; }
+
+/* ================================================================
+   Scrollspy 导航高亮（Task 3）
+   ================================================================ */
+.nav-link.active {
+  color: var(--clr-primary) !important;
+}
+.nav-link.active::after {
+  width: 100% !important;
+}
+
+/* 移动菜单链接 active */
+.mobile-menu a.active {
+  color: var(--clr-primary);
+  font-weight: 600;
+}
+
+/* ================================================================
+   AI 结果流式渐入动画（Task 4）
+   ================================================================ */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 给包裹容器加此类后，直接子元素逐个淡入 */
+.fade-stagger > * {
+  opacity: 0;
+  animation: fadeSlideUp 0.45s ease-out forwards;
+  animation-delay: calc(var(--i, 0) * 110ms);
+}
+
+/* 打字机光标闪烁 */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.typing-cursor::after {
+  content: '|';
+  margin-left: 2px;
+  color: var(--clr-accent);
+  animation: blink 0.8s step-start infinite;
+}
+/* 动画完成后自动移除光标 */
+.typing-cursor.done::after { display: none; }
+
+/* ================================================================
+   图片懒加载占位（Task 5）
+   ================================================================ */
+/* 目的地卡片图片占位背景，防止布局抖动 */
+.dest-card-img {
+  background: var(--clr-border, #e8ddd5);
+}
+
+/* Hero 背景占位 */
+.hero-img {
+  background: #1a2a1a;
+}
+
+/* ================================================================
+   无障碍辅助（Task 6）
+   ================================================================ */
+/* 焦点可见环 — 针对键盘用户 */
+:focus-visible {
+  outline: 2px solid var(--clr-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* 跳过导航链接（屏幕阅读器 + 键盘用户） */
+.skip-link {
+  position: absolute;
+  top: -50px;
+  left: 16px;
+  background: var(--clr-primary);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 0 0 8px 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  z-index: 9999;
+  text-decoration: none;
+  transition: top 0.2s;
+}
+.skip-link:focus { top: 0; }

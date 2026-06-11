@@ -211,4 +211,72 @@ WANDR.API = {
   get OPENAI_PROXY() { return `${this.BASE}/openai`; },
 };
 
+// ============ 智能图片回退（Unsplash Source API，无需 API Key）============
+const IMG_FAILED_SET = new Set();
+/**
+ * 目的地图片加载失败时，自动从 Unsplash 搜索相关图片回退
+ * @param {HTMLImageElement} img - 出错的 img 元素
+ * @param {string} destName - 目的地名称
+ * @param {string} fallbackUrl - Unsplash 回退 URL
+ */
+WANDR.handleDestImgError = function(img, destName, fallbackUrl) {
+  const srcKey = img.getAttribute('data-original-src') || img.src;
+
+  // 已经尝试过 Unsplash 回退但仍然失败 → 显示纯色占位
+  if (IMG_FAILED_SET.has(srcKey) || img.getAttribute('data-unsplash-tried') === '1') {
+    _showImgPlaceholder(img, destName);
+    return;
+  }
+
+  // 第一次失败 → 尝试 Unsplash 回退
+  img.setAttribute('data-original-src', img.src);
+  img.setAttribute('data-unsplash-tried', '1');
+  img.classList.add('dest-img-loading');
+
+  // 构造多个 Unsplash 回退 URL（增加成功率）
+  const sources = [
+    fallbackUrl,
+    `https://source.unsplash.com/600x400/?${encodeURIComponent(destName)},scenery`,
+    `https://source.unsplash.com/600x400/?china,travel,nature`,
+  ];
+
+  let tryIndex = 0;
+  function tryNext() {
+    if (tryIndex >= sources.length) {
+      IMG_FAILED_SET.add(srcKey);
+      img.classList.remove('dest-img-loading');
+      _showImgPlaceholder(img, destName);
+      return;
+    }
+    img.src = sources[tryIndex];
+    tryIndex++;
+  }
+
+  // 监听回退图片的加载结果
+  img.onerror = tryNext;
+  img.onload = () => {
+    img.classList.remove('dest-img-loading');
+  };
+
+  tryNext();
+};
+
+function _showImgPlaceholder(img, destName) {
+  const parent = img.parentElement;
+  if (!parent) return;
+
+  // 获取图标（根据目的地类型）
+  const iconMap = { '🏔️': 'mountain', '🏯': 'culture', '🏖️': 'beach', '🌆': 'city' };
+  const icon = '🏞️';
+
+  const fallback = document.createElement('div');
+  fallback.className = 'dest-img-fallback';
+  fallback.innerHTML = `
+    <div style="text-align:center">
+      <div style="font-size:2.5rem;margin-bottom:8px">${icon}</div>
+      <div style="font-size:0.85rem;color:var(--clr-text-light)">${destName}</div>
+    </div>`;
+  img.replaceWith(fallback);
+}
+
 window.WANDR = WANDR;

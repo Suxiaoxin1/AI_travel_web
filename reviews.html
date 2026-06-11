@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="探途 WANDR — 旅行者口碑评价，发现真实旅行故事与分享">
+  <title>口碑评价 — 探途 WANDR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,900;1,400&family=Noto+Serif+SC:wght@300;400;600&family=Noto+Sans+SC:wght@300;400;500&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .page-hero {
+      background: linear-gradient(135deg, #1a3a20 0%, #4EA064 60%, #a6e3a1 100%);
+      padding: 120px 24px 64px;
+      text-align: center;
+      color: var(--clr-white);
+      position: relative;
+      overflow: hidden;
+    }
+    .page-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: url('https://images.unsplash.com/photo-1539635278303-d4002c07eae3?w=1400&auto=format&fit=crop&q=50') center/cover no-repeat;
+      opacity: 0.15;
+    }
+    .page-hero-inner { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; }
+    .page-hero-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 999px; padding: 6px 18px;
+      font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: rgba(255,255,255,0.9); margin-bottom: 20px;
+    }
+    .page-hero h1 { font-family: var(--font-serif); font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.2; margin-bottom: 16px; }
+    .page-hero h1 em { font-style: italic; color: #d0ffd0; }
+    .page-hero p { font-size: 1.05rem; color: rgba(255,255,255,0.85); }
+
+    .reviews-main { max-width: 1100px; margin: 0 auto; padding: 48px 24px 80px; }
+
+    /* 发布按钮区 */
+    .reviews-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; margin-bottom: 32px; flex-wrap: wrap;
+    }
+    .reviews-search-wrap { flex: 1; min-width: 200px; position: relative; }
+    .reviews-search-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--clr-text-light); }
+    .reviews-search-input {
+      width: 100%; padding: 11px 44px 11px 42px; box-sizing: border-box;
+      border: 1.5px solid var(--clr-border); border-radius: var(--radius-sm);
+      font-size: 0.9rem; transition: var(--t-all);
+    }
+    .reviews-search-input:focus { border-color: var(--clr-primary); }
+    .btn-clear-search {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      width: 28px; height: 28px; border-radius: 50%;
+      background: none; border: none; color: var(--clr-text-light);
+      cursor: pointer; display: none; align-items: center; justify-content: center;
+      font-size: 0.82rem; padding: 0; line-height: 1;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-clear-search:hover {
+      background: var(--clr-border);
+      color: var(--clr-text);
+    }
+    .btn-clear-search:focus-visible {
+      outline: 2px solid var(--clr-primary);
+      outline-offset: -2px;
+    }
+    /* 隐藏 type=search 的原生清除按钮，避免与自定义按钮重复 */
+    .reviews-search-input::-webkit-search-cancel-button { -webkit-appearance: none; display: none; }
+
+    .btn-publish {
+      display: flex; align-items: center; gap: 8px;
+      padding: 11px 24px; border-radius: var(--radius-sm);
+      background: var(--clr-primary); color: #fff; font-size: 0.9rem; font-weight: 600;
+      transition: var(--t-all); white-space: nowrap;
+    }
+    .btn-publish:hover { background: var(--clr-primary-light); }
+
+    /* 轮播精选 */
+    .shares-carousel-section {
+      margin-bottom: 48px;
+      position: relative;
+    }
+    .shares-carousel-section h3 {
+      font-family: var(--font-serif); font-size: 1.3rem; color: var(--clr-primary);
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+<a class="skip-link" href="#reviews-main">跳至主内容</a>
+
+<!-- ============ 导航栏 ============ -->
+<nav class="navbar" id="navbar">
+  <div class="nav-logo">
+    <a href="index.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+      <span class="logo-icon"><i class="fa-solid fa-compass"></i></span>
+      <span class="logo-text">探途 <em>WANDR</em></span>
+    </a>
+  </div>
+  <div class="nav-links">
+    <a href="ai-plan.html" class="nav-link">AI 规划</a>
+    <a href="mbti.html" class="nav-link">性格测试</a>
+    <a href="destinations.html" class="nav-link">热门目的地</a>
+    <a href="navigate.html" class="nav-link">景点导航</a>
+    <a href="reviews.html" class="nav-link">口碑评价</a>
+    <a href="video.html" class="nav-link">旅行日记</a>
+  </div>
+  <div class="nav-actions">
+    <button class="btn-ghost" data-action="openUserPanel" data-tab="favorites"><i class="fa-regular fa-heart"></i> 我的收藏 <span class="nav-badge" id="favBadge" style="display:none">0</span></button>
+    <button class="btn-ghost" data-action="openUserPanel" data-tab="bookings"><i class="fa-regular fa-calendar-check"></i> 我的预定 <span class="nav-badge nav-badge-accent" id="bookBadge" style="display:none">0</span></button>
+    <a href="ai-plan.html" class="btn-primary" style="text-decoration:none;">开始探索</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="打开导航菜单" aria-expanded="false" aria-controls="mobileMenu"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="ai-plan.html">AI 规划</a>
+  <a href="mbti.html">性格测试</a>
+  <a href="destinations.html">热门目的地</a>
+  <a href="navigate.html">景点导航</a>
+  <a href="reviews.html">口碑评价</a>
+  <a href="video.html">旅行日记</a>
+  <a href="javascript:void(0)" data-action="openUserPanel" data-tab="favorites" data-close="mobileMenu">❤️ 我的收藏</a>
+  <a href="javascript:void(0)" data-action="openUserPanel" data-tab="bookings" data-close="mobileMenu">📅 我的预定</a>
+  <a href="javascript:void(0)" data-action="openUserPanel" data-tab="diaries" data-close="mobileMenu">📓 我的日记</a>
+</div>
+
+<!-- ============ 页头 ============ -->
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="page-hero-tag"><i class="fa-solid fa-comment-dots"></i> 旅行者说</div>
+    <h1>真实旅行<br><em>口碑故事</em></h1>
+    <p>来自旅行者的第一手分享，发现最值得去的目的地</p>
+  </div>
+</section>
+
+<!-- ============ 评价主内容 ============ -->
+<main id="reviews-main">
+  <div class="reviews-main">
+
+    <!-- 工具栏 -->
+    <div class="reviews-toolbar">
+      <div class="reviews-search-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="search" class="reviews-search-input" id="sharesSearch" placeholder="搜索目的地、关键词…">
+        <button class="btn-clear-search" id="sharesSearchClear" data-action="clearSharesSearch">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <button class="btn-publish" data-action="openPublishModal">
+        <i class="fa-solid fa-pen-nib"></i> 发布旅行评价
+      </button>
+    </div>
+
+    <!-- 精选轮播 -->
+    <div class="shares-carousel-section" id="sharesCarouselSection">
+      <h3><i class="fa-solid fa-fire" style="color:var(--clr-accent-2)"></i> 精选游记</h3>
+      <!-- 轮播容器 — 由 shared.js + page-reviews.js 渲染 -->
+      <div class="shares-carousel" id="sharesCarousel">
+        <!-- 舞台 + 左右导航 — 水平 flex 布局 -->
+        <div class="carousel-stage-wrapper">
+          <button class="carousel-btn carousel-btn-prev carousel-nav" id="carouselPrev" data-action="carouselPrev" aria-label="上一条"><i class="fa-solid fa-chevron-left"></i></button>
+          <div class="shares-carousel-stage" id="sharesCarouselStage">
+            <div class="carousel-bg-cards" id="carouselBgCards"></div>
+            <div class="shares-carousel-track" id="sharesCarouselTrack"></div>
+          </div>
+          <button class="carousel-btn carousel-btn-next carousel-nav" id="carouselNext" data-action="carouselNext" aria-label="下一条"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        <div class="carousel-dots" id="carouselDots"></div>
+        <span class="carousel-counter" id="carouselCounter" style="display:none"></span>
+      </div>
+    </div>
+
+    <!-- 全部评价列表 -->
+    <div class="section-label" style="margin-bottom:24px">
+      <span class="label-line"></span>
+      <span>全部评价</span>
+      <span class="label-line"></span>
+    </div>
+    <div class="shares-list" id="sharesList"></div>
+    <div class="shares-empty" id="sharesEmpty" style="display:none; text-align:center; padding:80px 24px; color:var(--clr-text-light)">
+      <i class="fa-solid fa-comment-slash" style="font-size:2.5rem; margin-bottom:16px; opacity:0.4"></i>
+      <p style="font-size:1.1rem">暂无评价</p>
+      <p style="font-size:0.9rem; margin-top:8px">成为第一个分享旅行故事的人吧！</p>
+    </div>
+
+  </div>
+</main>
+
+<!-- ============ 发布评价 Modal ============ -->
+<div class="share-modal-overlay" id="shareModalOverlay">
+  <div class="share-modal">
+    <div class="share-modal-header">
+      <h3 id="shareModalTitle"><i class="fa-solid fa-pen-nib"></i> 发布旅行分享</h3>
+      <button class="share-modal-close" data-action="closeShareModal" aria-label="关闭"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="share-modal-body">
+      <div class="share-form-group">
+        <label>目的地 <span class="required">*</span></label>
+        <input type="text" id="shareDest" placeholder="你去了哪里？">
+      </div>
+      <div class="share-form-group">
+        <label>评分</label>
+        <div class="share-rating-input" id="shareRatingInput">
+          <i class="fa-regular fa-star" data-star="1"></i>
+          <i class="fa-regular fa-star" data-star="2"></i>
+          <i class="fa-regular fa-star" data-star="3"></i>
+          <i class="fa-regular fa-star" data-star="4"></i>
+          <i class="fa-regular fa-star" data-star="5"></i>
+        </div>
+      </div>
+      <div class="share-form-group">
+        <label>标题</label>
+        <input type="text" id="shareTitle" placeholder="给你的旅行起个标题">
+      </div>
+      <div class="share-form-group">
+        <label>旅行故事 <span class="required">*</span></label>
+        <textarea id="shareContent" placeholder="分享你的旅行体验…" rows="5"></textarea>
+        <span class="share-char-count" id="shareCharCount">0/2000</span>
+      </div>
+      <div class="share-form-group">
+        <label>标签</label>
+        <div class="share-tags-input-wrap">
+          <div class="share-tags-list" id="shareTagsList"></div>
+          <input type="text" id="shareTagInput" placeholder="输入标签后按回车添加">
+        </div>
+      </div>
+      <div class="share-form-group">
+        <label>照片</label>
+        <div class="share-photo-upload-area">
+          <button class="share-photo-add-btn" onclick="document.getElementById('sharePhotoInput').click()">
+            <i class="fa-solid fa-camera"></i> 添加照片<span class="photo-hint">最多6张</span>
+          </button>
+          <input type="file" id="sharePhotoInput" accept="image/*" multiple style="display:none">
+          <div class="share-photo-grid" id="sharePhotoGrid"></div>
+        </div>
+      </div>
+      <div class="share-modal-footer">
+        <button class="btn-cancel-share" data-action="closeShareModal">取消</button>
+        <button class="btn-submit-share" data-action="submitShare">
+          <i class="fa-solid fa-paper-plane"></i> 发布分享
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 图片灯箱 -->
+<div class="photo-lightbox" id="photoLightbox" data-action="closeLightbox">
+  <button class="lightbox-close" data-action="closeLightbox"><i class="fa-solid fa-xmark"></i></button>
+  <button class="lightbox-prev" data-action="lightboxPrev"><i class="fa-solid fa-chevron-left"></i></button>
+  <button class="lightbox-next" data-action="lightboxNext"><i class="fa-solid fa-chevron-right"></i></button>
+  <div class="lightbox-img-wrap" id="lightboxImgWrap">
+    <img src="" alt="" id="lightboxImg" class="lightbox-img">
+  </div>
+</div>
+
+<!-- ============ 用户中心面板 ============ -->
+<div class="user-panel-overlay" id="userPanelOverlay" data-action="closeUserPanelOverlay">
+  <div class="user-panel" id="userPanel">
+    <div class="user-panel-header">
+      <div class="user-panel-tabs">
+        <button class="panel-tab active" id="favTab" data-action="switchPanelTab" data-tab="favorites">
+          <i class="fa-solid fa-heart"></i> 我的收藏 <span class="panel-tab-count" id="favCount">0</span>
+        </button>
+        <button class="panel-tab" id="bookTab" data-action="switchPanelTab" data-tab="bookings">
+          <i class="fa-solid fa-calendar-check"></i> 我的预定 <span class="panel-tab-count" id="bookCount">0</span>
+        </button>
+        <button class="panel-tab" id="diaryTab" data-action="switchPanelTab" data-tab="diaries">
+          <i class="fa-solid fa-book"></i> 我的日记 <span class="panel-tab-count" id="diaryCount">0</span>
+        </button>
+      </div>
+      <button class="user-panel-close" data-action="closeUserPanel"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="panel-content" id="panelFavorites">
+      <div class="panel-empty" id="favEmpty"><div class="panel-empty-icon"><i class="fa-regular fa-heart"></i></div><p>还没有收藏任何目的地</p><span>点击目的地卡片上的 ❤ 即可收藏</span></div>
+      <div class="panel-list" id="favList"></div>
+    </div>
+    <div class="panel-content" id="panelBookings" style="display:none">
+      <div class="panel-empty" id="bookEmpty"><div class="panel-empty-icon"><i class="fa-regular fa-calendar-check"></i></div><p>还没有预定任何行程</p><span>点击目的地卡片上的「立即预定」开始旅程</span></div>
+      <div class="panel-list" id="bookList"></div>
+    </div>
+    <div class="panel-content" id="panelDiaries" style="display:none">
+      <div class="panel-empty" id="diaryEmpty"><div class="panel-empty-icon"><i class="fa-regular fa-book"></i></div><p>还没有保存旅行日记</p><span>在「旅行日记」板块生成并保存你的第一本手帐</span></div>
+      <div class="panel-list diary-panel-list" id="diaryList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/wandr-core.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/api-key-manager.js"></script>
+<script src="js/toast-anim.js"></script>
+<script src="js/fav-manager.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/page-reviews.js"></script>
+</body>
+</html>

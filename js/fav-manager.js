@@ -44,7 +44,7 @@ const FavManager = {
 
   _syncUI(name, isActive) {
     refreshBadges();
-    // renderFavList 在 script.js 中定义，延迟调用时确保已加载
+    // renderFavList 在 shared.js 中定义，延迟调用时确保已加载
     if (typeof renderFavList === 'function') renderFavList();
     // 同步卡片按钮
     document.querySelectorAll('.dest-fav-btn').forEach(btn => {
@@ -54,7 +54,7 @@ const FavManager = {
     // 详情面板按钮
     const detailBtn = document.getElementById('destDetailFavBtn');
     if (detailBtn && WANDR.state.currentDestKey) {
-      // getDestData 在 script.js 中定义，延迟调用时确保已加载
+      // getDestData 在 shared.js 中定义，延迟调用时确保已加载
       if (typeof getDestData === 'function') {
         const data = getDestData(WANDR.state.currentDestKey);
         if (data && data.name === name) {
@@ -72,7 +72,7 @@ const FavManager = {
 function refreshBadges() {
   const favs = getFavorites();
   const books = getBookings();
-  // getDiaries 在 script.js 中定义，延迟调用时确保已加载
+  // getDiaries 在 page-video.js 中定义，延迟调用时确保已加载
   const diaries = typeof getDiaries === 'function' ? getDiaries() : [];
 
   const favBadge = document.getElementById('favBadge');

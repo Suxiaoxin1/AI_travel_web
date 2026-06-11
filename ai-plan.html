@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="探途 WANDR — AI 旅行规划，上传照片/文字/语音，让 AI 为你量身定制专属旅行方案">
+  <title>AI 规划 — 探途 WANDR</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,900;1,400&family=Noto+Serif+SC:wght@300;400;600&family=Noto+Sans+SC:wght@300;400;500&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* ——— AI 规划页专属样式 ——— */
+    :root {
+      --ai-accent: #e8974b;
+      --ai-accent-soft: rgba(245,166,35,0.08);
+      --ai-surface: #fafaf7;
+      --ai-border: #e8e5db;
+      --ai-text-dim: #8c8878;
+    }
+
+    .page-hero {
+      background: linear-gradient(135deg, var(--clr-primary) 0%, #2D5A3D 60%, #1a4a30 100%);
+      padding: 120px 24px 64px;
+      text-align: center;
+      color: var(--clr-white);
+      position: relative;
+      overflow: hidden;
+    }
+    .page-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1400&auto=format&fit=crop&q=60') center/cover no-repeat;
+      opacity: 0.18;
+    }
+    .page-hero-inner { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; }
+    .page-hero-tag {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 999px; padding: 6px 18px;
+      font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: rgba(255,255,255,0.9); margin-bottom: 20px;
+    }
+    .page-hero h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      line-height: 1.2; margin-bottom: 16px;
+    }
+    .page-hero h1 em { font-style: italic; color: var(--clr-accent); }
+    .page-hero p { font-size: 1.05rem; color: rgba(255,255,255,0.8); }
+
+    /* ——— 主内容区 ——— */
+    .aiplan-layout {
+      max-width: 1140px; margin: 0 auto;
+      padding: 56px 24px 80px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 36px;
+      align-items: start;
+    }
+    @media (max-width: 860px) { .aiplan-layout { grid-template-columns: 1fr; max-width: 600px; } }
+
+    /* ============ 左：上传面板 ============ */
+    .upload-panel {
+      background: var(--clr-white);
+      border-radius: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 32px rgba(0,0,0,.06);
+      padding: 36px 32px 28px;
+      border: 1px solid var(--ai-border);
+    }
+    .upload-panel-title {
+      font-family: var(--font-serif);
+      font-size: 1.35rem; margin-bottom: 4px; color: var(--clr-primary);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .upload-panel-desc { font-size: 0.85rem; color: var(--ai-text-dim); margin-bottom: 24px; line-height: 1.55; }
+
+    /* ---------- API Key 设置 ---------- */
+    .api-key-section-v2 {
+      background: var(--ai-surface);
+      border-radius: 12px;
+      padding: 0;
+      margin-bottom: 24px;
+      border: 1px solid var(--ai-border);
+      overflow: hidden;
+    }
+    .api-key-header-v2 {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px;
+      cursor: pointer;
+      user-select: none;
+      transition: background .2s;
+    }
+    .api-key-header-v2:hover { background: rgba(0,0,0,.02); }
+    .api-key-header-v2 .header-left { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: var(--clr-text); }
+    .api-key-header-v2 .header-left i { color: var(--clr-accent-2); font-size: 0.8rem; }
+    .api-key-header-v2 .header-right { display: flex; align-items: center; gap: 8px; }
+    .api-key-status-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .api-key-status-dot.ready { background: #4CAF50; box-shadow: 0 0 6px rgba(76,175,80,.5); }
+    .api-key-status-dot.none { background: #ccc; }
+    .api-key-body-v2 {
+      display: none;
+      padding: 0 16px 16px;
+    }
+    .api-key-body-v2.open { display: block; }
+    .api-key-field-v2 { margin-bottom: 12px; }
+    .api-key-field-v2 label { display: block; font-size: 0.78rem; font-weight: 500; color: var(--clr-text); margin-bottom: 6px; }
+    .api-key-row { display: flex; gap: 8px; }
+    .api-key-row input {
+      flex: 1; padding: 9px 12px;
+      border: 1.5px solid var(--ai-border); border-radius: 8px;
+      font-size: 0.85rem; background: var(--clr-white);
+      transition: border-color .2s;
+    }
+    .api-key-row input:focus { border-color: var(--clr-primary); outline: none; }
+    .btn-key-action {
+      padding: 9px 16px; border-radius: 8px;
+      font-size: 0.82rem; font-weight: 600;
+      background: var(--clr-primary); color: #fff;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .btn-key-action:hover { background: #2D5A3D; }
+    .key-status-v2 { display: block; font-size: 0.72rem; margin-top: 4px; color: #4CAF50; }
+    .key-help-link { font-size: 0.76rem; color: var(--clr-primary); margin-top: 8px; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; }
+    .key-help-link:hover { text-decoration: underline; }
+
+    /* ---------- Upload Tabs ---------- */
+    .upload-tabs {
+      display: flex; gap: 4px;
+      background: var(--ai-surface);
+      padding: 5px;
+      border-radius: 14px;
+      margin-bottom: 24px;
+    }
+    .upload-tab {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 11px 12px; border-radius: 10px;
+      font-size: 0.88rem; font-weight: 500;
+      color: var(--ai-text-dim);
+      transition: all .25s;
+      white-space: nowrap;
+    }
+    .upload-tab:hover { color: var(--clr-text); }
+    .upload-tab.active {
+      background: var(--clr-white);
+      color: var(--clr-primary);
+      box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.04);
+      font-weight: 600;
+    }
+    .upload-tab i { font-size: 0.9rem; }
+
+    .tab-content { display: none; animation: tabFadeIn .35s ease; }
+    .tab-content.active { display: block; }
+    @keyframes tabFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ============ 模块A：照片上传 ============ */
+    .photo-drop-zone {
+      border: 2px dashed #d5d1c4;
+      border-radius: 16px;
+      padding: 44px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all .3s;
+      background: linear-gradient(180deg, rgba(250,250,247,.6) 0%, transparent 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .photo-drop-zone::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 50% 40%, rgba(46,139,87,.04) 0%, transparent 60%);
+      opacity: 0; transition: opacity .3s;
+      pointer-events: none;
+    }
+    .photo-drop-zone:hover, .photo-drop-zone.dragover {
+      border-color: var(--clr-primary);
+      background: rgba(46,139,87,.04);
+    }
+    .photo-drop-zone:hover::after, .photo-drop-zone.dragover::after { opacity: 1; }
+    .photo-drop-icon {
+      width: 64px; height: 64px;
+      margin: 0 auto 16px;
+      background: rgba(46,139,87,.08);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; color: var(--clr-primary);
+      transition: transform .3s, background .3s;
+    }
+    .photo-drop-zone:hover .photo-drop-icon { transform: scale(1.08); background: rgba(46,139,87,.14); }
+    .photo-drop-zone .drop-title {
+      font-family: var(--font-serif);
+      font-size: 1rem; font-weight: 500; color: var(--clr-text);
+      margin-bottom: 6px;
+    }
+    .photo-drop-zone .drop-sub {
+      font-size: 0.84rem; color: var(--ai-text-dim);
+      margin-bottom: 16px;
+    }
+    .upload-link {
+      color: var(--clr-primary); font-weight: 600;
+      text-decoration: underline; text-underline-offset: 2px;
+    }
+    .upload-hint {
+      display: inline-block;
+      padding: 5px 14px;
+      background: rgba(0,0,0,.04);
+      border-radius: 20px;
+      font-size: 0.74rem; color: var(--ai-text-dim);
+      letter-spacing: 0.02em;
+    }
+
+    /* 照片预览网格 */
+    .photo-preview {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .photo-preview-item {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .photo-preview-item img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: transform .3s;
+    }
+    .photo-preview-item:hover img { transform: scale(1.06); }
+    .photo-preview-remove {
+      position: absolute; top: 4px; right: 4px;
+      width: 22px; height: 22px;
+      background: rgba(0,0,0,.55); color: #fff;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem; cursor: pointer;
+      opacity: 0; transition: opacity .2s;
+      backdrop-filter: blur(4px);
+    }
+    .photo-preview-item:hover .photo-preview-remove { opacity: 1; }
+
+    /* ============ 模块B：文字输入 ============ */
+    .preset-tags {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin-bottom: 16px;
+    }
+    .preset-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 7px 15px;
+      background: var(--clr-white);
+      border: 1.5px solid var(--ai-border);
+      border-radius: 20px;
+      font-size: 0.82rem; font-weight: 500;
+      color: var(--clr-text);
+      cursor: pointer;
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .preset-tag:hover {
+      background: var(--clr-primary); color: #fff;
+      border-color: var(--clr-primary);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(46,139,87,.2);
+    }
+    .preset-tag i { font-size: 0.85rem; }
+
+    .text-input-wrap {
+      position: relative;
+      margin-bottom: 12px;
+    }
+    .text-input-wrap textarea {
+      width: 100%; padding: 16px 18px;
+      border: 1.5px solid var(--ai-border);
+      border-radius: 14px;
+      font-size: 0.92rem; line-height: 1.7;
+      resize: vertical; min-height: 130px;
+      background: var(--ai-surface);
+      transition: border-color .25s, box-shadow .25s;
+      font-family: inherit;
+      color: var(--clr-text);
+    }
+    .text-input-wrap textarea::placeholder { color: #bfbab0; }
+    .text-input-wrap textarea:focus {
+      border-color: var(--clr-primary);
+      box-shadow: 0 0 0 3px rgba(46,139,87,.08);
+      outline: none;
+      background: var(--clr-white);
+    }
+
+    .text-input-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .char-counter {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.78rem; color: var(--ai-text-dim);
+    }
+    .char-progress {
+      width: 60px; height: 4px;
+      background: var(--ai-border);
+      border-radius: 2px; overflow: hidden;
+    }
+    .char-progress-fill {
+      height: 100%; background: var(--clr-primary);
+      border-radius: 2px;
+      transition: width .3s;
+    }
+    .char-counter.warn { color: var(--clr-accent-2); }
+    .char-counter.warn .char-progress-fill { background: var(--clr-accent-2); }
+
+    /* 预算与天数 */
+    .pref-inline-row {
+      display: flex; gap: 12px;
+      margin-bottom: 0;
+    }
+    .pref-inline-item {
+      flex: 1;
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .pref-inline-item label {
+      font-size: 0.74rem; font-weight: 600;
+      color: var(--ai-text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .pref-inline-item select {
+      padding: 9px 12px;
+      border: 1.5px solid var(--ai-border);
+      border-radius: 10px;
+      font-size: 0.85rem; color: var(--clr-text);
+      background: var(--clr-white);
+      cursor: pointer;
+      transition: border-color .2s;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238c8878' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+    .pref-inline-item select:focus { border-color: var(--clr-primary); outline: none; }
+
+    /* ============ 模块C：语音录音 ============ */
+    .voice-record-area {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 24px 20px;
+    }
+    .voice-waves-container {
+      width: 100%; height: 72px;
+      background: var(--ai-surface);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 24px;
+      overflow: hidden;
+      border: 1px solid var(--ai-border);
+    }
+    .voice-waves {
+      display: flex; gap: 3px; align-items: center; height: 40px;
+    }
+    .voice-waves span {
+      display: block; width: 3px; background: #d5d1c4; border-radius: 2px;
+      height: 6px; transition: height .15s;
+    }
+    .recording .voice-waves span {
+      background: var(--clr-accent-2);
+      animation: voiceWave 0.8s infinite ease-in-out;
+    }
+    @keyframes voiceWave {
+      0%, 100% { height: 6px; }
+      50% { height: 36px; }
+    }
+    .btn-record {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e8553e, #d94430);
+      color: #fff;
+      font-size: 1.5rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .3s;
+      box-shadow: 0 8px 28px rgba(232,85,62,.35);
+      position: relative;
+      z-index: 1;
+    }
+    .btn-record::before {
+      content: '';
+      position: absolute; inset: -4px;
+      border-radius: 50%;
+      border: 2px solid rgba(232,85,62,.2);
+      transition: all .3s;
+      pointer-events: none;
+    }
+    .btn-record:hover { transform: scale(1.06); }
+    .btn-record:hover::before { inset: -8px; border-color: rgba(232,85,62,.15); }
+    .btn-record.recording {
+      animation: recordPulse 1.6s infinite;
+    }
+    @keyframes recordPulse {
+      0%, 100% { box-shadow: 0 8px 28px rgba(232,85,62,.35); transform: scale(1); }
+      50% { box-shadow: 0 8px 40px rgba(232,85,62,.55), 0 0 0 14px rgba(232,85,62,.08); transform: scale(1.04); }
+    }
+    .record-hint {
+      margin-top: 16px;
+      font-size: 0.88rem; font-weight: 500; color: var(--clr-text);
+    }
+    .record-timer {
+      margin-top: 4px;
+      font-size: 1rem; font-weight: 700;
+      color: var(--clr-accent-2);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.03em;
+    }
+    .voice-transcript {
+      margin-top: 16px;
+      background: var(--ai-surface);
+      border-radius: 12px;
+      padding: 16px 18px;
+      border: 1px solid var(--ai-border);
+    }
+    .transcript-label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.76rem; color: var(--ai-text-dim);
+      margin-bottom: 6px;
+      font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .transcript-text { font-size: 0.9rem; color: var(--clr-text); line-height: 1.65; }
+
+    /* ============ 出行方式 + 分析按钮 ============ */
+    .travel-type-section {
+      margin-top: 24px; padding-top: 20px;
+      border-top: 1px solid var(--ai-border);
+    }
+    .travel-type-label {
+      font-size: 0.78rem; font-weight: 600;
+      color: var(--ai-text-dim);
+      text-transform: uppercase; letter-spacing: 0.04em;
+      margin-bottom: 10px;
+    }
+    .travel-type-btns {
+      display: flex; gap: 8px;
+      flex-wrap: wrap;
+    }
+    .type-btn {
+      flex: 1; min-width: 0;
+      padding: 10px 8px;
+      border-radius: 12px;
+      font-size: 0.82rem; font-weight: 500;
+      border: 1.5px solid var(--ai-border);
+      color: var(--clr-text);
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: all .2s;
+      background: var(--clr-white);
+      white-space: nowrap;
+    }
+    .type-btn:hover { border-color: var(--clr-primary); color: var(--clr-primary); }
+    .type-btn.active {
+      background: var(--clr-primary); color: #fff;
+      border-color: var(--clr-primary);
+      box-shadow: 0 4px 14px rgba(46,139,87,.25);
+    }
+    .type-btn i { font-size: 0.85rem; }
+
+    .btn-start-analysis {
+      width: 100%; margin-top: 20px;
+      background: linear-gradient(135deg, var(--clr-primary), #2D5A3D);
+      color: #fff;
+      padding: 16px;
+      border-radius: 14px;
+      font-size: 1rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: all .3s;
+      box-shadow: 0 8px 28px rgba(26,58,42,.28);
+      letter-spacing: 0.02em;
+    }
+    .btn-start-analysis:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 36px rgba(26,58,42,.35);
+      background: linear-gradient(135deg, #2e6b43, #1e4a30);
+    }
+    .btn-start-analysis:disabled {
+      opacity: 0.65; cursor: not-allowed; transform: none;
+    }
+
+    /* ============ 右：结果面板 ============ */
+    .result-panel {
+      background: var(--clr-white);
+      border-radius: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 32px rgba(0,0,0,.06);
+      padding: 36px 32px 28px;
+      min-height: 400px;
+      border: 1px solid var(--ai-border);
+      position: relative;
+    }
+    .result-panel-title {
+      font-family: var(--font-serif);
+      font-size: 1.35rem; margin-bottom: 4px; color: var(--clr-primary);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .result-panel-sub {
+      font-size: 0.85rem; color: var(--ai-text-dim); margin-bottom: 28px;
+    }
+    .result-placeholder {
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; color: var(--ai-text-dim);
+      padding: 60px 20px;
+    }
+    .placeholder-icon {
+      width: 80px; height: 80px;
+      background: var(--ai-surface);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2rem; color: #ccc;
+      margin-bottom: 18px;
+    }
+
+    /* 分析中遮罩 */
+    .analyzing-overlay {
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,.96);
+      display: none;
+      flex-direction: column; align-items: center; justify-content: center;
+      border-radius: 20px;
+      z-index: 2;
+    }
+    .ai-orb {
+      width: 90px; height: 90px;
+      position: relative;
+      margin-bottom: 24px;
+    }
+    .orb-core {
+      position: absolute; inset: 14px;
+      background: var(--clr-primary); border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 1.3rem;
+    }
+    .orb-ring, .orb-ring-2 {
+      position: absolute; inset: 0; border-radius: 50%;
+      border: 2px solid var(--clr-primary); opacity: .25;
+      animation: orbSpin 2s linear infinite;
+    }
+    .orb-ring-2 { inset: -8px; animation-duration: 3s; animation-direction: reverse; border-color: var(--clr-accent); }
+    @keyframes orbSpin { to { transform: rotate(360deg); } }
+    .loading-text {
+      font-size: 1rem; font-weight: 600; color: var(--clr-text);
+      margin-bottom: 20px;
+    }
+    .loading-steps {
+      display: flex; flex-direction: column; gap: 10px;
+      text-align: left; width: 100%; max-width: 280px;
+    }
+    .load-step {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.84rem; color: var(--ai-text-dim);
+      opacity: .35; transition: all .4s;
+      padding-left: 4px;
+    }
+    .load-step i { font-size: 0.8rem; width: 18px; }
+    .load-step.active { opacity: 1; color: var(--clr-primary); }
+    .load-step.done { opacity: .7; color: #4CAF50; }
+
+    /* 结果内容区 */
+    .result-content { display: none; }
+    .result-content.fade-stagger > * {
+      opacity: 0; animation: fadeInUp .5s ease forwards;
+    }
+    .result-content.fade-stagger > *:nth-child(1) { animation-delay: 0s; }
+    .result-content.fade-stagger > *:nth-child(2) { animation-delay: .1s; }
+    .result-content.fade-stagger > *:nth-child(3) { animation-delay: .2s; }
+    .result-content.fade-stagger > *:nth-child(4) { animation-delay: .3s; }
+    .result-content.fade-stagger > *:nth-child(5) { animation-delay: .4s; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-header-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .match-score-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(46,139,87,.08);
+      color: var(--clr-primary);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem; font-weight: 700;
+    }
+    .match-score-badge strong { font-size: 1.1rem; }
+
+    /* AI 分析 */
+    .ai-analysis-section {
+      background: var(--ai-surface);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 16px;
+      border: 1px solid var(--ai-border);
+    }
+    .ai-analysis-header {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.82rem; font-weight: 600;
+      color: var(--clr-primary); margin-bottom: 8px;
+    }
+    .ai-analysis-text { font-size: 0.85rem; color: var(--clr-text); line-height: 1.65; }
+
+    /* 推荐目的地卡 */
+    .rec-dest-card {
+      border-radius: 14px; overflow: hidden;
+      position: relative; margin-bottom: 16px;
+    }
+    .rec-dest-card img {
+      width: 100%; height: 200px; object-fit: cover;
+      transition: transform .5s;
+    }
+    .rec-dest-card:hover img { transform: scale(1.04); }
+    .rec-dest-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      padding: 24px 20px;
+      background: linear-gradient(to top, rgba(0,0,0,.75), transparent);
+      color: #fff;
+    }
+    .rec-dest-name {
+      font-family: var(--font-serif); font-size: 1.4rem;
+      font-weight: 600; margin-bottom: 6px;
+    }
+    .rec-dest-name.typing-cursor::after {
+      content: '|'; animation: blink 1s infinite;
+      color: var(--clr-accent);
+    }
+    .rec-dest-name.done::after { content: ''; animation: none; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    .rec-dest-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .rec-dest-tag {
+      background: rgba(245,166,35,.85); padding: 3px 10px;
+      border-radius: 6px; font-size: 0.72rem; font-weight: 600;
+    }
+
+    /* 行程预览 */
+    .itinerary-preview {
+      display: flex; flex-direction: column; gap: 8px;
+      margin-bottom: 16px;
+    }
+    .itin-day {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 12px 14px;
+      background: var(--ai-surface);
+      border-radius: 10px;
+      border: 1px solid var(--ai-border);
+    }
+    .itin-day-num {
+      min-width: 34px; height: 34px;
+      background: var(--clr-primary); color: #fff;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; font-weight: 700;
+      flex-shrink: 0;
+    }
+    .itin-day-content { flex: 1; min-width: 0; }
+    .itin-day-title { font-weight: 600; font-size: 0.88rem; margin-bottom: 2px; color: var(--clr-text); }
+    .itin-day-desc { font-size: 0.8rem; color: var(--ai-text-dim); line-height: 1.45; }
+
+    /* 旅行洞察 */
+    .travel-insights {
+      background: var(--ai-surface);
+      border-radius: 12px;
+      padding: 8px 4px;
+      margin-bottom: 16px;
+      border: 1px solid var(--ai-border);
+    }
+    .insight-row {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 10px 14px;
+    }
+    .insight-row + .insight-row { border-top: 1px solid var(--ai-border); }
+    .insight-icon {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--clr-primary); color: #fff;
+      font-size: 0.7rem; flex-shrink: 0; margin-top: 1px;
+    }
+    .insight-body { flex: 1; min-width: 0; }
+    .insight-label {
+      font-size: 0.72rem; font-weight: 600; color: var(--ai-text-dim);
+      text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px;
+    }
+    .insight-text { font-size: 0.85rem; color: var(--clr-text); line-height: 1.6; }
+    .insight-meta-grid {
+      display: flex; flex-wrap: wrap; gap: 8px 20px; padding-top: 2px;
+    }
+    .insight-meta-item {
+      font-size: 0.83rem; color: var(--clr-text); display: flex; align-items: center; gap: 6px;
+    }
+    .insight-meta-item i { color: var(--clr-accent); font-size: 0.75rem; }
+    .insight-tips-list {
+      list-style: none; padding: 0; margin: 2px 0 0;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .insight-tips-list li {
+      font-size: 0.82rem; color: var(--clr-text); line-height: 1.55;
+      display: flex; align-items: flex-start; gap: 8px;
+    }
+    .insight-tips-list li i { color: var(--clr-primary); font-size: 0.7rem; margin-top: 3px; flex-shrink: 0; }
+
+    /* 推理区域 */
+    .reasoning-section {
+      margin-bottom: 16px;
+      border: 1px solid var(--ai-border);
+      border-radius: 12px; overflow: hidden;
+    }
+    .reasoning-toggle {
+      width: 100%; padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 0.85rem; font-weight: 600; color: var(--clr-text);
+      background: var(--ai-surface);
+      transition: background .2s;
+    }
+    .reasoning-toggle:hover { background: rgba(0,0,0,.03); }
+    .reasoning-content {
+      display: none; padding: 0 16px 16px;
+      font-size: 0.84rem; color: var(--clr-text); line-height: 1.7;
+    }
+    .reasoning-content.open { display: block; }
+
+    /* API 详情 */
+    .api-details-section {
+      background: var(--ai-surface);
+      border-radius: 12px; padding: 16px 18px;
+      border: 1px solid var(--ai-border);
+      margin-top: 16px;
+    }
+    .api-details-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .api-detail-item { display: flex; flex-direction: column; gap: 2px; }
+    .api-detail-label { font-size: 0.7rem; color: var(--ai-text-dim); text-transform: uppercase; letter-spacing: 0.03em; }
+    .api-detail-value { font-size: 0.85rem; font-weight: 600; color: var(--clr-text); }
+
+    /* 结果操作按钮 */
+    .result-actions-row {
+      display: flex; gap: 10px; margin-top: 20px;
+    }
+    .btn-result-save, .btn-result-detail {
+      flex: 1; padding: 12px; border-radius: 12px;
+      font-size: 0.88rem; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: all .2s;
+    }
+    .btn-result-save {
+      border: 1.5px solid var(--clr-primary); color: var(--clr-primary);
+      background: transparent;
+    }
+    .btn-result-save:hover { background: var(--clr-primary); color: #fff; }
+    .btn-result-detail {
+      background: var(--clr-accent); color: #fff;
+    }
+    .btn-result-detail:hover { filter: brightness(1.08); }
+  </style>
+</head>
+<body>
+<a class="skip-link" href="#aiplan-main">跳至主内容</a>
+
+<!-- ============ 导航栏 ============ -->
+<nav class="navbar" id="navbar">
+  <div class="nav-logo">
+    <a href="index.html" style="display:flex;align-items:center;gap:10px;text-decoration:none;">
+      <span class="logo-icon"><i class="fa-solid fa-compass"></i></span>
+      <span class="logo-text">探途 <em>WANDR</em></span>
+    </a>
+  </div>
+  <div class="nav-links">
+    <a href="ai-plan.html" class="nav-link">AI 规划</a>
+    <a href="mbti.html" class="nav-link">性格测试</a>
+    <a href="destinations.html" class="nav-link">热门目的地</a>
+    <a href="navigate.html" class="nav-link">景点导航</a>
+    <a href="reviews.html" class="nav-link">口碑评价</a>
+    <a href="video.html" class="nav-link">旅行日记</a>
+  </div>
+  <div class="nav-actions">
+    <button class="btn-ghost" data-action="openUserPanel" data-tab="favorites"><i class="fa-regular fa-heart"></i> 我的收藏 <span class="nav-badge" id="favBadge" style="display:none">0</span></button>
+    <button class="btn-ghost" data-action="openUserPanel" data-tab="bookings"><i class="fa-regular fa-calendar-check"></i> 我的预定 <span class="nav-badge nav-badge-accent" id="bookBadge" style="display:none">0</span></button>
+    <a href="ai-plan.html" class="btn-primary" style="text-decoration:none;">开始探索</a>
+  </div>
+  <button class="hamburger" id="hamburger" aria-label="打开导航菜单" aria-expanded="false" aria-controls="mobileMenu"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
+</nav>
+
+<!-- ============ 移动端菜单 ============ -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="ai-plan.html">AI 规划</a>
+  <a href="mbti.html">性格测试</a>
+  <a href="destinations.html">热门目的地</a>
+  <a href="navigate.html">景点导航</a>
+  <a href="reviews.html">口碑评价</a>
+  <a href="video.html">旅行日记</a>
+  <a href="javascript:void(0)" data-action="openUserPanel" data-tab="favorites" data-close="mobileMenu">❤️ 我的收藏</a>
+  <a href="javascript:void(0)" data-action="openUserPanel" data-tab="bookings" data-close="mobileMenu">📅 我的预定</a>
+  <a href="javascript:void(0)" data-action="openUserPanel" data-tab="diaries" data-close="mobileMenu">📓 我的日记</a>
+</div>
+
+<!-- ============ 页头 ============ -->
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <div class="page-hero-tag"><i class="fa-solid fa-wand-magic-sparkles"></i> AI 智能规划</div>
+    <h1>上传灵感<br><em>AI 定制</em>你的旅程</h1>
+    <p>照片、文字、语音三合一输入，智能解析偏好，秒出行程方案</p>
+  </div>
+</section>
+
+<!-- ============ AI 规划主区域 ============ -->
+<main id="aiplan-main">
+  <div class="aiplan-layout">
+
+    <!-- 左：上传输入面板 -->
+    <div class="upload-panel">
+      <h2 class="upload-panel-title"><i class="fa-solid fa-cloud-arrow-up" style="color:var(--clr-accent)"></i> 告诉 AI 你的想法</h2>
+      <p class="upload-panel-desc">上传照片、输入文字描述，或录制语音 — AI 会智能分析你的旅行偏好，秒出行程方案</p>
+
+      <!-- API Key 设置（折叠面板） -->
+      <div class="api-key-section-v2" id="apiKeySection">
+        <div class="api-key-header-v2" data-action="toggleApiKeyInput">
+          <span class="header-left"><i class="fa-solid fa-key"></i> API 密钥配置</span>
+          <span class="header-right">
+            <span class="api-key-status-dot none" id="apiKeyStatusDot"></span>
+            <i class="fa-solid fa-chevron-down" id="apiKeyChevron" style="font-size:.7rem;color:var(--ai-text-dim);transition:transform .25s"></i>
+          </span>
+        </div>
+        <div class="api-key-body-v2" id="apiKeyInputWrap">
+          <div class="api-key-field-v2">
+            <label>DeepSeek API Key（文字推理）</label>
+            <div class="api-key-row">
+              <input type="password" id="deepseekApiKey" placeholder="sk-..." autocomplete="off">
+              <button class="api-key-eye" data-action="toggleApiKeyVisibility" aria-label="显示/隐藏" style="display:none"><i class="fa-solid fa-eye" id="apiKeyEye"></i></button>
+              <button class="btn-key-action" data-action="saveApiKey">保存</button>
+            </div>
+            <span class="key-status-v2" id="apiKeyStatus"></span>
+            <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener" class="key-help-link">
+              <i class="fa-solid fa-external-link-alt"></i> 如何获取 DeepSeek API Key？
+            </a>
+          </div>
+          <div class="api-key-field-v2">
+            <label>智谱 GLM API Key（视觉识别）</label>
+            <div class="api-key-row">
+              <input type="password" id="zhipuApiKey" placeholder="输入智谱 API Key" autocomplete="off">
+              <button class="api-key-eye" data-action="toggleZhipuKeyVisibility" aria-label="显示/隐藏" style="display:none"><i class="fa-solid fa-eye" id="zhipuKeyEye"></i></button>
+              <button class="btn-key-action" data-action="saveZhipuKey">保存</button>
+            </div>
+            <span class="key-status-v2" id="zhipuKeyStatus"></span>
+          </div>
+          <a href="https://open.bigmodel.cn/" target="_blank" rel="noopener" class="key-help-link">
+            <i class="fa-solid fa-external-link-alt"></i> 如何获取 API Key？
+          </a>
+        </div>
+      </div>
+
+      <!-- 上传 Tab -->
+      <div class="upload-tabs">
+        <button class="upload-tab active" data-tab="photo"><i class="fa-solid fa-camera"></i> 照片</button>
+        <button class="upload-tab" data-tab="text"><i class="fa-solid fa-pen-nib"></i> 文字</button>
+        <button class="upload-tab" data-tab="voice"><i class="fa-solid fa-microphone"></i> 语音</button>
+      </div>
+
+      <!-- ===== 模块A：照片上传 ===== -->
+      <div class="tab-content active" id="tab-photo">
+        <div class="photo-drop-zone" id="photoDropZone" data-action="triggerClick" data-target="#photoInput">
+          <div class="photo-drop-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+          <div class="drop-title">拖拽图片至此，或<span class="upload-link"> 点击选择</span></div>
+          <div class="drop-sub">支持单张或多张风景照，AI 将识别图片中的场景风格</div>
+          <span class="upload-hint">JPG / PNG · 最多 4 张 · 每张 ≤10MB</span>
+          <input type="file" id="photoInput" multiple accept="image/*" style="display:none">
+        </div>
+        <div class="photo-preview" id="photoPreview"></div>
+      </div>
+
+      <!-- ===== 模块B：文字输入 ===== -->
+      <div class="tab-content" id="tab-text">
+        <div class="preset-tags">
+          <span class="preset-tag" data-action="addPresetText" data-tag="海边度假"><i class="fa-solid fa-umbrella-beach"></i> 海边</span>
+          <span class="preset-tag" data-action="addPresetText" data-tag="历史文化古城"><i class="fa-solid fa-landmark"></i> 古城</span>
+          <span class="preset-tag" data-action="addPresetText" data-tag="山地徒步"><i class="fa-solid fa-mountain"></i> 登山</span>
+          <span class="preset-tag" data-action="addPresetText" data-tag="美食探店"><i class="fa-solid fa-utensils"></i> 美食</span>
+          <span class="preset-tag" data-action="addPresetText" data-tag="亲子游"><i class="fa-solid fa-children"></i> 亲子</span>
+          <span class="preset-tag" data-action="addPresetText" data-tag="蜜月旅行"><i class="fa-solid fa-heart"></i> 蜜月</span>
+        </div>
+
+        <div class="text-input-wrap">
+          <textarea id="textInput" placeholder="描述你的旅行梦想……&#10;&#10;例如：想去安静的海边小镇，预算5000元左右，喜欢看日出日落、品尝当地海鲜，希望行程不要太赶" maxlength="500" rows="5"></textarea>
+        </div>
+
+        <div class="text-input-footer">
+          <div class="char-counter" id="charCounterWrap">
+            <span id="charCount">0</span><span>/500</span>
+            <div class="char-progress"><div class="char-progress-fill" id="charProgressFill" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 模块C：语音录音 ===== -->
+      <div class="tab-content" id="tab-voice">
+        <div class="voice-record-area">
+          <div class="voice-waves-container" id="voiceVisualizer">
+            <div class="voice-waves">
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+          </div>
+          <button class="btn-record" id="recordBtn" data-action="toggleRecording">
+            <i class="fa-solid fa-microphone" id="recordIcon"></i>
+          </button>
+          <p class="record-hint" id="recordHint">点击开始录音</p>
+          <div class="record-timer" id="recordTimer" style="display:none">00:00</div>
+        </div>
+        <div class="voice-transcript" id="voiceTranscript" style="display:none">
+          <p class="transcript-label"><i class="fa-solid fa-quote-left"></i> 识别结果</p>
+          <p class="transcript-text" id="transcriptText"></p>
+        </div>
+      </div>
+
+      <!-- 出行偏好 -->
+      <div class="travel-type-section">
+        <p class="travel-type-label">出行偏好设置</p>
+        <div class="pref-inline-row">
+          <div class="pref-inline-item">
+            <label><i class="fa-regular fa-clock"></i> 出行天数</label>
+            <select id="travelTime">
+              <option value="1-3 天">1-3 天（周末游）</option>
+              <option value="3-5 天" selected>3-5 天（小长假）</option>
+              <option value="5-7 天">5-7 天（长假游）</option>
+              <option value="7-14 天">7-14 天（深度游）</option>
+            </select>
+          </div>
+          <div class="pref-inline-item">
+            <label><i class="fa-solid fa-coins"></i> 预算范围</label>
+            <select id="budget">
+              <option value="经济实惠">经济实惠（≤3000元/人）</option>
+              <option value="适中" selected>舒适适中（3000-8000元/人）</option>
+              <option value="品质享受">品质享受（8000-15000元/人）</option>
+              <option value="奢华体验">奢华体验（15000元+/人）</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 出行方式 -->
+      <div class="travel-type-section" style="border-top:none;padding-top:16px;margin-top:4px;">
+        <p class="travel-type-label">出行方式</p>
+        <div class="travel-type-btns">
+          <button class="type-btn active" data-type="家庭游"><i class="fa-solid fa-house"></i> 家庭游</button>
+          <button class="type-btn" data-type="情侣游"><i class="fa-solid fa-heart-circle-bolt"></i> 情侣游</button>
+          <button class="type-btn" data-type="独自游"><i class="fa-solid fa-person-hiking"></i> 独自游</button>
+          <button class="type-btn" data-type="朋友游"><i class="fa-solid fa-people-group"></i> 朋友游</button>
+        </div>
+      </div>
+
+      <!-- 开始分析按钮 -->
+      <button class="btn-start-analysis" data-action="startAnalysis" id="analyzeBtn">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> 开始 AI 规划
+      </button>
+    </div>
+
+    <!-- 右：结果展示面板 -->
+    <div class="result-panel" style="position:relative">
+      <h2 class="result-panel-title">
+        <i class="fa-solid fa-map-pin" style="color:var(--clr-accent-2)"></i>
+        AI 推荐结果
+      </h2>
+      <p class="result-panel-sub">你的专属旅行方案将在这里呈现</p>
+
+      <!-- 占位状态 -->
+      <div class="result-placeholder" id="resultPlaceholder">
+        <div class="placeholder-icon"><i class="fa-solid fa-compass fa-spin-pulse"></i></div>
+        <p style="font-size:.92rem;line-height:1.6">上传灵感后，AI 将为你推荐<br>最适合的旅行目的地与行程方案</p>
+      </div>
+
+      <!-- 结果内容（初始隐藏） -->
+      <div class="result-content" id="resultContent">
+        <!-- 匹配度 -->
+        <div class="result-header-bar">
+          <span class="match-score-badge">
+            <i class="fa-solid fa-bullseye"></i> 匹配度 <strong id="matchScore">90%</strong>
+          </span>
+        </div>
+
+        <!-- AI 分析 -->
+        <div class="ai-analysis-section" id="aiAnalysisSection" style="display:none">
+          <div id="aiAnalysisBody"></div>
+        </div>
+
+        <!-- 推荐目的地 -->
+        <div class="recommended-dest" id="recommendedDest"></div>
+
+        <!-- 旅行洞察（推荐理由 / 最佳季节 / 预算 / 住宿 / 贴士） -->
+        <div class="travel-insights" id="travelInsights" style="display:none"></div>
+
+        <!-- 行程预览 -->
+        <div class="itinerary-preview" id="itineraryPreview"></div>
+
+        <!-- 推理过程 -->
+        <div class="reasoning-section" id="reasoningSection" style="display:none">
+          <button class="reasoning-toggle" data-action="toggleReasoning">
+            <i class="fa-solid fa-brain"></i> AI 思考过程
+            <i class="fa-solid fa-chevron-down" id="reasoningChevron" style="font-size:.7rem;transition:transform .25s"></i>
+          </button>
+          <div class="reasoning-content" id="reasoningContent"></div>
+        </div>
+
+        <!-- API 调用详情 -->
+        <div class="api-details-section" id="apiDetailsSection" style="display:none">
+          <div class="api-details-grid">
+            <div class="api-detail-item"><span class="api-detail-label">模型</span><span class="api-detail-value" id="apiModel">—</span></div>
+            <div class="api-detail-item"><span class="api-detail-label">状态</span><span class="api-detail-value api-status-ok" id="apiStatus" style="color:#4CAF50">—</span></div>
+            <div class="api-detail-item"><span class="api-detail-label">Prompt Tokens</span><span class="api-detail-value" id="apiPromptTokens">—</span></div>
+            <div class="api-detail-item"><span class="api-detail-label">Completion</span><span class="api-detail-value" id="apiCompletionTokens">—</span></div>
+            <div class="api-detail-item"><span class="api-detail-label">总计 Tokens</span><span class="api-detail-value" id="apiTotalTokens">—</span></div>
+            <div class="api-detail-item"><span class="api-detail-label">响应时间</span><span class="api-detail-value" id="apiResponseTime">—</span></div>
+          </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="result-actions-row">
+          <button class="btn-result-save" data-action="savePlan"><i class="fa-regular fa-bookmark"></i> 保存行程</button>
+          <button class="btn-result-detail" data-action="showDetailModal"><i class="fa-solid fa-expand"></i> 查看详情</button>
+        </div>
+      </div>
+
+      <!-- 分析中遮罩层 -->
+      <div class="analyzing-overlay" id="analyzingOverlay">
+        <div class="ai-orb">
+          <div class="orb-core"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+          <div class="orb-ring"></div>
+          <div class="orb-ring-2"></div>
+        </div>
+        <p class="loading-text" id="loadingText">正在分析你的偏好...</p>
+        <div class="loading-steps">
+          <div class="load-step"><i class="fa-solid fa-circle-notch fa-spin"></i> 解析输入内容</div>
+          <div class="load-step"><i class="fa-regular fa-circle"></i> AI 推理模型中</div>
+          <div class="load-step"><i class="fa-regular fa-circle"></i> 匹配最佳目的地</div>
+          <div class="load-step"><i class="fa-regular fa-circle"></i> 生成行程方案</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ============ Footer ============ -->
+<footer class="footer">
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="nav-logo">
+        <span class="logo-icon"><i class="fa-solid fa-compass"></i></span>
+        <span class="logo-text">探途 <em>WANDR</em></span>
+      </div>
+      <p>AI 驱动的智能旅行平台，让每一次旅行都成为专属体验</p>
+      <div class="social-links">
+        <a href="#"><i class="fa-brands fa-weixin"></i></a>
+        <a href="#"><i class="fa-brands fa-weibo"></i></a>
+        <a href="#"><i class="fa-brands fa-tiktok"></i></a>
+        <a href="#"><i class="fa-solid fa-rss"></i></a>
+      </div>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <h5>功能</h5>
+        <a href="ai-plan.html">AI 旅行规划</a>
+        <a href="mbti.html">性格测试</a>
+        <a href="destinations.html">热门目的地</a>
+        <a href="navigate.html">景点导航</a>
+        <a href="reviews.html">平台评价</a>
+        <a href="video.html">旅行日记</a>
+      </div>
+      <div class="footer-col">
+        <h5>支持</h5>
+        <a href="#">使用帮助</a>
+        <a href="#">隐私政策</a>
+        <a href="#">服务条款</a>
+        <a href="#">联系我们</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; 2026 探途 WANDR &middot; AI 智能旅行平台 &middot; 让旅行更美好</p>
+  </div>
+</footer>
+
+<!-- ============ 预定 Modal ============ -->
+<div class="modal-overlay booking-modal-overlay" id="bookingModal" data-action="closeBookingOverlay">
+  <div class="booking-modal-content">
+    <button class="modal-close" data-action="closeBookingModal" aria-label="关闭对话框"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    <div class="booking-modal-left">
+      <img src="" id="bookingDestImg" alt="目的地图片" class="booking-dest-img">
+      <div class="booking-dest-overlay">
+        <div class="booking-dest-name" id="bookingDestName">张家界</div>
+        <div class="booking-dest-sub" id="bookingDestSub">湖南 · 世界自然遗产</div>
+        <div class="booking-dest-price" id="bookingDestPrice">从 ¥880/人</div>
+      </div>
+    </div>
+    <div class="booking-modal-right">
+      <h3 class="booking-modal-title"><i class="fa-solid fa-calendar-check"></i> 立即预定</h3>
+      <div class="booking-form">
+        <div class="flyai-product-panel" id="flyaiProductPanel">
+          <div class="flyai-panel-header"><i class="fa-solid fa-list-check"></i> 为您找到以下旅行团产品</div>
+          <div class="flyai-filter-bar" id="flyaiFilterBar">
+            <div class="flyai-filter-tabs">
+              <button class="flyai-filter-tab active" data-filter="all">全部</button>
+              <button class="flyai-filter-tab" data-filter="跟团游">跟团游</button>
+              <button class="flyai-filter-tab" data-filter="自由行">自由行</button>
+            </div>
+            <div class="flyai-sort-wrap">
+              <label><i class="fa-solid fa-sort"></i>
+                <select id="flyaiSortSelect" class="flyai-sort-select">
+                  <option value="default">推荐排序</option>
+                  <option value="price_asc">价格从低到高</option>
+                  <option value="price_desc">价格从高到低</option>
+                  <option value="rating_desc">评分最高</option>
+                  <option value="sales_desc">销量最多</option>
+                  <option value="days_asc">天数最少</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div class="flyai-product-list" id="flyaiProductList"></div>
+        </div>
+        <p class="booking-tip" style="margin-top:16px"><i class="fa-solid fa-shield-halved"></i> 点击「查看详情」跳转飞猪官方平台完成预订</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 用户中心面板 ============ -->
+<div class="user-panel-overlay" id="userPanelOverlay" data-action="closeUserPanelOverlay">
+  <div class="user-panel" id="userPanel">
+    <div class="user-panel-header">
+      <div class="user-panel-tabs">
+        <button class="panel-tab active" id="favTab" data-action="switchPanelTab" data-tab="favorites">
+          <i class="fa-solid fa-heart"></i> 我的收藏 <span class="panel-tab-count" id="favCount">0</span>
+        </button>
+        <button class="panel-tab" id="bookTab" data-action="switchPanelTab" data-tab="bookings">
+          <i class="fa-solid fa-calendar-check"></i> 我的预定 <span class="panel-tab-count" id="bookCount">0</span>
+        </button>
+        <button class="panel-tab" id="diaryTab" data-action="switchPanelTab" data-tab="diaries">
+          <i class="fa-solid fa-book"></i> 我的日记 <span class="panel-tab-count" id="diaryCount">0</span>
+        </button>
+      </div>
+      <button class="user-panel-close" data-action="closeUserPanel"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="panel-content" id="panelFavorites">
+      <div class="panel-empty" id="favEmpty">
+        <div class="panel-empty-icon"><i class="fa-regular fa-heart"></i></div>
+        <p>还没有收藏任何目的地</p>
+        <span>点击目的地卡片上的 ❤ 即可收藏</span>
+      </div>
+      <div class="panel-list" id="favList"></div>
+    </div>
+    <div class="panel-content" id="panelBookings" style="display:none">
+      <div class="panel-empty" id="bookEmpty">
+        <div class="panel-empty-icon"><i class="fa-regular fa-calendar-check"></i></div>
+        <p>还没有预定任何行程</p>
+        <span>点击目的地卡片上的「立即预定」开始旅程</span>
+      </div>
+      <div class="panel-list" id="bookList"></div>
+    </div>
+    <div class="panel-content" id="panelDiaries" style="display:none">
+      <div class="panel-empty" id="diaryEmpty">
+        <div class="panel-empty-icon"><i class="fa-regular fa-book"></i></div>
+        <p>还没有保存旅行日记</p>
+        <span>在「旅行日记」板块生成并保存你的第一本手帐</span>
+      </div>
+      <div class="panel-list diary-panel-list" id="diaryList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 详细行程 Modal ============ -->
+<div class="modal-overlay" id="detailModal" data-action="closeModalOverlay">
+  <div class="modal-content">
+    <button class="modal-close" data-action="closeDetailModal" aria-label="关闭对话框"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    <div class="modal-header">
+      <h3>AI 定制行程方案</h3>
+      <div class="modal-dest" id="modalDestName">三亚 · 海南</div>
+    </div>
+    <div class="modal-body">
+      <div class="itinerary-days" id="itineraryDays"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-save" data-action="savePlan"><i class="fa-regular fa-bookmark"></i> 保存行程</button>
+      <button class="btn-modal-navigate" id="modalNavBtn" data-action="navigateCurrentDest"><i class="fa-solid fa-location-dot"></i> 导航前往</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 目的地详情页 ============ -->
+<div class="dest-detail-overlay" id="destDetailOverlay" data-action="closeDestDetailOverlay">
+  <div class="dest-detail-container" id="destDetailContainer">
+    <div class="dest-detail-hero" id="destDetailHero">
+      <img src="" alt="" id="destDetailHeroImg" class="dest-detail-hero-img">
+      <div class="dest-detail-hero-overlay">
+        <div class="dest-detail-hero-info">
+          <h1 id="destDetailName">张家界</h1>
+          <p id="destDetailSub">湖南 · 世界自然遗产</p>
+          <div class="dest-detail-hero-meta">
+            <span class="dest-detail-rating" id="destDetailRating"><i class="fa-solid fa-star"></i> 4.9</span>
+            <span class="dest-detail-price" id="destDetailPrice">从 ¥880/人</span>
+          </div>
+        </div>
+        <div class="dest-detail-hero-actions">
+          <button class="dest-detail-fav-btn" id="destDetailFavBtn" data-action="toggleDestDetailFav"><i class="fa-regular fa-heart"></i> 收藏</button>
+          <button class="dest-detail-book-btn" data-action="bookDestDetail"><i class="fa-solid fa-calendar-plus"></i> 立即预定</button>
+          <button class="dest-detail-nav-btn" data-action="navDestDetail"><i class="fa-solid fa-location-dot"></i> 导航</button>
+        </div>
+      </div>
+      <button class="dest-detail-close" data-action="closeDestDetail"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="dest-detail-tabs" id="destDetailTabs">
+      <button class="dest-detail-tab active" data-tab="history" data-action="switchDestTab"><i class="fa-solid fa-scroll"></i> 历史故事</button>
+      <button class="dest-detail-tab" data-tab="food" data-action="switchDestTab"><i class="fa-solid fa-bowl-food"></i> 地方美食</button>
+      <button class="dest-detail-tab" data-tab="heritage" data-action="switchDestTab"><i class="fa-solid fa-masks-theater"></i> 非遗文化</button>
+      <button class="dest-detail-tab" data-tab="landmarks" data-action="switchDestTab"><i class="fa-solid fa-landmark-dome"></i> 特色地标</button>
+      <button class="dest-detail-tab" data-tab="routes" data-action="switchDestTab"><i class="fa-solid fa-route"></i> 旅行路线</button>
+    </div>
+    <div class="dest-detail-body" id="destDetailBody"></div>
+  </div>
+</div>
+
+<!-- ============ 通知提示 ============ -->
+<div class="toast" id="toast"></div>
+
+<!-- JS 模块 -->
+<script src="js/wandr-core.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/api-key-manager.js"></script>
+<script src="js/toast-anim.js"></script>
+<script src="js/fav-manager.js"></script>
+<script src="js/shared.js"></script>
+<script src="js/page-ai-plan.js?v=2"></script>
+</body>
+</html>

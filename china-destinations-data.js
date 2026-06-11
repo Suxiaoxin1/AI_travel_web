@@ -1940,7 +1940,7 @@ const chinaDestIndex = [
 
 // 将数据合并到现有的 destDetailData
 // 使用方式：Object.assign(destDetailData, chinaDestinationsData);
-// 或者在 script.js 中直接合并两个对象
+// 或者在页面初始化时直接合并两个对象
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { chinaDestinationsData, chinaDestIndex };
