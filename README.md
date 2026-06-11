@@ -23,7 +23,7 @@
 | 🏨 **热门目的地** | `destinations.html` | 浏览热门城市/景区，一键跳转飞猪完成预订 |
 | 🗺️ **景点导航** | `navigate.html` | 全国景点地图标注，多点路线规划与可视化 |
 | 📸 **口碑评价** | `reviews.html` | 聚合多平台真实评价，AI 提炼核心洞察 |
-| 📓 **AI 旅行日记** | `video.html` | 上传照片自动生成手帐日记，支持图片导出 |
+| 📓 **AI 旅行日记** | `journal.html` | 上传照片自动生成手帐日记，支持图片导出 |
 
 所有页面共享：收藏管理、预订面板、用户中心、Toast 通知。
 
@@ -83,7 +83,7 @@ travel-website/
 ├── destinations.html               # 热门目的地页
 ├── navigate.html                   # 景点导航页（Leaflet 地图）
 ├── reviews.html                    # 口碑评价页
-├── video.html                      # AI 旅行日记页
+├── journal.html                    # AI 旅行日记页
 ├── style.css                       # 全局样式（含响应式断点）
 │
 ├── china-destinations-data.js      # 热门目的地数据（85KB）
@@ -135,7 +135,7 @@ travel-website/
                    ├─→  destinations.html  (热门目的地)
                    ├─→  navigate.html      (景点导航)
                    ├─→  reviews.html        (口碑评价)
-                   └─→  video.html         (AI 旅行日记)
+                   └─→  journal.html       (AI 旅行日记)
 ```
 
 ### JS 加载顺序
