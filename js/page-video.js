@@ -86,6 +86,7 @@ async function generateDiaryAI() {
   _diaryFinalImageUrl = '';
 
   // —— UI 进入加载状态 ——
+  const preview = document.getElementById('diaryPreview');
   const placeholder = document.getElementById('diaryPlaceholder');
   const generating = document.getElementById('diaryGenerating');
   const templateResult = document.getElementById('diaryResult');
@@ -94,6 +95,9 @@ async function generateDiaryAI() {
   const aiLoading = document.getElementById('diaryAILoading');
   const aiError = document.getElementById('diaryAIError');
   const resultActions = document.getElementById('diaryResultActions');
+
+  // 重置画布尺寸（移除 AI 结果模式的自适应类）
+  if (preview) preview.classList.remove('showing-ai-result');
 
   [placeholder, generating, templateResult, resultActions, aiError].forEach(el => el && (el.style.display = 'none'));
   if (aiImage) aiImage.style.display = 'none';
@@ -228,6 +232,7 @@ async function generateDiaryAI() {
     updateGenStatus('生成完成！', 100);
 
     if (aiLoading) aiLoading.style.display = 'none';
+    if (preview) preview.classList.add('showing-ai-result');
     if (aiResult) aiResult.style.display = 'flex';
     if (aiImage) {
       aiImage.src = _diaryFinalImageUrl;
@@ -238,6 +243,7 @@ async function generateDiaryAI() {
 
   } catch (err) {
     console.error('[AI Diary]', err);
+    if (preview) preview.classList.remove('showing-ai-result');
     if (aiLoading) aiLoading.style.display = 'none';
     if (aiError) aiError.style.display = 'flex';
     const errMsg = document.getElementById('diaryAIErrorMsg');
@@ -299,6 +305,9 @@ function generateDiary() {
   if (aiResult) aiResult.style.display = 'none';
   if (resultActions) resultActions.style.display = 'none';
   if (generating) generating.style.display = 'flex';
+  // 移除 AI 结果自适应类，恢复默认画布
+  const preview = document.getElementById('diaryPreview');
+  if (preview) preview.classList.remove('showing-ai-result');
 
   // 简单拼贴渲染
   const dateVal = document.getElementById('diaryDate')?.value;
@@ -603,6 +612,8 @@ function viewDiary(id) {
     return;
   }
 
+  const preview = document.getElementById('diaryPreview');
+
   diaryPlaceholder.style.display = 'none';
   const diaryGenerating = document.getElementById('diaryGenerating');
   if (diaryGenerating) diaryGenerating.style.display = 'none';
@@ -631,6 +642,7 @@ function viewDiary(id) {
     aiImage.src = d.thumb;
     aiImage.style.display = 'block';
   }
+  if (preview) preview.classList.add('showing-ai-result');
   if (diaryAIResult) diaryAIResult.style.display = 'flex';
 
   // 回填照片

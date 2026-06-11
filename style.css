@@ -5976,7 +5976,8 @@ select.booking-input { cursor: pointer; }
 
 /* AI 图片加载区 */
 #diaryAIImage {
-  width: 100%;
+  width: auto;
+  max-width: 100%;
   object-fit: contain;
   max-height: 65vh;
   border-radius: var(--radius-md);
