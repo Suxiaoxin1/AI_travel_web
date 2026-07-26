@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>星际行者 - 图层诊断</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans SC', sans-serif; background: #F8F6F0; color: #1A1A2E; padding: 32px; }
+h1 { font-size: 24px; color: #0D6B5C; margin-bottom: 24px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 1200px; margin-bottom: 32px; }
+.card { background: #fff; border: 1px solid #E5E0D6; border-radius: 12px; padding: 20px; }
+.card h2 { font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1A1A2E; }
+.status { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 14px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.dot.green { background: #0D6B5C; }
+.dot.red { background: #C23B22; }
+.dot.yellow { background: #D4A84B; }
+.dot.gray { background: #ccc; }
+pre { background: #F3F2EE; padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin-top: 8px; font-family: 'JetBrains Mono', monospace; }
+.debug-svg { width: 100%; height: 500px; border: 1px dashed #D4C8B8; border-radius: 8px; background: #FAF9F6; }
+.btn { padding: 8px 20px; border: 1px solid #0D6B5C; background: #fff; color: #0D6B5C; border-radius: 8px; cursor: pointer; font-size: 13px; margin-right: 8px; margin-top: 8px; }
+.btn:hover { background: rgba(13,107,92,0.06); }
+.btn-primary { background: #0D6B5C; color: #fff; border-color: #0D6B5C; }
+.btn-primary:hover { background: #1A8A7A; }
+#testSvg { width: 100%; height: 300px; border: 1px dashed #D4C8B8; border-radius: 8px; background: #FAF9F6; }
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<h1>🔍 星际行者 · 图层诊断</h1>
+
+<div class="grid">
+  <div class="card">
+    <h2>1. 数据源连通性</h2>
+    <div id="sourceTests"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. D3.js 可用性</h2>
+    <div id="d3Status">检查中...</div>
+  </div>
+
+  <div class="card">
+    <h2>3. SVG 容器</h2>
+    <div id="svgStatus">检查中...</div>
+  </div>
+
+  <div class="card">
+    <h2>4. 省份数据</h2>
+    <div id="dataStatus">检查中...</div>
+  </div>
+</div>
+
+<div class="card" style="max-width: 1200px; margin-bottom: 20px;">
+  <h2>5. D3 测试渲染</h2>
+  <svg id="testSvg"></svg>
+  <div style="margin-top: 8px; font-size: 12px; color: #8B8B9E;">如果上方显示了一个绿色圆形和一个蓝色正方形，说明 D3 渲染正常</div>
+</div>
+
+<div class="card" style="max-width: 1200px; margin-bottom: 20px;">
+  <h2>6. 控制台日志</h2>
+  <pre id="logOutput" style="max-height: 300px; overflow-y: auto;">等待测试...</pre>
+  <button class="btn btn-primary" onclick="runAllTests()">🔄 重新运行所有测试</button>
+</div>
+
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://d3js.org/topojson-client.v3.min.js"></script>
+<script>
+const log = document.getElementById('logOutput')
+const d3Status = document.getElementById('d3Status')
+const svgStatus = document.getElementById('svgStatus')
+const dataStatus = document.getElementById('dataStatus')
+
+function addLog(msg) {
+  const time = new Date().toLocaleTimeString()
+  log.textContent = `[${time}] ${msg}\n` + log.textContent
+  console.log(`[Diagnostic] ${msg}`)
+}
+
+function setStatus(el, ok, text) {
+  el.innerHTML = `<div class="status"><span class="dot ${ok ? 'green' : 'red'}"></span>${text}</div>`
+}
+
+// ===== 1. 数据源测试 =====
+async function testDataSources() {
+  const container = document.getElementById('sourceTests')
+  const sources = [
+    { name: 'Vite 代理 (/api/map)', url: '/api/map' },
+    { name: 'datav 直连', url: 'https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json' }
+  ]
+
+  let html = ''
+  for (const src of sources) {
+    try {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 5000)
+      const resp = await fetch(src.url, { signal: controller.signal })
+      clearTimeout(timer)
+
+      if (!resp.ok) {
+        html += `<div class="status"><span class="dot red"></span>${src.name}: HTTP ${resp.status} ${resp.statusText}</div>`
+        addLog(`❌ ${src.name}: HTTP ${resp.status}`)
+        continue
+      }
+
+      const text = await resp.text()
+      let data
+      try { data = JSON.parse(text) } catch { throw new Error('响应不是 JSON') }
+
+      // 检查数据格式
+      const hasObjects = !!data.objects
+      const isFC = data.type === 'FeatureCollection'
+      const hasFeatures = Array.isArray(data.features)
+      const objectKeys = data.objects ? Object.keys(data.objects).join(', ') : '-'
+      const featureCount = data.features ? data.features.length : (data.objects ? 'TopoJSON' : 0)
+      const sampleProps = data.features?.[0]?.properties || {}
+
+      html += `<div class="status"><span class="dot green"></span>${src.name}: ✅ OK</div>`
+      html += `<pre>大小: ${(text.length/1024).toFixed(1)}KB | objects: ${hasObjects} | 对象键: ${objectKeys}
+FeatureCollection: ${isFC} | features: ${hasFeatures} | 数量: ${featureCount}
+示例属性: ${JSON.stringify(sampleProps).slice(0, 120)}</pre>`
+      addLog(`✅ ${src.name}: OK, ${featureCount} features, ${hasObjects ? 'TopoJSON' : isFC ? 'GeoJSON' : '未知格式'}`)
+    } catch (e) {
+      html += `<div class="status"><span class="dot red"></span>${src.name}: ❌ ${e.message}</div>`
+      addLog(`❌ ${src.name}: ${e.message}`)
+    }
+  }
+  container.innerHTML = html || '<div class="status"><span class="dot red"></span>没有数据源可测试</div>'
+}
+
+// ===== 2. D3 测试 =====
+function testD3() {
+  try {
+    if (typeof d3 === 'undefined') {
+      setStatus(d3Status, false, 'D3 未加载')
+      addLog('❌ D3 未加载')
+      return
+    }
+
+    const testSvg = d3.select('#testSvg')
+    testSvg.selectAll('*').remove()
+
+    const w = 800, h = 300
+    testSvg.attr('viewBox', `0 0 ${w} ${h}`)
+
+    // 测试绘制
+    testSvg.append('circle').attr('cx', 200).attr('cy', 150).attr('r', 60)
+      .attr('fill', '#1A8A7A').attr('opacity', 0.8)
+    testSvg.append('rect').attr('x', 450).attr('y', 70).attr('width', 120).attr('height', 120)
+      .attr('fill', '#0D6B5C').attr('opacity', 0.8).attr('rx', 8)
+    testSvg.append('text').attr('x', 200).attr('y', 260).attr('text-anchor', 'middle')
+      .attr('fill', '#5C5C6E').attr('font-size', '14').text('D3 渲染正常 ✓')
+    testSvg.append('text').attr('x', 510).attr('y', 260).attr('text-anchor', 'middle')
+      .attr('fill', '#5C5C6E').attr('font-size', '14').text('GeoJSON 路径测试')
+
+    // 测试 geoPath
+    const projection = d3.geoMercator().center([104, 35]).scale(400).translate([200, 150])
+    const path = d3.geoPath().projection(projection)
+
+    // 测试路径渲染（用一个简单的多边形模拟省份）
+    const mockFeature = {
+      type: 'Feature',
+      properties: { name: '测试省份', adcode: '999999' },
+      geometry: { type: 'Polygon', coordinates: [[[100, 30], [110, 30], [110, 40], [100, 40], [100, 30]]] }
+    }
+    const pathStr = path(mockFeature)
+    testSvg.append('path').attr('d', pathStr).attr('fill', '#D4A84B').attr('stroke', '#fff').attr('stroke-width', 1)
+      .attr('opacity', 0.7)
+
+    // 测试投影坐标
+    const beijing = projection([116.4, 39.9])
+    testSvg.append('circle').attr('cx', beijing[0] + 400).attr('cy', beijing[1]).attr('r', 8)
+      .attr('fill', '#C23B22')
+    testSvg.append('text').attr('x', beijing[0] + 400).attr('y', beijing[1] - 15)
+      .attr('text-anchor', 'middle').attr('fill', '#C23B22').attr('font-size', '11').text('北京')
+
+    setStatus(d3Status, true, `D3 ${d3.version}: ✅ 加载正常，渲染测试通过`)
+    addLog(`✅ D3 v${d3.version}: 渲染测试通过，路径测试: ${pathStr.slice(0, 50)}...`)
+  } catch (e) {
+    setStatus(d3Status, false, `D3 错误: ${e.message}`)
+    addLog(`❌ D3 错误: ${e.message}`)
+  }
+}
+
+// ===== 3. SVG 容器测试 =====
+function testSVG() {
+  const svgEl = document.querySelector('.china-map-svg')
+  if (!svgEl) {
+    setStatus(svgStatus, false, '⚠️ .china-map-svg 元素不存在（诊断页无此元素，正常）')
+    addLog('⚠️ .china-map-svg 不在诊断页中（预期行为）')
+    return
+  }
+  const rect = svgEl.getBoundingClientRect()
+  const info = `尺寸: ${rect.width.toFixed(0)}×${rect.height.toFixed(0)}px, 位置: (${rect.left.toFixed(0)}, ${rect.top.toFixed(0)})`
+  if (rect.width > 0 && rect.height > 0) {
+    setStatus(svgStatus, true, `SVG 容器: ✅ ${info}`)
+    addLog(`✅ SVG 容器: ${info}`)
+  } else {
+    setStatus(svgStatus, false, `SVG 容器: ❌ ${info}（尺寸为0，CSS可能有误）`)
+    addLog(`❌ SVG 容器尺寸为0: ${info}`)
+  }
+}
+
+// ===== 4. 省份数据测试 =====
+function testData() {
+  // 测试 province-centers
+  const centers = {
+    110000: { name: '北京', lng: 116.4, lat: 39.9 },
+    310000: { name: '上海', lng: 121.5, lat: 31.2 },
+    440000: { name: '广东', lng: 113.3, lat: 23.1 },
+    510000: { name: '四川', lng: 102.2, lat: 30.6 },
+    650000: { name: '新疆', lng: 85.6, lat: 41.5 }
+  }
+
+  const provinceCount = Object.keys(centers).length
+  const projection = d3.geoMercator().center([104, 35]).scale(700).translate([480, 475])
+
+  let allValid = true
+  for (const [code, c] of Object.entries(centers)) {
+    const [x, y] = projection([c.lng, c.lat])
+    if (isNaN(x) || isNaN(y)) { allValid = false; break }
+  }
+
+  if (allValid) {
+    setStatus(dataStatus, true, `✅ ${provinceCount} 个省份坐标数据完整，投影转换正常`)
+    addLog(`✅ ${provinceCount} 个省份坐标数据完整`)
+  } else {
+    setStatus(dataStatus, false, '❌ 坐标数据异常')
+    addLog('❌ 坐标数据异常')
+  }
+}
+
+// ===== 主诊断函数 =====
+async function runAllTests() {
+  log.textContent = '开始诊断...\n'
+  addLog('========== 图层诊断开始 ==========')
+
+  // 检查 D3 是否加载
+  if (typeof d3 === 'undefined') {
+    addLog('❌ D3 未加载，尝试从 CDN 加载...')
+  }
+
+  await testDataSources()
+  testD3()
+  testSVG()
+  testData()
+
+  addLog('========== 诊断完成 ==========')
+}
+
+// 页面加载后自动运行
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(runAllTests, 500)
+})
+</script>
+</body>
+</html>
