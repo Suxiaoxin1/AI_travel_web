@@ -1,286 +1,207 @@
 # 星际行者 · AI 旅行向导
 
-> 一个基于 Vue 3 + Vite + FastAPI + PostgreSQL + S3 兼容对象存储的交互式中国旅行探索与 AI 行程规划平台。
+“星际行者”是一套基于 Vue 3、Vite、Pinia、FastAPI 和 PostgreSQL 的 AI 旅行规划与旅行内容分享平台。项目覆盖地图探索、旅行偏好测试、AI 行程规划、真实路线规划、旅行手账生成与编辑、旅行游记分享和公共链接访问等核心场景。
 
-“星际行者”让用户在可视化中国地图上浏览 34 个省级行政区，发现热门景点，并通过 AI 生成个性化旅行规划、路线、手账与游记分享。当前已实现前后端分离架构，核心数据持久化到 PostgreSQL，图片等媒体资源存储在 S3 兼容对象存储。
+## 当前能力
 
----
+### 首页与地图
 
-## 功能特性
+- 高德地图中国地图展示
+- 省份标记、详情弹窗和热门景点信息
+- 景点图片、评分、价格、简介和推荐信息
+- 前端高德 JS Key 使用 `VITE_AMAP_KEY` 注入
+- 路线服务通过后端 Web 服务 Key 代理，避免把服务端 Key 暴露给浏览器
 
-### 已上线
+### AI 旅行规划
 
-- **首页互动地图**：基于高德 JS API 的中国地图，点击省份标记可弹出省份详情与推荐景点。
-- **省份景点弹窗**：展示省份简介、评分、推荐景点列表，并提供携程 / 飞猪旅行团快捷入口。
-- **热门目的地轮播**：精选景点卡片横向滚动展示。
-- **功能入口导航**：6 大核心模块的快速入口（规划、偏好、路线、分享、手账、地图）。
-- **用户登录/注册**（`/auth`）：支持手机号/邮箱登录，JWT 鉴权，登录态持久化。
-- **AI 旅行规划**（`/plan`）：支持文字、图片、语音输入，调用 DeepSeek / 智谱 AI 生成结构化行程并保存到后端。
-- **出行偏好测试**（`/destinations`）：60 道情景题生成 MBTI 与旅行画像，并用于后续规划。
-- **行程路线**（`/routes`）：导入已保存行程，在高德地图上查看/编辑每日游玩路线，保存到后端。
-- **旅途分享**（`/share`）：旅行社区 UI，支持发布游记、点赞、评论（当前为内存数据）。
-- **旅游手账**（`/journal`）：上传照片，通过 AI 生成手账文案或视频，并保存到后端。
-- **旅途分享**（`/share`）：社区发布游记、点赞、评论，数据持久化到后端。
-- **文件上传**：图片等媒体资源通过后端上传到 S3 兼容对象存储（本地 MinIO / 阿里云 OSS / AWS S3）。
-- **我的收藏 / 我的预定 / 我的日记**：右侧抽屉统一管理，数据均来自后端 API。
+- 支持文字、图片和语音输入
+- 支持文字与图片同时提交给视觉模型分析
+- 接入 DeepSeek 文本模型和智谱视觉模型
+- 生成结构化的多日旅行计划
+- 支持每天多个景点、景点位置信息和景点图片
+- 没有景点图片时不展示空图片占位
+- 支持保存、复制和重新生成行程
 
-### 待完善
+### 行程路线规划
 
-- 手账/社区中的大图片/视频目前走服务端上传，后续可优化为前端直传对象存储。
-- 部分 AI 生成任务（图片/视频）依赖外部 Agnes API 额度与可用性。
-- API Key 已迁移到后端 `.env`，但高德地图 Key 仍在前端硬编码，生产环境需要进一步处理。
+- 导入已保存行程并按天展示途经景点
+- 添加、删除和调整景点顺序
+- 支持时间优先、路程优先、顺利优先和费用优先
+- 将路线偏好映射为高德路线策略
+- 按天调用后端真实路线接口并进行前端缓存
+- 展示真实道路轨迹，而不是简单直线连接
+- 地图颜色区分行程天数，数字区分当天途经顺序
+- 支持保存调整后的路线
 
----
+### 旅行手账
+
+- 支持 3、5、9 张照片的自动拼贴版式
+- 根据照片内容选择主图
+- 使用 `layout.elements` 统一管理照片、文本、贴纸、胶带和手绘线
+- 支持照片移动、缩放、旋转、删除、复制和图层调整
+- 支持多种贴纸、胶带、手绘线和文本样式
+- 支持自定义文本框
+- 支持保存、更新、刷新恢复和继续编辑
+- 支持新建手账
+
+### 旅行分享
+
+- 发布文字游记和多图片游记
+- 最多上传 9 张图片，单张图片大小限制为 10MB
+- 支持点赞、评论和评论分页，每页 6 条
+- 精选游记展示互动数据最高的前 10 条
+- 图片加载失败时隐藏损坏图片
+- 无图片游记只展示文字内容
+- 支持分享弹窗、复制链接、二维码和浏览器系统分享
+- 公共游记详情页：`/share/post/{postId}`
+
+### 后端与数据持久化
+
+- FastAPI + SQLAlchemy + PostgreSQL
+- JWT 登录认证
+- 用户、收藏、预定、行程、路线、手账、游记、评论和点赞持久化
+- Alembic 数据库迁移
+- `/api/uploads` 文件上传接口
+- S3/MinIO 兼容对象存储，异常时支持本地存储回退
 
 ## 技术栈
 
 ### 前端
 
-- **框架**：Vue 3（Composition API）
-- **构建工具**：Vite 5
-- **状态管理**：Pinia
-- **路由**：Vue Router 4
-- **地图**：高德地图 JS API 2.0（`@amap/amap-jsapi-loader`）
-- **样式**：原生 CSS / Scoped CSS
+- Vue 3 Composition API
+- Vite 5
+- Pinia
+- Vue Router 4
+- 高德地图 JS API
+- Leaflet、D3、html2canvas、qrcode
+- 原生 CSS 和 Scoped CSS
 
 ### 后端
 
-- **框架**：FastAPI（Python 3.11+）
-- **数据库**：PostgreSQL 14+
-- **ORM**：SQLAlchemy 2.0
-- **迁移**：Alembic
-- **鉴权**：JWT（`python-jose` + `passlib`）
-- **运行**：Uvicorn
-- **对象存储**：S3 兼容存储（MinIO / 阿里云 OSS / AWS S3）
+- Python 3.11+
+- FastAPI
+- PostgreSQL 14+
+- SQLAlchemy 2
+- Alembic
+- JWT
+- Uvicorn
 
-### AI 服务
+### AI 与外部服务
 
-- DeepSeek `deepseek-v4-flash`（文本对话 / 行程规划）
-- 智谱 `glm-4.6v`（图片 + 文本多模态输入）
-- Agnes AI（图片/视频生成）
+- DeepSeek：文本对话和行程规划
+- 智谱：图片与文本多模态分析
+- Agnes AI：图片/视频生成能力
+- 高德地图：地图、地理编码和路线规划
+- S3/MinIO：图片等媒体资源存储
 
-### 语音输入
+## 本地启动
 
-- 浏览器 Web Speech API
+### 前端依赖
 
----
-
-## 快速开始
-
-### 环境要求
-
-- Node.js >= 18
-- npm >= 9
-- Python >= 3.11
-- PostgreSQL >= 14
-
-### 1. 克隆与安装前端依赖
-
-```bash
+```powershell
 npm install
 ```
 
-### 2. 安装并配置后端
+### 后端环境
 
-```bash
+```powershell
 cd backend
 python -m venv .venv
-# Windows
-.venv/Scripts/pip install -r requirements.txt
-# macOS / Linux
-# .venv/bin/pip install -r requirements.txt
-
-cp .env.example .env
-# 编辑 .env，填写 DATABASE_URL 与 AI Keys
+.venv\Scripts\pip install -r requirements.txt
 ```
 
-### 3. 初始化数据库
+复制 `backend/.env.example` 为 `backend/.env`，配置数据库、JWT、AI 服务、对象存储和高德 Web 服务 Key。
 
-```bash
+### 数据库迁移
+
+```powershell
 cd backend
-.venv/Scripts/alembic upgrade head
+.venv\Scripts\alembic upgrade head
 ```
 
-### 4. 启动开发服务器
+### 启动后端
 
-启动后端：
-
-```bash
+```powershell
 cd backend
-.venv/Scripts/uvicorn app.main:app --host 0.0.0.0 --port 8081 --reload
+.venv\Scripts\uvicorn app.main:app --host 127.0.0.1 --port 8081 --reload
 ```
 
-启动前端：
+### 启动前端
 
-```bash
+```powershell
 npm run dev
 ```
 
-默认访问地址：
+默认地址：
 
-- 前端：http://localhost:5173
-- 后端 API：http://localhost:8081
-- 后端 API 文档：http://localhost:8081/docs
-- MinIO 控制台：http://localhost:9001（默认账号 `minioadmin` / `minioadmin`）
+- 前端：<http://127.0.0.1:5173>
+- 后端 API：<http://127.0.0.1:8081>
+- OpenAPI：<http://127.0.0.1:8081/openapi.json>
+- 健康检查：<http://127.0.0.1:8081/health>
 
-### 5. 对象存储配置
+## 环境变量
 
-复制 `backend/.env.example` 为 `backend/.env` 后，根据环境配置：
+前端 `.env`：
 
 ```env
-# 本地 MinIO（开发默认）
+VITE_API_BASE_URL=http://127.0.0.1:8081/api
+VITE_AMAP_KEY=your-amap-js-key
+```
+
+后端 `backend/.env`：
+
+```env
+DATABASE_URL=postgresql+psycopg://user:password@localhost:5432/starwalk
+SECRET_KEY=replace-with-a-long-random-secret
+DEEPSEEK_API_KEY=your-deepseek-key
+ZHIPU_API_KEY=your-zhipu-key
+AGNES_API_KEY=your-agnes-key
+AMAP_WEB_SERVICE_KEY=your-amap-web-service-key
 S3_ENDPOINT=http://localhost:9000
-S3_ACCESS_KEY=minioadmin
-S3_SECRET_KEY=minioadmin
+S3_ACCESS_KEY=your-access-key
+S3_SECRET_KEY=your-secret-key
 S3_BUCKET=starwalk
 S3_REGION=us-east-1
-
-# 阿里云 OSS 示例
-# S3_ENDPOINT=https://oss-cn-hangzhou.aliyuncs.com
-# S3_ACCESS_KEY=your-access-key
-# S3_SECRET_KEY=your-secret-key
-# S3_BUCKET=your-bucket
-# S3_REGION=oss-cn-hangzhou
+S3_PUBLIC_URL=
 ```
 
-> 生产环境建议通过 `S3_PUBLIC_URL` 配置 CDN 域名。
+不要把真实密码、API Key 或数据库凭据写入 README、Git 或前端代码。生产环境需要分别验证高德 JS API Key 的域名白名单和 Web 服务 Key 的路线规划权限。
 
-### 6. 构建生产包
+## 构建与验证
 
-```bash
-npm run build
+```powershell
+npm.cmd run build
+cd backend
+.venv\Scripts\python.exe -m pytest -q
 ```
 
-构建产物输出到 `dist/` 目录。
+当前本地验证结果：
 
----
+- 前端构建通过
+- 后端测试 3 passed
+- 前端 `5173` 服务可访问
+- 后端 `/health` 返回 200
+- 游记公共详情接口可访问
+
+## 当前限制与后续工作
+
+- AI 模型调用依赖外部额度、网络和服务稳定性；视觉模型需要继续完善超时、重试和降级提示
+- S3/MinIO 生产环境可用性和 CDN 配置尚未完成正式验收
+- 微信、微博、QQ 等平台专用分享 SDK 尚未接入，目前提供复制链接、二维码和浏览器系统分享
+- 前端构建仍有大于 500KB 的 chunk 提示，后续可进行路由级代码分割
+- 尚未完成生产域名、HTTPS、CI/CD 和正式部署验收
+- 尚未建立完整的前端 Playwright/E2E 自动化测试
 
 ## 项目结构
 
-```
-├── backend/                # FastAPI 后端
-│   ├── alembic/            # 数据库迁移
-│   ├── app/
-│   │   ├── main.py         # FastAPI 应用入口
-│   │   ├── models.py       # SQLAlchemy 数据模型
-│   │   ├── schemas.py      # Pydantic 请求/响应模型
-│   │   ├── routers/        # API 路由
-│   │   │   ├── auth.py
-│   │   │   ├── bookings.py
-│   │   │   ├── favorites.py
-│   │   │   ├── journals.py
-│   │   │   ├── plans.py
-│   │   │   ├── posts.py
-│   │   │   ├── routes.py
-│   │   │   ├── uploads.py
-│   │   │   └── users.py
-│   │   ├── database.py     # 数据库连接
-│   │   ├── config.py       # 配置读取
-│   │   ├── dependencies.py # JWT 依赖
-│   │   └── storage.py      # S3 兼容对象存储封装
-│   ├── requirements.txt
-│   └── .env.example
-├── public/                 # 静态资源
-│   └── images/
-├── src/
-│   ├── components/         # 公共组件
-│   │   ├── AMapChina.vue           # 中国地图组件
-│   │   ├── AppFooter.vue           # 页脚
-│   │   ├── FeatureEntries.vue      # 首页功能入口
-│   │   ├── HotDestinations.vue     # 热门目的地轮播
-│   │   ├── MyDrawer.vue            # 右侧抽屉（收藏/预定/日记）
-│   │   ├── NavBar.vue              # 顶部导航
-│   │   ├── ProvinceDetail.vue      # 省份详情（备用）
-│   │   ├── ProvincePanel.vue       # 省份景点弹窗
-│   │   └── SimpleMap.vue           # 简化地图组件
-│   ├── composables/        # 组合式函数
-│   │   └── useChinaMap.js          # 地图相关逻辑
-│   ├── data/               # 静态数据
-│   │   ├── province-centers.js     # 省份中心坐标
-│   │   ├── provinces.js            # 省份与景点数据
-│   │   └── provinces-updated.json  # 省份数据 JSON
-│   ├── router/             # 路由配置
-│   │   └── index.js
-│   ├── stores/             # Pinia 状态管理
-│   │   ├── authStore.js            # 用户登录态
-│   │   ├── bookingStore.js         # 预定记录
-│   │   ├── favoriteStore.js        # 收藏记录
-│   │   ├── journalStore.js         # 手账记录
-│   │   ├── planStore.js            # 行程规划记录
-│   │   ├── routeStore.js           # 路线记录
-│   │   ├── shareStore.js           # 分享社区
-│   │   ├── mapStore.js             # 地图交互状态
-│   │   └── uiStore.js              # UI 状态（抽屉）
-│   ├── utils/              # 工具函数
-│   │   ├── agnesApi.js             # AI API 封装
-│   │   └── apiClient.js            # Axios 后端请求封装
-│   ├── views/              # 页面级组件
-│   │   ├── AuthPage.vue
-│   │   ├── Bookings.vue
-│   │   ├── Favorites.vue
-│   │   ├── Home.vue
-│   │   ├── HotDestinationsPage.vue
-│   │   ├── TravelJournal.vue
-│   │   ├── TravelPlan.vue
-│   │   ├── TravelShare.vue
-│   │   └── TripRoutes.vue
-│   ├── App.vue
-│   └── main.js
-├── index.html
-├── package.json
-└── vite.config.js
+```text
+backend/              FastAPI 后端、数据库模型、路由和迁移
+public/               静态图片和地图资源
+src/components/       公共组件和地图组件
+src/views/            页面级组件
+src/stores/           Pinia 状态管理
+src/utils/            API 与 AI 服务封装
+src/router/           Vue Router 路由
 ```
 
----
-
-## 配置说明
-
-### 后端配置
-
-复制 `backend/.env.example` 为 `backend/.env`，主要配置项：
-
-| 配置项 | 说明 |
-| --- | --- |
-| `DATABASE_URL` | PostgreSQL 连接串 |
-| `SECRET_KEY` | JWT 签名密钥 |
-| `DEEPSEEK_API_KEY` | DeepSeek API Key |
-| `ZHIPU_API_KEY` | 智谱 AI API Key |
-| `AGNES_API_KEY` | Agnes AI API Key |
-| `S3_ENDPOINT` | S3 兼容对象存储 Endpoint |
-| `S3_ACCESS_KEY` | Access Key |
-| `S3_SECRET_KEY` | Secret Key |
-| `S3_BUCKET` | Bucket 名称 |
-| `S3_REGION` | Region |
-| `S3_PUBLIC_URL` | 可选 CDN 域名 |
-
-### 前端配置
-
-前端 API 基础地址在 `.env` 中配置：
-
-```env
-VITE_API_BASE_URL=http://localhost:8081/api
-```
-
-高德地图 Key 目前硬编码在 `src/components/AMapChina.vue` 与 `src/views/TripRoutes.vue` 中，生产环境建议通过服务端代理或构建时注入。
-
-> 注意：当前代码中高德 Key 为明文硬编码，仅用于开发/演示。生产环境请通过环境变量注入并配置服务端代理，避免前端暴露密钥。
-
----
-
-## 测试账号
-
-- 手机号：`13800138000`
-- 密码：`123456`
-
----
-
-## 浏览器支持
-
-- Chrome / Edge / Firefox / Safari 最新版
-- 语音输入功能需要浏览器支持 Web Speech API
-
----
-
-## 许可证
-
-私有项目，仅供学习与交流使用。
+项目为学习和交流用途，生产使用前请完成安全配置、第三方服务权限、对象存储、HTTPS 和完整验收。
