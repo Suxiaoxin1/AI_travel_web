@@ -5,6 +5,7 @@
 node_modules
 dist
 backend/.env
+deploy/.env.production
 backend/.venv
 backend/__pycache__
 backend/.pytest_cache
