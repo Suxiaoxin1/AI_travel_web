@@ -176,6 +176,7 @@ class JournalCreate(BaseModel):
     travel_date: Optional[date] = None
     mood: Optional[str] = None
     photos: Optional[List[str]] = None
+    layout_json: Optional[dict] = None
     content_html: Optional[str] = None
     video_url: Optional[str] = None
 
@@ -188,6 +189,7 @@ class JournalResponse(BaseModel):
     travel_date: Optional[date] = None
     mood: Optional[str] = None
     photos: Optional[List[str]] = None
+    layout_json: Optional[dict] = None
     content_html: Optional[str] = None
     video_url: Optional[str] = None
     created_at: datetime

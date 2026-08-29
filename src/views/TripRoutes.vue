@@ -1,5 +1,7 @@
 <template>
-  <div class="navigate-layout">
+  <div class="routes-page">
+    <PageHero v-bind="pageHeroConfig.routes" @action="panelMode = 'import'" />
+    <div id="route-panel" class="navigate-layout">
     <!-- 左侧控制面板 -->
     <div class="nav-panel">
       <div class="nav-panel-header">
@@ -207,6 +209,7 @@
 
     <!-- Toast -->
     <div class="toast" :class="[toast.type, { visible: toast.visible }]">{{ toast.message }}</div>
+    </div>
   </div>
 </template>
 
@@ -219,6 +222,8 @@ import { chat } from '../utils/agnesApi.js'
 import { useAuthStore } from '../stores/authStore.js'
 import { usePlanStore } from '../stores/planStore.js'
 import { useRouteStore } from '../stores/routeStore.js'
+import PageHero from '../components/PageHero.vue'
+import { pageHeroConfig } from '../config/pageHeroConfig.js'
 
 const authStore = useAuthStore()
 const planStore = usePlanStore()
@@ -1105,6 +1110,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 /* ===== 页面容器（与其他页面保持一致） ===== */
+.routes-page { width: 100%; padding-top: 24px; }
+.routes-page > .page-hero { width: min(1220px, calc(100% - 48px)); margin: 0 auto 24px; }
 .navigate-layout {
   max-width: 1400px; width: 70%; margin: 0 auto;
   padding: 24px 24px 40px;
@@ -1432,6 +1439,8 @@ onBeforeUnmount(() => {
   .navigate-layout { width: 90%; }
 }
 @media (max-width: 768px) {
+  .routes-page { padding-top: 16px; }
+  .routes-page > .page-hero { width: calc(100% - 32px); }
   .navigate-layout { width: 100%; padding: 16px; flex-direction: column; min-height: auto; }
   .nav-panel { width: 100%; border-right: none; border-bottom: 1px solid #E5E0D6; max-height: 420px; }
   .map-container { height: 55vw; min-height: 260px; }

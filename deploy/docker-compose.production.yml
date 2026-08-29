@@ -1,0 +1,70 @@
+services:
+  db:
+    image: postgres:16.4-alpine3.20
+    restart: unless-stopped
+    env_file:
+      - ${DEPLOY_ENV_FILE:-./.env.production}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ${DEPLOY_ENV_FILE:-./.env.production}
+    environment:
+      AUTO_CREATE_TABLES: "false"
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+
+  migrate:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    env_file:
+      - ${DEPLOY_ENV_FILE:-./.env.production}
+    environment:
+      AUTO_CREATE_TABLES: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["alembic", "upgrade", "head"]
+    profiles: ["migrate"]
+
+  web:
+    build:
+      context: ..
+      dockerfile: Dockerfile.web
+      args:
+        VITE_API_BASE_URL: /api
+        VITE_AMAP_KEY: ${VITE_AMAP_KEY}
+        VITE_AMAP_SECURITY_CODE: ${VITE_AMAP_SECURITY_CODE}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      # Keep the existing Nginx site on host port 80 untouched.
+      - "8001:80"
+
+volumes:
+  postgres_data:
+  uploads_data:

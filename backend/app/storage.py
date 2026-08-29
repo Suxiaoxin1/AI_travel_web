@@ -70,6 +70,11 @@ def upload_file(file_bytes: bytes, content_type: str, key: str) -> str:
     """上传文件到 S3 兼容对象存储，返回可公开访问的 URL。"""
     global _s3_retry_after
 
+    # 单机生产部署或对象存储尚未配置时，直接写入持久化 uploads 卷。
+    # 避免首次上传等待不可用的 S3/MinIO 连接超时。
+    if not settings.S3_ENABLED:
+        return _upload_local(file_bytes, key)
+
     # S3 连续不可用时，避免每张图片都重复等待连接超时。
     if monotonic() < _s3_retry_after:
         return _upload_local(file_bytes, key)

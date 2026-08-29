@@ -9,11 +9,15 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+.venv/
+.pytest_cache/
 __pycache__/
 *.py[cod]
 .playwright-cli/
 .playwright-mcp/
 backend/uploads/
+output/
+viode/
 .DS_Store
 dist
 dist-ssr

@@ -194,4 +194,29 @@ const features = [
   background: #0D6B5C;
   color: #fff;
 }
+
+@media (max-width: 900px) {
+  .features-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    padding: 0 24px;
+  }
+}
+
+@media (max-width: 560px) {
+  .feature-entries {
+    padding: 36px 0;
+    border-radius: 18px;
+  }
+
+  .features-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 0 16px;
+  }
+
+  .feature-card {
+    padding: 24px 20px;
+  }
+}
 </style>

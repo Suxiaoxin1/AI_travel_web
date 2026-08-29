@@ -159,6 +159,7 @@ class Journal(Base):
     travel_date = Column(Date, nullable=True)
     mood = Column(Text, nullable=True)
     photos = Column(ARRAY(Text), nullable=True)
+    layout_json = Column(JSON, nullable=True)
     content_html = Column(Text, nullable=True)
     video_url = Column(Text, nullable=True)
     created_at = Column(DateTime, default=now_utc)

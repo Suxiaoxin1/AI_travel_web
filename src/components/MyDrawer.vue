@@ -118,7 +118,7 @@
                   <p class="masonry-desc">{{ j.mood || '记录一段美好旅程' }}</p>
                   <div class="masonry-footer">
                     <span class="masonry-date">{{ j.location }}</span>
-                    <span class="masonry-link">{{ j.content_html ? '图文手账' : (j.video_url ? '视频手账' : '手账') }}</span>
+                    <button class="masonry-link" @click="openJournal(j)">继续编辑 →</button>
                   </div>
                 </div>
               </div>
@@ -164,12 +164,14 @@ import { useBookingStore } from '../stores/bookingStore.js'
 import { useFavoriteStore } from '../stores/favoriteStore.js'
 import { useJournalStore } from '../stores/journalStore.js'
 import { useAuthStore } from '../stores/authStore.js'
+import { useRouter } from 'vue-router'
 
 const ui = useUiStore()
 const bookingStore = useBookingStore()
 const favoriteStore = useFavoriteStore()
 const journalStore = useJournalStore()
 const authStore = useAuthStore()
+const router = useRouter()
 
 // 行程详情 Modal
 const planModal = ref(null)
@@ -187,6 +189,11 @@ watch(() => ui.drawerType, (val) => {
 const favorites = computed(() => favoriteStore.favorites || [])
 const bookings = computed(() => bookingStore.currentUserBookings || [])
 const journals = computed(() => journalStore.journals || [])
+
+async function openJournal(journal) {
+  await router.push({ name: 'TravelJournal', query: { journalId: journal.id } })
+  ui.closeDrawer()
+}
 
 // 删除收藏
 async function removeFavorite(id) {

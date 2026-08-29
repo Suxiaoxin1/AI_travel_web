@@ -38,11 +38,45 @@ export const useJournalStore = defineStore('journal', () => {
         travel_date: journalData.travel_date || journalData.travelDate || null,
         mood: journalData.mood || '',
         photos: journalData.photos || [],
+        layout_json: journalData.layout_json || journalData.layoutJson || null,
         content_html: journalData.content_html || journalData.contentHtml || '',
         video_url: journalData.video_url || journalData.videoUrl || ''
       }
       const { data } = await apiClient.post('/journals', payload)
       journals.value.unshift(data.data)
+      return { ok: true, record: data.data }
+    } catch (err) {
+      return { ok: false, msg: err.message }
+    }
+  }
+
+  async function getJournal(id) {
+    try {
+      const { data } = await apiClient.get(`/journals/${id}`)
+      return { ok: true, record: data.data }
+    } catch (err) {
+      return { ok: false, msg: err.message }
+    }
+  }
+
+  async function updateJournal(id, journalData) {
+    const auth = useAuthStore()
+    if (!auth.currentUser) return { ok: false, msg: '请先登录' }
+    try {
+      const payload = {
+        title: journalData.title || '',
+        style: journalData.style || '',
+        location: journalData.location || '',
+        travel_date: journalData.travel_date || journalData.travelDate || null,
+        mood: journalData.mood || '',
+        photos: journalData.photos || [],
+        layout_json: journalData.layout_json || journalData.layoutJson || null,
+        content_html: journalData.content_html || journalData.contentHtml || '',
+        video_url: journalData.video_url || journalData.videoUrl || ''
+      }
+      const { data } = await apiClient.put(`/journals/${id}`, payload)
+      const index = journals.value.findIndex(item => item.id === id)
+      if (index >= 0) journals.value[index] = data.data
       return { ok: true, record: data.data }
     } catch (err) {
       return { ok: false, msg: err.message }
@@ -60,5 +94,5 @@ export const useJournalStore = defineStore('journal', () => {
     }
   }
 
-  return { journals, isLoading, loadJournals, saveJournal, removeJournal }
+  return { journals, isLoading, loadJournals, saveJournal, getJournal, updateJournal, removeJournal }
 })

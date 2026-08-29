@@ -2,12 +2,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import engine, Base
+from app.config import settings
 from fastapi.staticfiles import StaticFiles
 
 from app.routers import auth, users, favorites, bookings, plans, routes, journals, posts, comments, likes, uploads, map_routes
 
-# 创建数据库表（开发阶段便捷方式；生产环境建议使用 Alembic）
-Base.metadata.create_all(bind=engine)
+# 创建数据库表（仅开发环境便捷使用；生产环境应先执行 Alembic 迁移）
+if settings.AUTO_CREATE_TABLES:
+    Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="星际行者 · AI 旅行向导",
@@ -15,15 +17,11 @@ app = FastAPI(
     version="0.8.0"
 )
 
-# CORS 配置
+# CORS 配置：通过 FC 环境变量 CORS_ORIGINS 传入逗号分隔的前端公网地址
+cors_origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:4173",
-        "http://127.0.0.1:4173",
-    ],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

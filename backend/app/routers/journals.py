@@ -35,6 +35,7 @@ def create_journal(
         travel_date=payload.travel_date,
         mood=payload.mood,
         photos=payload.photos,
+        layout_json=payload.layout_json,
         content_html=payload.content_html,
         video_url=payload.video_url,
     )

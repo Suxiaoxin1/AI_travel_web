@@ -1,5 +1,5 @@
 <template>
-  <nav class="navbar">
+  <nav class="navbar" :class="{ 'is-scrolled': isScrolled }">
     <div class="navbar-inner">
       <div class="nav-left">
         <router-link to="/" class="logo">
@@ -66,6 +66,7 @@ import { useUiStore } from '../stores/uiStore.js'
 const auth = useAuthStore()
 const ui = useUiStore()
 const showDropdown = ref(false)
+const isScrolled = ref(false)
 
 function setReg() { sessionStorage.setItem('authMode', 'register') }
 
@@ -83,36 +84,74 @@ function handleLogout() {
 function handleClickOutside(e) {
   if (!e.target.closest('.nav-right')) showDropdown.value = false
 }
-onMounted(() => { document.addEventListener('click', handleClickOutside) })
-onUnmounted(() => { document.removeEventListener('click', handleClickOutside) })
+function handleScroll() {
+  isScrolled.value = window.scrollY > 12
+}
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+  window.addEventListener('scroll', handleScroll, { passive: true })
+  handleScroll()
+})
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+  window.removeEventListener('scroll', handleScroll)
+})
 </script>
 
 <style scoped>
 .navbar {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  background: rgba(248, 246, 240, 0.92); backdrop-filter: blur(12px);
-  border-bottom: 1px solid #E5E0D6; height: 64px;
+  position: fixed; inset: 0 0 auto; z-index: 100;
+  height: 72px; background: rgba(248, 246, 240, 0.78);
+  backdrop-filter: blur(18px) saturate(125%);
+  border-bottom: 1px solid rgba(229, 224, 214, 0.72);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+.navbar::after {
+  content: ''; position: absolute; left: 50%; bottom: -1px;
+  width: min(1180px, calc(100% - 40px)); height: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, rgba(13,107,92,.24), rgba(212,168,75,.42), transparent);
+  pointer-events: none;
+}
+.navbar.is-scrolled {
+  background: rgba(248, 246, 240, 0.94);
+  box-shadow: 0 12px 34px rgba(16, 58, 49, 0.1);
 }
 .navbar-inner {
-  max-width: 1400px; margin: 0 auto; padding: 0 32px; height: 100%;
+  max-width: 1220px; margin: 0 auto; padding: 0 20px; height: 100%;
   display: flex; align-items: center; justify-content: space-between;
 }
-.nav-left { display: flex; align-items: center; gap: 40px; }
-.logo { display: flex; align-items: center; gap: 10px; cursor: default; text-decoration: none; }
-.logo-icon { flex-shrink: 0; }
-.logo-text {
-  font-family: 'Noto Sans SC', sans-serif; font-size: 20px; font-weight: 700;
-  color: #0D6B5C; letter-spacing: 1px;
+.nav-left { display: flex; align-items: center; gap: 42px; }
+.logo {
+  display: flex; align-items: center; gap: 11px; padding: 6px 10px 6px 6px;
+  border-radius: 16px; cursor: pointer; text-decoration: none;
+  transition: background .25s ease, transform .25s ease;
 }
-.nav-links { display: flex; align-items: center; gap: 4px; }
-.nav-right { position: relative; }
+.logo:hover { background: rgba(13, 107, 92, 0.06); transform: translateY(-1px); }
+.logo-icon {
+  flex-shrink: 0; width: 36px; height: 36px; padding: 5px;
+  border-radius: 12px; background: linear-gradient(145deg, #e8f7f2, #fff6d7);
+  box-shadow: 0 5px 14px rgba(13,107,92,.13);
+}
+.logo-text {
+  font-family: 'Noto Sans SC', sans-serif; font-size: 21px; font-weight: 750;
+  color: #0D6B5C; letter-spacing: .08em;
+}
+.nav-links { display: flex; align-items: center; gap: 2px; }
+.nav-right { position: relative; display: flex; align-items: center; gap: 8px; }
 .nav-link {
-  padding: 8px 16px; font-size: 14px; font-weight: 500; color: #5C5C6E;
-  cursor: pointer; border-radius: 8px; transition: all 0.25s ease;
+  position: relative; padding: 10px 14px; font-size: 14px; font-weight: 500; color: #5C5C6E;
+  cursor: pointer; border-radius: 12px; transition: all 0.25s ease;
   font-family: 'Noto Sans SC', sans-serif; text-decoration: none;
 }
-.nav-link:hover { color: #0D6B5C; background: rgba(13, 107, 92, 0.06); }
-.nav-link.active { color: #0D6B5C; background: rgba(13, 107, 92, 0.08); font-weight: 600; }
+.nav-link::after {
+  content: ''; position: absolute; left: 14px; right: 14px; bottom: 5px; height: 2px;
+  border-radius: 2px; background: #D4A84B; transform: scaleX(0);
+  transform-origin: center; transition: transform .25s ease;
+}
+.nav-link:hover { color: #0D6B5C; background: rgba(13, 107, 92, 0.06); transform: translateY(-1px); }
+.nav-link.active { color: #0D6B5C; background: rgba(13, 107, 92, 0.08); font-weight: 650; }
+.nav-link.active::after { transform: scaleX(1); }
 
 .quick-actions { display: flex; align-items: center; gap: 8px; margin-right: 12px; }
 .quick-action-btn {
@@ -127,19 +166,25 @@ onUnmounted(() => { document.removeEventListener('click', handleClickOutside) })
 .dropdown-separator { height: 1px; background: #E5E0D6; margin: 4px 0; }
 
 .btn-login {
-  padding: 8px 20px; font-size: 14px; font-weight: 500; color: #0D6B5C;
-  background: transparent; border: 1px solid #0D6B5C; border-radius: 8px;
+  display: inline-flex; align-items: center; justify-content: center; min-height: 38px;
+  padding: 8px 16px; font-size: 14px; font-weight: 700; color: #0D6B5C;
+  background: transparent; border: 1px solid #0D6B5C; border-radius: 12px;
   cursor: pointer; transition: all 0.25s ease; font-family: 'Noto Sans SC', sans-serif;
   text-decoration: none;
 }
-.btn-login:hover { background: rgba(13, 107, 92, 0.06); }
+.btn-login:hover { background: #fff; box-shadow: 0 6px 16px rgba(13,107,92,.1); transform: translateY(-1px); }
 .btn-register {
-  padding: 8px 20px; font-size: 14px; font-weight: 500; color: #fff;
-  background: #0D6B5C; border: none; border-radius: 8px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; min-height: 38px;
+  padding: 8px 16px; font-size: 14px; font-weight: 700; color: #fff;
+  background: #0D6B5C; border: none; border-radius: 12px; cursor: pointer;
   transition: all 0.25s ease; font-family: 'Noto Sans SC', sans-serif;
   text-decoration: none;
 }
 .btn-register:hover { background: #1A8A7A; box-shadow: 0 4px 12px rgba(13, 107, 92, 0.3); }
+.nav-link:focus-visible, .logo:focus-visible, .btn-login:focus-visible,
+.btn-register:focus-visible, .user-menu:focus-visible {
+  outline: 3px solid rgba(212, 168, 75, .45); outline-offset: 3px;
+}
 
 .user-menu {
   display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px;
@@ -165,4 +210,21 @@ onUnmounted(() => { document.removeEventListener('click', handleClickOutside) })
   transition: all 0.2s; font-family: 'Noto Sans SC', sans-serif; border: none; background: none; width: 100%;
 }
 .dropdown-item:hover { background: rgba(13, 107, 92, 0.06); color: #0D6B5C; }
+
+@media (max-width: 760px) {
+  .navbar { height: 60px; }
+  .navbar-inner { padding: 0 12px; }
+  .nav-left { gap: 0; min-width: 0; }
+  .nav-links { display: none; }
+  .logo { padding-left: 2px; }
+  .logo-icon { width: 32px; height: 32px; }
+  .logo-text { font-size: 17px; letter-spacing: .04em; }
+  .nav-right { display: flex; flex: 0 0 auto; }
+  .btn-login, .btn-register { min-height: 34px; padding: 6px 10px; border-radius: 10px; font-size: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .navbar, .logo, .nav-link, .btn-login, .btn-register { transition: none; }
+}
+
 </style>

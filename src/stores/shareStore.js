@@ -22,6 +22,15 @@ export const useShareStore = defineStore('share', () => {
     }
   }
 
+  async function getPublicPost(id) {
+    try {
+      const { data } = await apiClient.get(`/posts/${id}`)
+      return { ok: true, record: data.data }
+    } catch (err) {
+      return { ok: false, msg: err.message }
+    }
+  }
+
   async function createPost(postData) {
     const auth = useAuthStore()
     if (!auth.currentUser) return { ok: false, msg: '请先登录' }
@@ -114,6 +123,7 @@ export const useShareStore = defineStore('share', () => {
     posts,
     isLoading,
     loadPosts,
+    getPublicPost,
     createPost,
     deletePost,
     toggleLike,

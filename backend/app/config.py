@@ -30,8 +30,13 @@ class Settings(BaseSettings):
     S3_BUCKET: str = "starwalk"
     S3_REGION: str = "us-east-1"
     S3_PUBLIC_URL: str = ""  # 自定义 CDN 域名，为空时使用 S3_ENDPOINT + bucket
+    S3_ENABLED: bool = True  # 生产单机部署可关闭，直接使用持久化本地上传目录
     S3_FALLBACK_COOLDOWN_SECONDS: int = 60  # S3 故障后本地回退的冷却时间
     APP_PUBLIC_URL: str = "http://127.0.0.1:8081"  # 本地文件回退时使用的后端访问地址
+
+    # 部署配置：生产环境通过 FC 环境变量覆盖，不把公网地址写死在代码中
+    CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173"
+    AUTO_CREATE_TABLES: bool = True  # 生产环境使用 Alembic 后应设置为 false
 
     class Config:
         env_file = ".env"

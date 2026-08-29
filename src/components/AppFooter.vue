@@ -158,4 +158,19 @@ import { useRouter } from 'vue-router'
   color: #6B6B7D;
   text-align: center;
 }
+
+@media (max-width: 760px) {
+  .footer { padding: 42px 16px 22px; }
+  .footer-top { display: block; padding-bottom: 28px; }
+  .footer-brand { max-width: none; }
+  .footer-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 30px; }
+  .footer-col h4 { font-size: 12px; margin-bottom: 12px; }
+  .footer-col a { font-size: 11px; margin-bottom: 9px; }
+  .footer-bottom { padding-top: 20px; font-size: 10px; }
+}
+
+@media (max-width: 420px) {
+  .footer-links { gap: 10px; }
+  .footer-col a { white-space: normal; overflow-wrap: anywhere; }
+}
 </style>

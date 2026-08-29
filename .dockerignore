@@ -1,0 +1,16 @@
+.git
+.env
+.env.*
+!.env.example
+node_modules
+dist
+backend/.env
+backend/.venv
+backend/__pycache__
+backend/.pytest_cache
+backend/uploads
+**/__pycache__
+*.py[cod]
+.playwright-cli
+.playwright-mcp
+*.log

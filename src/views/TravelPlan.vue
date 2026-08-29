@@ -1,12 +1,7 @@
 <template>
   <div class="page-container">
-    <div class="page-header">
-      <h1 class="page-title">旅行规划</h1>
-      <p class="page-subtitle" v-if="prefLoaded && prefData?.mbti">已加载你的旅行偏好报告 — {{ prefPersona }}（{{ prefData.mbti }}）</p>
-      <p class="page-subtitle" v-else-if="prefLoaded">已加载你的旅行偏好报告 — {{ prefPersona }}</p>
-      <p class="page-subtitle" v-else>告诉我你的想法，AI 为你定制专属旅程</p>
-    </div>
-    <div class="plan-layout">
+    <PageHero v-bind="pageHeroConfig.plan" />
+    <div id="plan-input" class="plan-layout">
       <!-- 左侧：输入区 -->
       <div class="input-card">
         <div class="pref-banner" v-if="prefData">
@@ -275,6 +270,8 @@ import { useUiStore } from '../stores/uiStore.js'
 import { useAuthStore } from '../stores/authStore.js'
 import { usePlanStore } from '../stores/planStore.js'
 import { useFavoriteStore } from '../stores/favoriteStore.js'
+import PageHero from '../components/PageHero.vue'
+import { pageHeroConfig } from '../config/pageHeroConfig.js'
 
 const router = useRouter()
 const ui = useUiStore()

@@ -1,10 +1,8 @@
 <template>
-  <div class="page-container">
+  <div class="page-container preference-page">
+    <PageHero v-bind="pageHeroConfig.preference" />
     <!-- ============ 欢迎页：可选MBTI + 统一答题入口 ============ -->
-    <div v-if="currentQ === -1" class="welcome-screen">
-      <h1 class="welcome-title">个性化旅行偏好测试</h1>
-      <p class="welcome-desc">60 道多元化情景题，精准描绘你的旅行人格</p>
-
+    <div v-if="currentQ === -1" id="preference-test" class="welcome-screen">
       <!-- MBTI 可选选择（选了直接用，没选则通过答题推断） -->
       <div class="mbti-section">
         <div class="mbti-optional-hint">
@@ -251,6 +249,8 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import PageHero from '../components/PageHero.vue'
+import { pageHeroConfig } from '../config/pageHeroConfig.js'
 
 const router = useRouter()
 
@@ -1006,11 +1006,17 @@ function resetQuiz() {
 
 <style scoped>
 .page-container { max-width: 720px; margin: 0 auto; padding: 40px 24px 60px; }
+.preference-page { max-width: 1080px; width: calc(100% - 48px); }
+.preference-page .welcome-screen,
+.preference-page .quiz-screen,
+.preference-page .report-screen { max-width: 720px; margin-left: auto; margin-right: auto; }
 
 /* 欢迎页 */
-.welcome-screen { text-align: center; padding: 20px 0; }
-.welcome-title { font-size: 28px; font-weight: 800; color: #1A1A2E; margin: 0 0 8px; font-family: 'Noto Sans SC', sans-serif; }
-.welcome-desc { font-size: 14px; color: #8B8B9E; margin: 0 0 32px; }
+.welcome-screen { text-align: center; padding: 34px 0 20px; }
+.welcome-kicker { display: inline-flex; align-items: center; gap: 9px; padding: 7px 14px; border: 1px solid rgba(212,168,75,.42); border-radius: 999px; color: #0D6B5C; background: rgba(255,255,255,.68); font-size: 10px; font-weight: 800; letter-spacing: .16em; }
+.welcome-kicker::before { content: '✦'; color: #D4A84B; font-size: 13px; }
+.welcome-title { font-size: clamp(30px, 5vw, 46px); font-weight: 800; color: #1A1A2E; margin: 18px 0 10px; font-family: 'Noto Sans SC', sans-serif; letter-spacing: .08em; background: linear-gradient(100deg,#173B31 0%,#0D6B5C 58%,#D4A84B 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.welcome-desc { max-width: 560px; font-size: 14px; color: #65736D; margin: 0 auto 32px; line-height: 1.8; }
 
 /* MBTI 可选提示 */
 .mbti-optional-hint { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: #8B8B9E; margin-bottom: 20px; }
@@ -1187,6 +1193,7 @@ function resetQuiz() {
 /* 响应式 */
 @media (max-width: 640px) {
   .page-container { padding: 20px 16px 40px; }
+  .preference-page { width: calc(100% - 32px); }
   .question-card { padding: 32px 24px; }
   .q-text { font-size: 18px; }
   .opt-text { font-size: 14px; }

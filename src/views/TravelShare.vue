@@ -1,18 +1,10 @@
 <template>
   <div class="page-container">
     <div v-if="publishNotice" class="publish-toast" role="status">{{ publishNotice }}</div>
-    <!-- 页面引导 -->
-    <section class="share-hero">
-      <div>
-        <p class="share-eyebrow">TRAVEL COMMUNITY</p>
-        <h1 class="share-heading">发现旅途灵感</h1>
-        <p class="share-subtitle">看看其他旅行者的真实体验，也记录属于你的旅途故事。</p>
-      </div>
-      <div class="share-hero-mark" aria-hidden="true">✦</div>
-    </section>
+    <PageHero v-bind="pageHeroConfig.share" @action="showPublishModal = true" />
 
     <!-- 搜索栏 + 发布按钮 -->
-    <div class="search-bar">
+    <div id="share-content" class="search-bar">
       <div class="search-input">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8B8B9E" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         <input v-model="searchQuery" type="text" placeholder="搜索目的地、关键词..." />
@@ -89,6 +81,7 @@
                 v-for="(image, imageIndex) in postImages(post)"
                 :key="`${post.id}-featured-${imageIndex}`"
                 class="media-image"
+                @error="hideBrokenImage"
                 :src="image"
                 :alt="`${post.title}第${imageIndex + 1}张图片`" />
             </div>
@@ -104,6 +97,10 @@
               <button class="interaction-btn">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B8B9E" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 <span>{{ post.comments_count }}</span>
+              </button>
+              <button class="interaction-btn" @click="openShareDialog(post)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
+                <span>分享</span>
               </button>
             </div>
 
@@ -195,7 +192,8 @@
             <img
               v-for="(image, imageIndex) in postImages(post)"
               :key="`${post.id}-review-${imageIndex}`"
-              class="media-image"
+                class="media-image"
+                @error="hideBrokenImage"
               :src="image"
               :alt="`${post.title}第${imageIndex + 1}张图片`" />
           </div>
@@ -211,6 +209,10 @@
             <button class="interaction-btn-lg">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8B8B9E" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               {{ post.comments_count }}
+            </button>
+            <button class="interaction-btn-lg" @click="openShareDialog(post)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
+              分享
             </button>
           </div>
 
@@ -234,6 +236,30 @@
     </div>
 
     <!-- 发布弹窗 -->
+    <div class="modal-overlay" v-if="shareTarget" @click.self="closeShareDialog">
+      <div class="share-modal-card" role="dialog" aria-modal="true" aria-labelledby="share-dialog-title">
+        <div class="modal-header">
+          <h3 id="share-dialog-title">分享这篇游记</h3>
+          <button class="modal-close" @click="closeShareDialog">×</button>
+        </div>
+        <div class="share-dialog-content">
+          <p class="share-dialog-title">{{ shareTarget.post.title || '旅行游记' }}</p>
+          <p class="share-dialog-hint">扫码打开游记详情，或复制链接发送给朋友</p>
+          <div v-if="shareQrCode" class="share-qr-wrap">
+            <img :src="shareQrCode" alt="游记分享二维码" class="share-qr" />
+          </div>
+          <div v-else class="share-qr-loading">正在生成二维码…</div>
+          <div class="share-url-row">
+            <input :value="shareTarget.url" readonly aria-label="分享链接" @focus="$event.target.select()" />
+          </div>
+          <div class="share-actions">
+            <button class="share-action-primary" @click="copyShareLink">{{ shareCopied ? '已复制链接' : '复制链接' }}</button>
+            <button class="share-action-secondary" @click="nativeShare">系统分享</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-overlay" v-if="showPublishModal" @click.self="showPublishModal = false">
       <div class="modal-card">
         <div class="modal-header">
@@ -309,9 +335,15 @@
 import { ref, reactive, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '../stores/authStore'
 import { useShareStore } from '../stores/shareStore'
+import QRCode from 'qrcode'
+import PageHero from '../components/PageHero.vue'
+import { pageHeroConfig } from '../config/pageHeroConfig.js'
 
 const searchQuery = ref('')
 const showPublishModal = ref(false)
+const shareTarget = ref(null)
+const shareQrCode = ref('')
+const shareCopied = ref(false)
 const publishNotice = ref('')
 let publishNoticeTimer = null
 const newTag = ref('')
@@ -492,6 +524,63 @@ function postImages(post) {
   return Array.isArray(post.images) ? post.images.filter(Boolean) : []
 }
 
+async function openShareDialog(post) {
+  const url = `${window.location.origin}/share/post/${post.id}`
+  shareTarget.value = { post, url }
+  shareQrCode.value = ''
+  shareCopied.value = false
+  try {
+    shareQrCode.value = await QRCode.toDataURL(url, { width: 192, margin: 1, errorCorrectionLevel: 'M' })
+  } catch (err) {
+    console.error('生成分享二维码失败', err)
+  }
+}
+
+function closeShareDialog() {
+  shareTarget.value = null
+  shareQrCode.value = ''
+}
+
+async function copyShareLink() {
+  if (!shareTarget.value) return
+  const url = shareTarget.value.url
+  try {
+    await navigator.clipboard.writeText(url)
+  } catch {
+    const input = document.createElement('textarea')
+    input.value = url
+    input.style.position = 'fixed'
+    input.style.opacity = '0'
+    document.body.appendChild(input)
+    input.focus()
+    input.select()
+    document.execCommand('copy')
+    input.remove()
+  }
+  shareCopied.value = true
+  setTimeout(() => { shareCopied.value = false }, 2200)
+}
+
+async function nativeShare() {
+  if (!shareTarget.value || !navigator.share) {
+    await copyShareLink()
+    return
+  }
+  try {
+    await navigator.share({
+      title: shareTarget.value.post.title || '旅行游记',
+      text: (shareTarget.value.post.content || '').slice(0, 100),
+      url: shareTarget.value.url
+    })
+  } catch (err) {
+    if (err?.name !== 'AbortError') console.warn('系统分享不可用', err)
+  }
+}
+
+function hideBrokenImage(event) {
+  event.currentTarget.style.display = 'none'
+}
+
 function hasMedia(post) {
   return postImages(post).length > 0
 }
@@ -666,18 +755,18 @@ onUnmounted(() => {
 
 /* ===== 轮播 ===== */
 .carousel-wrapper {
-  position: relative; display: flex; align-items: center; gap: 12px;
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 12px;
   margin-bottom: 24px;
 }
 .carousel-container {
-  flex: 0 0 80%; width: 80%; height: 75vh; max-height: 75vh; overflow: hidden;
+  flex: 0 0 80%; width: 80%; height: auto; min-height: 280px; max-height: none; overflow: hidden;
   border-radius: 20px;
   background: #fff; border: 1px solid #E5E0D6;
   box-shadow: 0 8px 32px rgba(0,0,0,0.08);
 }
-.carousel-track { display: flex; transition: transform 0.5s ease; }
+.carousel-track { display: flex; align-items: flex-start; transition: transform 0.5s ease; }
 .carousel-slide {
-  min-width: 100%; padding: 28px;
+  min-width: 100%; box-sizing: border-box; height: auto; padding: 28px;
   background: linear-gradient(to bottom, #FAFAF8, #fff);
 }
 
@@ -979,6 +1068,29 @@ onUnmounted(() => {
   background: #fff; border-radius: 20px; padding: 28px; width: 90%; max-width: 480px;
   box-shadow: 0 16px 48px rgba(0,0,0,0.15);
 }
+.share-modal-card {
+  width: min(92vw, 390px); background: #fff; border-radius: 22px; padding: 24px;
+  box-shadow: 0 18px 56px rgba(26,58,46,0.2);
+}
+.share-dialog-content { text-align: center; }
+.share-dialog-title { margin: 0; color: #1A1A2E; font-size: 16px; font-weight: 700; }
+.share-dialog-hint { margin: 8px 0 16px; color: #8B8B9E; font-size: 12px; line-height: 1.6; }
+.share-qr-wrap { display: flex; justify-content: center; margin: 4px 0 16px; }
+.share-qr { width: 192px; height: 192px; border-radius: 10px; border: 1px solid #EDEAE3; }
+.share-qr-loading { height: 192px; display: flex; align-items: center; justify-content: center; color: #8B8B9E; font-size: 12px; }
+.share-url-row input {
+  box-sizing: border-box; width: 100%; border: 1px solid #E5E0D6; border-radius: 9px;
+  padding: 9px 10px; background: #F8F6F0; color: #5C5C6E; font-size: 11px; outline: none;
+}
+.share-actions { display: flex; gap: 10px; margin-top: 14px; }
+.share-actions button {
+  flex: 1; border-radius: 10px; padding: 10px 12px; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: 'Noto Sans SC', sans-serif; transition: all .2s;
+}
+.share-action-primary { border: none; background: #1A3A2E; color: #fff; }
+.share-action-primary:hover { background: #0D6B5C; }
+.share-action-secondary { border: 1px solid #D9E5DF; background: #F5FAF7; color: #0D6B5C; }
+.share-action-secondary:hover { border-color: #0D6B5C; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .modal-header h3 { font-size: 18px; font-weight: 700; color: #1A1A2E; margin: 0; }
 .modal-close {

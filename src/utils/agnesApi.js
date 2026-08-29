@@ -117,13 +117,13 @@ async function chat(messages, options = {}) {
  * @returns {Promise<Object>} API 响应数据
  */
 async function chatWithVision(messages, options = {}) {
-  const { temperature = 0.7, maxTokens = 2048, retries = 2 } = options
+  const { temperature = 0.7, maxTokens = 2048, retries = 2, timeoutMs = 60000 } = options
   let lastError
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60s 超时
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
       const body = {
         model: VISION_MODEL,
