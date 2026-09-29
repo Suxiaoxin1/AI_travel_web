@@ -10,6 +10,14 @@ const apiClient = axios.create({
   }
 })
 
+let refreshPromise = null
+
+function clearLocalAuth() {
+  localStorage.removeItem('travelUser')
+  localStorage.removeItem('travelAccessToken')
+  localStorage.removeItem('travelRefreshToken')
+}
+
 // 请求拦截器：自动附加 token
 apiClient.interceptors.request.use(
   (config) => {
@@ -25,12 +33,44 @@ apiClient.interceptors.request.use(
 // 响应拦截器：统一错误处理
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     const message = error.response?.data?.detail || error.message || '请求失败'
+    const original = error.config
+    const refreshToken = localStorage.getItem('travelRefreshToken')
+    const isRefreshRequest = original?.url?.includes('/auth/refresh')
+    if (error.response?.status === 401 && refreshToken && !original?._retry && !isRefreshRequest) {
+      original._retry = true
+      try {
+        if (!refreshPromise) {
+          refreshPromise = axios.post(`${baseURL}/auth/refresh`, null, {
+            headers: { Authorization: `Bearer ${refreshToken}` },
+            timeout: 30000
+          }).then(({ data }) => {
+            localStorage.setItem('travelAccessToken', data.access_token)
+            localStorage.setItem('travelRefreshToken', data.refresh_token)
+            if (data.user) localStorage.setItem('travelUser', JSON.stringify({
+              id: data.user.id,
+              account: data.user.account,
+              nickname: data.user.nickname,
+              avatarBg: data.user.avatar_bg,
+              avatarUrl: data.user.avatar_url,
+              bio: data.user.bio,
+              homeCity: data.user.home_city,
+              isAdmin: Boolean(data.user.is_admin)
+            }))
+            return data.access_token
+          }).finally(() => { refreshPromise = null })
+        }
+        const token = await refreshPromise
+        original.headers = original.headers || {}
+        original.headers.Authorization = `Bearer ${token}`
+        return apiClient(original)
+      } catch {
+        clearLocalAuth()
+      }
+    }
     if (error.response?.status === 401) {
-      localStorage.removeItem('travelAccessToken')
-      localStorage.removeItem('travelRefreshToken')
-      // 可选：触发全局登录态失效事件
+      clearLocalAuth()
     }
     return Promise.reject(new Error(message))
   }

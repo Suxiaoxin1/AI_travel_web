@@ -17,7 +17,7 @@
           <router-link to="/destinations" class="nav-link" active-class="active">出行偏好</router-link>
           <router-link to="/routes" class="nav-link" active-class="active">行程路线</router-link>
           <router-link to="/share" class="nav-link" active-class="active">旅途分享</router-link>
-          <router-link to="/journal" class="nav-link" active-class="active">旅游手账</router-link>
+          <router-link to="/journal" class="nav-link" active-class="active">旅行记忆</router-link>
         </div>
       </div>
       <div class="nav-right">
@@ -46,6 +46,10 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
               我的旅行日记
             </div>
+            <router-link v-if="auth.currentUser.isAdmin" to="/admin" class="dropdown-item" @click="showDropdown = false">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
+              管理后台
+            </router-link>
             <div class="dropdown-separator"></div>
             <div class="dropdown-item" @click="handleLogout">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -108,7 +112,7 @@ onUnmounted(() => {
 }
 .navbar::after {
   content: ''; position: absolute; left: 50%; bottom: -1px;
-  width: min(1180px, calc(100% - 40px)); height: 1px;
+  width: min(1400px, 70%); height: 1px;
   transform: translateX(-50%);
   background: linear-gradient(90deg, transparent, rgba(13,107,92,.24), rgba(212,168,75,.42), transparent);
   pointer-events: none;
@@ -118,7 +122,8 @@ onUnmounted(() => {
   box-shadow: 0 12px 34px rgba(16, 58, 49, 0.1);
 }
 .navbar-inner {
-  max-width: 1220px; margin: 0 auto; padding: 0 20px; height: 100%;
+  max-width: 1400px; width: 70%; margin: 0 auto; padding: 0 24px; height: 100%;
+  box-sizing: border-box;
   display: flex; align-items: center; justify-content: space-between;
 }
 .nav-left { display: flex; align-items: center; gap: 42px; }
@@ -213,7 +218,8 @@ onUnmounted(() => {
 
 @media (max-width: 760px) {
   .navbar { height: 60px; }
-  .navbar-inner { padding: 0 12px; }
+  .navbar-inner { width: 100%; max-width: none; padding: 0 16px; }
+  .navbar::after { width: calc(100% - 32px); }
   .nav-left { gap: 0; min-width: 0; }
   .nav-links { display: none; }
   .logo { padding-left: 2px; }

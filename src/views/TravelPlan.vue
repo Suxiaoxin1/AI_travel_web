@@ -81,9 +81,44 @@
 
         <!-- 附加选项 -->
         <div class="extra-options">
+          <div class="option-group" style="grid-column: 1 / -1;">
+            <label>出发地 <span class="field-required">*</span></label>
+            <input
+              ref="originInput"
+              v-model.trim="form.origin"
+              class="option-input"
+              :class="{ 'is-invalid': fieldErrors.origin }"
+              placeholder="例如：广州天河区、北京南站"
+              maxlength="120"
+            />
+          </div>
           <div class="option-group">
-            <label>出行时间</label>
-            <input type="date" v-model="form.startDate" class="option-input" />
+            <label>出发日期 <span class="field-required">*</span></label>
+            <input
+              ref="startDateInput"
+              type="date"
+              v-model="form.startDate"
+              class="option-input"
+              :class="{ 'is-invalid': fieldErrors.startDate }"
+            />
+          </div>
+          <div class="option-group">
+            <label>出发时段</label>
+            <select v-model="form.departurePeriod" class="option-input">
+              <option value="morning">上午（08:00 左右）</option>
+              <option value="afternoon">下午（14:00 左右）</option>
+              <option value="evening">晚间（19:00 左右）</option>
+            </select>
+          </div>
+          <div class="option-group">
+            <label>交通偏好</label>
+            <select v-model="form.transportPreference" class="option-input">
+              <option value="smart">智能推荐</option>
+              <option value="drive">驾车优先</option>
+              <option value="transit">公共交通优先</option>
+              <option value="rail">高铁/动车建议优先</option>
+              <option value="flight">飞机建议优先</option>
+            </select>
           </div>
           <div class="option-group">
             <label>预算范围</label>
@@ -173,8 +208,72 @@
               </div>
               <p class="reason-text">{{ plan.reason }}</p>
             </div>
+            <!-- 出发信息摘要 -->
+            <div v-if="plan.transport?.origin" class="departure-card">
+              <div class="departure-head">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D6B5C" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span>出发信息</span>
+              </div>
+              <p class="departure-summary">{{ formatDepartureSummary(plan.transport) }}</p>
+              <div class="departure-grid">
+                <div class="departure-item">
+                  <span class="departure-label">出发地</span>
+                  <strong>{{ plan.transport.origin }}</strong>
+                </div>
+                <div class="departure-item">
+                  <span class="departure-label">出发日期</span>
+                  <strong>{{ plan.transport.departureDate || '未设置' }}</strong>
+                </div>
+                <div class="departure-item">
+                  <span class="departure-label">出发时段</span>
+                  <strong>{{ departurePeriodLabels[plan.transport.departurePeriod] || '未设置' }}</strong>
+                </div>
+                <div class="departure-item">
+                  <span class="departure-label">交通偏好</span>
+                  <strong>{{ transportPreferenceLabels[plan.transport.preference] || '智能推荐' }}</strong>
+                </div>
+              </div>
+              <p class="departure-note">详细去程查询可在「行程路线」页继续生成；这里只保留规划所需的出发摘要。</p>
+            </div>
+            <!-- 出行天气预报 -->
+            <div v-if="weather.loading || weather.error || (weather.days && weather.days.length)" class="weather-card">
+              <div class="weather-head">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D6B5C" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                <span>出行天气预报</span>
+                <span v-if="weather.city" class="weather-city">{{ weather.city }}{{ weather.admin1 ? ` · ${weather.admin1}` : '' }}</span>
+              </div>
+              <p v-if="weather.loading" class="weather-loading">正在获取目的地一周天气…</p>
+              <p v-else-if="weather.error" class="weather-error">{{ weather.error }}</p>
+              <template v-else>
+                <p class="weather-note" :class="{ 'is-historical': weather.mode !== 'forecast' }">{{ weather.note }}</p>
+                <div class="weather-grid">
+                  <div
+                    v-for="day in weather.days"
+                    :key="day.date"
+                    class="weather-day"
+                    :class="{ 'is-ref': day.source === 'historical' }"
+                  >
+                    <div class="weather-day-top">
+                      <span class="weather-weekday">{{ day.weekday }}</span>
+                      <span class="weather-date">{{ formatWeatherDate(day.date) }}</span>
+                    </div>
+                    <div class="weather-summary">{{ day.summary }}</div>
+                    <div class="weather-temp">
+                      <strong>{{ formatTemp(day.temp_max) }}</strong>
+                      <span>/ {{ formatTemp(day.temp_min) }}</span>
+                    </div>
+                    <div class="weather-meta">
+                      <span v-if="day.precipitation_probability != null">降水 {{ day.precipitation_probability }}%</span>
+                      <span v-else-if="day.precipitation_sum != null">降水 {{ day.precipitation_sum }}mm</span>
+                      <span v-else>降水 —</span>
+                    </div>
+                    <div v-if="day.source === 'historical'" class="weather-badge">往年同期</div>
+                  </div>
+                </div>
+              </template>
+            </div>
             <!-- 关键信息（最佳季节/预算） -->
-            <div v-if="plan.bestSeason || plan.estimateCost" class="info-row">
+            <div v-if="plan.bestSeason || plan.estimateCost || plan.budgetLabel" class="info-row">
               <div v-if="plan.bestSeason" class="info-card">
                 <span class="info-icon">📅</span>
                 <div>
@@ -182,11 +281,11 @@
                   <span class="info-value">{{ plan.bestSeason }}</span>
                 </div>
               </div>
-              <div v-if="plan.estimateCost" class="info-card">
+              <div v-if="plan.estimateCost || plan.budgetLabel" class="info-card">
                 <span class="info-icon">💰</span>
                 <div>
                   <span class="info-label">预估费用</span>
-                  <span class="info-value">{{ plan.estimateCost }}</span>
+                  <span class="info-value">{{ plan.estimateCost || plan.budgetLabel }}</span>
                 </div>
               </div>
             </div>
@@ -210,17 +309,38 @@
             </div>
             <!-- 每日行程 -->
             <div v-if="plan.daysList && plan.daysList.length" class="days-section">
-              <h4 class="days-title">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D6B5C" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                每日行程安排
-              </h4>
-              <div v-for="(day, i) in plan.daysList" :key="i" class="day-card">
+              <div class="days-head">
+                <h4 class="days-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D6B5C" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                  每日行程安排
+                </h4>
+                <span class="days-hint">悬停景点 / 美食 / 人文标签可预览图片</span>
+              </div>
+              <div v-for="(day, i) in plan.daysList" :key="i" class="day-card" :class="{ 'is-arrival-day': i === 0 }">
                 <div class="day-badge">Day {{ i + 1 }}</div>
                 <div class="day-body">
-                  <h5 class="day-title">{{ day.title }}</h5>
+                  <div class="day-title-row">
+                    <h5 class="day-title">{{ day.title }}</h5>
+                    <span v-if="i === 0" class="day-tag">去程衔接</span>
+                  </div>
                   <p class="day-desc">{{ day.desc }}</p>
-                  <div v-if="day.spots && day.spots.length" class="day-spots">
-                    <span v-for="(s, j) in day.spots" :key="j" class="day-spot">{{ s.name || s }}</span>
+                  <div v-if="day.highlights && day.highlights.length" class="day-highlights">
+                    <span
+                      v-for="(item, j) in day.highlights"
+                      :key="`${item.type}-${item.label}-${j}`"
+                      class="day-highlight"
+                      :class="[`type-${item.type}`, { 'has-preview': isPreviewableHighlight(item) }]"
+                      @mouseenter="(e) => isPreviewableHighlight(item) && showTagPreview(e, {
+                        label: item.label,
+                        tagType: item.type,
+                        city: form.destination || plan.destination,
+                        localImage: item.image || getSpotImageByName(item.label),
+                        dayIdx: i,
+                        tagIdx: j,
+                      })"
+                      @mousemove="(e) => isPreviewableHighlight(item) && moveTagPreview(e)"
+                      @mouseleave="() => isPreviewableHighlight(item) && hideTagPreview()"
+                    >{{ item.label }}</span>
                   </div>
                 </div>
               </div>
@@ -258,6 +378,25 @@
       </div>
     </div>
     <div v-if="actionToast" class="action-toast" :class="actionToast.type">{{ actionToast.text }}</div>
+    <Teleport to="body">
+      <div
+        v-if="tagPreview.visible"
+        class="tag-preview-card"
+        :style="{ left: `${tagPreview.x}px`, top: `${tagPreview.y}px` }"
+        @mouseenter="keepTagPreview"
+        @mouseleave="hideTagPreview"
+      >
+        <div class="tag-preview-media">
+          <img v-if="tagPreview.imageUrl" :src="tagPreview.imageUrl" :alt="tagPreview.label" />
+          <div v-else-if="tagPreview.loading" class="tag-preview-state">加载图片中…</div>
+          <div v-else class="tag-preview-state">暂无图片</div>
+        </div>
+        <div class="tag-preview-meta">
+          <strong>{{ tagPreview.label }}</strong>
+          <span v-if="tagPreview.attribution">{{ tagPreview.attribution }}</span>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -266,6 +405,8 @@ import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { chat, chatWithVision } from '../utils/agnesApi.js'
 import { getSpotImageByName } from '../data/provinces.js'
+import { resolveTagPreview } from '../utils/tagPreview.js'
+import apiClient from '../utils/apiClient.js'
 import { useUiStore } from '../stores/uiStore.js'
 import { useAuthStore } from '../stores/authStore.js'
 import { usePlanStore } from '../stores/planStore.js'
@@ -337,13 +478,45 @@ const recordFinalText = ref('')
 const recordInterimText = ref('')
 const recordError = ref('')
 
+function todayISODate() {
+  const d = new Date()
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 const form = reactive({
-  startDate: '',
+  origin: '',
+  startDate: todayISODate(),
+  departurePeriod: 'morning',
+  transportPreference: 'smart',
   budget: '',
   days: 7,
   style: '',
   people: ''
 })
+
+const originInput = ref(null)
+const startDateInput = ref(null)
+const fieldErrors = reactive({
+  origin: false,
+  startDate: false
+})
+
+const departurePeriodLabels = {
+  morning: '上午（08:00 左右）',
+  afternoon: '下午（14:00 左右）',
+  evening: '晚间（19:00 左右）'
+}
+
+const transportPreferenceLabels = {
+  smart: '智能推荐',
+  drive: '驾车优先',
+  transit: '公共交通优先',
+  rail: '高铁/动车建议优先',
+  flight: '飞机建议优先'
+}
 
 const travelStyles = [
   { key: 'relax', label: '悠闲度假', icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>` },
@@ -482,11 +655,391 @@ function stopRecord() {
 const planGenerated = ref(false)
 const rawContent = ref('') // AI 原始返回内容（JSON 解析失败时用于 Markdown 回退渲染）
 const plan = reactive({
-  days: 7, cities: 3, budget: '4500', daysList: [],
+  days: 7, cities: 3, budget: '4500', budgetLabel: '', daysList: [],
   destination: '', heroImage: '', heroTags: [],
   reason: '', bestSeason: '', estimateCost: '',
-  hotel: '', tips: []
+  hotel: '', tips: [], transport: null
 })
+
+const weather = reactive({
+  loading: false,
+  error: '',
+  city: '',
+  admin1: '',
+  mode: '',
+  note: '',
+  days: []
+})
+
+function resetWeather() {
+  weather.loading = false
+  weather.error = ''
+  weather.city = ''
+  weather.admin1 = ''
+  weather.mode = ''
+  weather.note = ''
+  weather.days = []
+}
+
+function formatWeatherDate(iso) {
+  if (!iso) return ''
+  const parts = String(iso).split('-')
+  if (parts.length < 3) return iso
+  return `${Number(parts[1])}/${Number(parts[2])}`
+}
+
+function formatTemp(value) {
+  if (value == null || value === '') return '—'
+  return `${value}°`
+}
+
+function weatherModeLabel(mode) {
+  if (mode === 'forecast') return '实时预报'
+  if (mode === 'historical') return '往年同期参考'
+  if (mode === 'mixed') return '预报+往年参考'
+  return ''
+}
+
+async function loadTripWeather(city, startDate) {
+  resetWeather()
+  let place = String(city || '').trim()
+  // 从「林芝（西藏）」这类文案中提取主城市名
+  place = place.replace(/[（(].*?[）)]/g, '').replace(/[·\-—].*$/, '').trim()
+  const dateStr = String(startDate || '').trim()
+  if (!place || !dateStr) {
+    weather.error = '缺少目的地或出发日期，暂无法展示天气'
+    return
+  }
+  weather.loading = true
+  try {
+    const { data } = await apiClient.get('/weather/trip', {
+      params: { city: place, start_date: dateStr, days: 7 }
+    })
+    weather.city = data.city || place
+    weather.admin1 = data.admin1 || ''
+    weather.mode = data.mode || ''
+    weather.note = data.note || ''
+    weather.days = Array.isArray(data.days) ? data.days : []
+    if (!weather.days.length) weather.error = '暂无可用天气数据'
+  } catch (err) {
+    const detail = err.response?.data?.detail
+    weather.error = (typeof detail === 'string' ? detail : null) || err.message || '天气获取失败'
+    weather.days = []
+  } finally {
+    weather.loading = false
+  }
+}
+
+const budgetEstimateMap = {
+  '': '按实际行程灵活安排',
+  '1000元以内': '800-1000元/人',
+  '1000-3000元': '1000-3000元/人',
+  '3000-5000元': '3000-5000元/人',
+  '5000元以上': '5000元以上/人'
+}
+
+const budgetValueMap = {
+  '': '4500',
+  '1000元以内': '800',
+  '1000-3000元': '2000',
+  '3000-5000元': '4000',
+  '5000元以上': '8000'
+}
+
+function buildTransportSnapshot() {
+  return {
+    origin: form.origin,
+    departureDate: form.startDate,
+    departurePeriod: form.departurePeriod,
+    preference: form.transportPreference
+  }
+}
+
+function formatDepartureSummary(transport) {
+  if (!transport?.origin) return ''
+  const dateText = transport.departureDate || '待定日期'
+  const periodText = departurePeriodLabels[transport.departurePeriod] || '灵活时段'
+  const preferenceText = transportPreferenceLabels[transport.preference] || '智能推荐'
+  return `${dateText} ${periodText}从${transport.origin}出发，交通偏好：${preferenceText}。`
+}
+
+function syncBudgetFields() {
+  plan.budgetLabel = form.budget || '不限'
+  plan.budget = budgetValueMap[form.budget] || '4500'
+  if (form.budget) {
+    plan.estimateCost = budgetEstimateMap[form.budget]
+  } else if (!plan.estimateCost) {
+    plan.estimateCost = budgetEstimateMap['']
+  }
+}
+
+function ensureDay1InboundDesc(daysList) {
+  if (!Array.isArray(daysList) || !daysList.length || !form.origin) return daysList
+  const day1 = { ...daysList[0] }
+  const inboundLine = formatDepartureSummary(buildTransportSnapshot()).replace(/。$/, '')
+  const prefix = `去程衔接：${inboundLine}，抵达后先办理入住，再安排附近轻松游览。`
+  const desc = day1.desc || ''
+  if (!desc.includes(form.origin) && !desc.includes('去程')) {
+    day1.desc = `${prefix}${desc ? ` ${desc}` : ''}`
+  }
+  daysList[0] = day1
+  return daysList
+}
+
+const tagPreview = reactive({
+  visible: false,
+  loading: false,
+  label: '',
+  imageUrl: '',
+  attribution: '',
+  x: 0,
+  y: 0,
+  token: 0,
+})
+let tagPreviewHideTimer = null
+/** 当前规划结果内已分配给各标签的图片，避免同程撞车（对齐行程路线页） */
+const tagImageByKey = new Map()
+
+function tagImageKey(dayIdx, tagIdx) {
+  return `${dayIdx}:${tagIdx}`
+}
+
+function collectExcludeTagImageUrls(exceptKey = '') {
+  const urls = []
+  for (const [key, url] of tagImageByKey.entries()) {
+    if (key === exceptKey || !url) continue
+    urls.push(url)
+  }
+  return urls
+}
+
+function normalizePreviewUrl(url) {
+  const text = String(url || '').trim()
+  if (!text) return ''
+  const m = text.match(/^https?:\/\/[^/]+(\/uploads\/.+)$/i)
+  if (m) return m[1]
+  return text
+}
+
+function positionTagPreview(clientX, clientY) {
+  const pad = 16
+  const cardW = 220
+  const cardH = 190
+  let x = clientX + 14
+  let y = clientY + 14
+  if (typeof window !== 'undefined') {
+    if (x + cardW + pad > window.innerWidth) x = Math.max(pad, clientX - cardW - 12)
+    if (y + cardH + pad > window.innerHeight) y = Math.max(pad, clientY - cardH - 12)
+  }
+  tagPreview.x = x
+  tagPreview.y = y
+}
+
+function keepTagPreview() {
+  if (tagPreviewHideTimer) {
+    clearTimeout(tagPreviewHideTimer)
+    tagPreviewHideTimer = null
+  }
+}
+
+function hideTagPreview() {
+  if (tagPreviewHideTimer) clearTimeout(tagPreviewHideTimer)
+  tagPreviewHideTimer = setTimeout(() => {
+    tagPreview.visible = false
+    tagPreview.loading = false
+    tagPreview.imageUrl = ''
+    tagPreview.attribution = ''
+    tagPreview.token += 1
+  }, 120)
+}
+
+function moveTagPreview(e) {
+  if (!tagPreview.visible) return
+  positionTagPreview(e.clientX, e.clientY)
+}
+
+async function showTagPreview(e, {
+  label,
+  tagType = 'spot',
+  city = '',
+  localImage = '',
+  dayIdx = -1,
+  tagIdx = -1,
+} = {}) {
+  const text = String(label || '').trim()
+  if (!text) return
+  keepTagPreview()
+  const token = tagPreview.token + 1
+  const imageKey = dayIdx >= 0 && tagIdx >= 0 ? tagImageKey(dayIdx, tagIdx) : `label:${text}`
+  const excludeUrls = collectExcludeTagImageUrls(imageKey).map(normalizePreviewUrl)
+  const local = normalizePreviewUrl(localImage)
+
+  tagPreview.token = token
+  tagPreview.visible = true
+  tagPreview.label = text
+  tagPreview.loading = true
+  tagPreview.imageUrl = (local && !excludeUrls.includes(local)) ? local : ''
+  tagPreview.attribution = tagPreview.imageUrl ? '本地景点图库' : ''
+  positionTagPreview(e.clientX, e.clientY)
+
+  // 1) 对齐行程路线：先查运营景点库封面（精确/模糊名称）
+  try {
+    const { data } = await apiClient.get('/attractions/lookup', { params: { name: text } })
+    if (tagPreview.token !== token) return
+    const cover = normalizePreviewUrl(data?.data?.cover_image_url || '')
+    if (cover && !excludeUrls.includes(cover)) {
+      tagPreview.imageUrl = cover
+      tagPreview.attribution = '星际行者景点库'
+      tagPreview.loading = false
+      tagImageByKey.set(imageKey, cover)
+      return
+    }
+  } catch {
+    // 忽略库查询失败，继续图搜兜底
+  }
+
+  if (tagPreview.token !== token) return
+  if (tagPreview.imageUrl) {
+    tagImageByKey.set(imageKey, tagPreview.imageUrl)
+    tagPreview.loading = false
+    return
+  }
+
+  // 2) 图搜兜底：景点/人文更接近路线页 spot 检索；其余保留原 tagType
+  const previewType = (tagType === 'spot' || tagType === 'culture') ? 'spot' : tagType
+  try {
+    const data = await resolveTagPreview({
+      label: text,
+      tagType: previewType,
+      city,
+      localImage: '',
+      excludeUrls,
+    })
+    if (tagPreview.token !== token) return
+    tagPreview.imageUrl = normalizePreviewUrl(data.image_url || '')
+    tagPreview.attribution = data.attribution || ''
+    tagPreview.loading = false
+    if (tagPreview.imageUrl) tagImageByKey.set(imageKey, tagPreview.imageUrl)
+  } catch {
+    if (tagPreview.token !== token) return
+    tagPreview.loading = false
+    tagPreview.imageUrl = ''
+    tagPreview.attribution = '暂无可用图片'
+  }
+}
+
+function stripHighlightPrefix(text) {
+  return String(text || '')
+    .trim()
+    .replace(/^(美食|人文|体验|氛围|景点|赏阅|文化)\s*[·•.\-—]\s*/u, '')
+    .trim()
+}
+
+/** 抽象氛围词：无法稳定检索到对应图片，不应作为展示标签 */
+function isAbstractHighlightLabel(label) {
+  const text = String(label || '').trim()
+  if (!text) return true
+  if (text.length < 2 || text.length > 14) return true
+  if (/^(抵达|入住|出发|返程|告别|行程|安排|衔接)/u.test(text)) return true
+  if (/(初体验|独特体验|慢生活|城市氛围|轻松到店|深度漫步|悠闲午后|告别高原)$/u.test(text)) return true
+  if (/氛围|节奏|心情|感受|体验感|打卡感|特色小吃|特色美食|人文地标|当地小吃/.test(text)) return true
+  return false
+}
+
+function isPreviewableHighlight(item) {
+  return Boolean(item && ['spot', 'food', 'culture'].includes(item.type) && item.label)
+}
+
+function classifyHighlightLabel(text) {
+  const label = stripHighlightPrefix(text)
+  if (!label || isAbstractHighlightLabel(label)) return null
+  if (/火锅|米线|小吃|咖啡|甜茶|酸奶|美食|菜|饵块|乳扇|烤|鲜|包子|面|饭|酥|汤/.test(label)) {
+    return { type: 'food', label }
+  }
+  if (/寺|庙|宫|园|街|古镇|古城|博物馆|非遗|壁画|经筒|园林|文化|民族|藏式园林/.test(label)) {
+    // 具体地点优先归为景点，便于走景点库封面
+    if (/寺|庙|宫|园|街|古镇|古城|博物馆|林卡|布达拉|罗布林卡|八廓/.test(label)) {
+      return { type: 'spot', label }
+    }
+    return { type: 'culture', label }
+  }
+  // 默认识别为景点名（可检索实体），不再产出 vibe / 抽象 experience
+  return { type: 'spot', label }
+}
+
+function normalizeHighlight(item) {
+  if (!item) return null
+  if (typeof item === 'string') return classifyHighlightLabel(item)
+
+  const label = stripHighlightPrefix(item.label || item.name || item.text || '')
+  if (!label || isAbstractHighlightLabel(label)) return null
+
+  let type = ['food', 'culture', 'spot'].includes(item.type) ? item.type : ''
+  if (!type || type === 'vibe' || type === 'experience') {
+    return classifyHighlightLabel(label)
+  }
+  // AI 把景点标成 experience 时，纠偏为 spot
+  if (type === 'culture' && /寺|庙|宫|园|街|古镇|古城|博物馆|林卡|布达拉|罗布林卡|八廓/.test(label)) {
+    type = 'spot'
+  }
+  const image = item.image ? String(item.image) : ''
+  return image ? { type, label, image } : { type, label }
+}
+
+function highlightRank(item) {
+  if (item.type === 'spot') return 0
+  if (item.type === 'food') return 1
+  if (item.type === 'culture') return 2
+  return 9
+}
+
+function normalizeDayHighlights(day, usedLabels = null) {
+  const used = usedLabels instanceof Set ? usedLabels : null
+  const fromAi = Array.isArray(day.highlights)
+    ? day.highlights.map(normalizeHighlight).filter(Boolean)
+    : []
+  const spotTags = (day.spots || [])
+    .map((spot) => {
+      if (!spot) return null
+      if (typeof spot === 'string') {
+        const label = spot.trim()
+        return label && !isAbstractHighlightLabel(label) ? { type: 'spot', label } : null
+      }
+      const label = String(spot.name || spot.label || '').trim()
+      if (!label || isAbstractHighlightLabel(label)) return null
+      return { type: 'spot', label, image: spot.image || '' }
+    })
+    .filter(Boolean)
+
+  const merged = [...fromAi, ...spotTags]
+  const seen = new Set()
+  const unique = merged.filter((item) => {
+    const key = item.label
+    if (seen.has(key)) return false
+    // 整程去重：前面天数已用过的标签不再出现
+    if (used && used.has(key)) return false
+    seen.add(key)
+    return true
+  })
+
+  unique.sort((a, b) => highlightRank(a) - highlightRank(b))
+
+  // 每天最多 5 个：优先未在前几天出现过的景点/美食/人文
+  const picked = unique.slice(0, 5)
+  if (used) {
+    for (const item of picked) used.add(item.label)
+  }
+  return picked
+}
+
+/** 按天顺序规范化整份行程标签，保证跨天不重复 */
+function normalizePlanHighlights(daysList) {
+  const used = new Set()
+  return (daysList || []).map((day) => ({
+    ...day,
+    highlights: normalizeDayHighlights(day, used),
+  }))
+}
 const isGenerating = ref(false)
 const thinkingContent = ref('')
 const errorMsg = ref('')
@@ -516,33 +1069,87 @@ const spotPool = {
 function extractJson(text) {
   if (!text) return null
 
-  // 策略 1：直接尝试整体解析（最理想情况）
-  try {
-    const obj = JSON.parse(text)
-    if (obj && typeof obj === 'object') return obj
-  } catch (e) { /* 继续尝试 */ }
+  // 去掉常见思维链包装，避免污染解析
+  let cleaned = String(text)
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
+    .replace(/<\/?redacted_reasoning>/gi, '')
+    .trim()
 
-  // 策略 2：提取 markdown 代码块 ```json ... ``` 或 ``` ... ```
-  const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i)
-  if (codeBlockMatch) {
+  const tryParse = (raw) => {
     try {
-      const obj = JSON.parse(codeBlockMatch[1].trim())
-      if (obj && typeof obj === 'object') return obj
-    } catch (e) { /* 继续尝试 */ }
+      const obj = JSON.parse(raw)
+      if (obj && typeof obj === 'object' && !Array.isArray(obj)) return obj
+    } catch (e) { /* ignore */ }
+    return null
   }
 
-  // 策略 3：用括号配对找到第一个完整的 {...} 块
-  const firstBrace = text.indexOf('{')
+  const isPlanLike = (obj) =>
+    obj && (obj.destination || obj.daysList || obj.heroTags || obj.reason)
+
+  // 策略 1：直接整体解析
+  let obj = tryParse(cleaned)
+  if (obj && isPlanLike(obj)) return obj
+  if (obj) return obj
+
+  // 策略 2：markdown 代码块（取最后一个 json 块）
+  const blocks = [...cleaned.matchAll(/```(?:json)?\s*([\s\S]*?)```/gi)]
+  for (let i = blocks.length - 1; i >= 0; i--) {
+    obj = tryParse(blocks[i][1].trim())
+    if (obj && isPlanLike(obj)) return obj
+    if (obj) return obj
+  }
+
+  // 策略 3：从后往前找包含 destination/daysList 的完整 {...}
+  const keys = ['"daysList"', '"destination"', '"heroTags"']
+  let searchFrom = cleaned.length
+  while (searchFrom > 0) {
+    let brace = -1
+    for (const key of keys) {
+      const idx = cleaned.lastIndexOf(key, searchFrom - 1)
+      if (idx >= 0 && (brace < 0 || idx > brace)) brace = idx
+    }
+    if (brace < 0) break
+    const start = cleaned.lastIndexOf('{', brace)
+    if (start < 0) {
+      searchFrom = brace
+      continue
+    }
+    let depth = 0
+    let inString = false
+    let escape = false
+    let endIdx = -1
+    for (let i = start; i < cleaned.length; i++) {
+      const ch = cleaned[i]
+      if (escape) { escape = false; continue }
+      if (ch === '\\') { escape = true; continue }
+      if (ch === '"') { inString = !inString; continue }
+      if (inString) continue
+      if (ch === '{') depth++
+      else if (ch === '}') {
+        depth--
+        if (depth === 0) { endIdx = i; break }
+      }
+    }
+    if (endIdx > start) {
+      obj = tryParse(cleaned.slice(start, endIdx + 1))
+      if (obj && isPlanLike(obj)) return obj
+    }
+    searchFrom = start
+  }
+
+  // 策略 4：第一个完整 {...}
+  const firstBrace = cleaned.indexOf('{')
   if (firstBrace >= 0) {
     let depth = 0
     let inString = false
     let escape = false
     let endIdx = -1
-    for (let i = firstBrace; i < text.length; i++) {
-      const ch = text[i]
+    for (let i = firstBrace; i < cleaned.length; i++) {
+      const ch = cleaned[i]
       if (escape) { escape = false; continue }
       if (ch === '\\') { escape = true; continue }
-      if (ch === '"' && !escape) { inString = !inString; continue }
+      if (ch === '"') { inString = !inString; continue }
       if (inString) continue
       if (ch === '{') depth++
       else if (ch === '}') {
@@ -551,21 +1158,9 @@ function extractJson(text) {
       }
     }
     if (endIdx > firstBrace) {
-      const candidate = text.slice(firstBrace, endIdx + 1)
-      try {
-        const obj = JSON.parse(candidate)
-        if (obj && typeof obj === 'object') return obj
-      } catch (e) { /* 继续尝试 */ }
+      obj = tryParse(cleaned.slice(firstBrace, endIdx + 1))
+      if (obj) return obj
     }
-  }
-
-  // 策略 4：宽松正则匹配（非贪婪，但可能截断）
-  const looseMatch = text.match(/\{[\s\S]*\}/)
-  if (looseMatch) {
-    try {
-      const obj = JSON.parse(looseMatch[0])
-      if (obj && typeof obj === 'object') return obj
-    } catch (e) { /* 全部失败 */ }
   }
 
   return null
@@ -616,7 +1211,10 @@ function buildPrompt() {
   }
   if (form.style) prompt += `- 旅行风格：${form.style}\n`
   if (form.people) prompt += `- 出行人员：${form.people}\n`
+  if (form.origin) prompt += `- 出发地：${form.origin}\n`
   if (form.startDate) prompt += `- 出发日期：${form.startDate}\n`
+  if (form.departurePeriod) prompt += `- 出发时段：${departurePeriodLabels[form.departurePeriod]}\n`
+  if (form.transportPreference) prompt += `- 交通偏好：${transportPreferenceLabels[form.transportPreference]}\n`
   if (form.budget) prompt += `- 预算范围：${form.budget}\n`
   prompt += `- 旅行天数：${form.days}天\n`
   if (prefData.value) {
@@ -629,16 +1227,23 @@ function buildPrompt() {
 2. 景点选择应**直接呼应**用户需求（尤其是图片场景）
 3. 景点名称使用**规范全名**（如"故宫博物院"、"慕田峪长城"）
 4. 每天给出合理的活动安排
+5. 结果必须体现用户填写的出发信息与预算：
+   - "estimateCost" 必须与用户预算范围一致：不限→灵活区间；1000元以内→800-1000元/人；1000-3000元→1000-3000元/人；3000-5000元→3000-5000元/人；5000元以上→5000元以上/人
+   - Day 1 的 title/desc 必须包含去程衔接：写清从出发地、出发日期/时段、按交通偏好前往目的地并入住；抵达日只安排附近轻松活动
+   - Day 2 及之后专注当地玩法，不要重复罗列出发地、出发时段或交通偏好
 
 ## 输出格式（严格遵守）
 
 【必须】只输出一个 JSON 对象，**不要任何额外内容**：
-- ❌ 不要在 JSON 前面/后面添加任何解释、问候、标题
+- ❌ 不要在 JSON 前面/后面添加任何解释、问候、标题、英文思考过程
+- ❌ 思考过程（若有）不得写入最终答案；最终答案只能是 JSON
 - ❌ 不要在字段值里添加 emoji（如 ✨📅💰🏨💡📍）
 - ❌ 不要重复字段名（如不要写"推荐理由：xxx"）
 - ❌ 不要用 markdown 代码块包裹（不要写 \`\`\`json）
 - ❌ 不要写"以下是JSON"等引导文字
+- ❌ 不要输出 Markdown 行程正文（如 Day 1 / ## 标题）
 - ✅ 直接以 \`{\` 开头，以 \`}\` 结尾
+- ✅ 若模型会思考，请在思考结束后只把 JSON 作为最终可见答案
 
 【字段值规范】
 - "reason"：纯文本推荐理由，2-3 句话，**不要 emoji 也不要"推荐理由："前缀**
@@ -647,9 +1252,21 @@ function buildPrompt() {
 - "hotel"：纯住宿建议文本，**不要 emoji 也不要"住宿建议："前缀**
 - "tips"：数组，每项是一条纯文本贴士，**不要 emoji 也不要数字编号**
 - "daysList[].title"：纯标题，如 "Day 1 · 泰山脚下热身"（不要 emoji）
-- "daysList[].desc"：纯行程描述
-- "daysList[].spots"：**景点对象数组**（不是字符串！），每个对象必须包含：
-  - "name"：景点规范全名（如"故宫博物院"、"慕田裕长城"、"涠洲岛"）
+- "daysList[].desc"：纯行程描述，写清上午/下午/晚间，可点名当地美食与体验
+- "daysList[].highlights"：当天可检索标签数组（3-5 个），每项为对象：
+  - "type"：只能是 spot / food / culture 之一（禁止 vibe、experience）
+  - "label"：具体实体名称，2-10 字，不要加前缀
+  - spot：当天真实景点全名或常用名，如 "布达拉宫"、"八廓街"、"罗布林卡"
+  - food：当地具体美食名，如 "藏式甜茶"、"藏式火锅"、"牦牛肉干"
+  - culture：可指认的人文活动/场所，如 "大昭寺转经"、"藏戏表演"
+  【硬性要求】
+  - 禁止抽象词：抵达入住、独特体验、高原初体验、悠闲午后、告别高原、慢生活、城市氛围等
+  - 优先使用当天 spots 里的景点名；每天至少 2 个 spot，至少 1 个 food 或 culture
+  - 每个 label 都应能对应真实地点/食物/活动，便于图片检索
+  - **整程 highlights 的 label 不得跨天重复**：同一景点/美食/人文标签整份行程只出现一次（例如「大昭寺」「八廓街」只能出现在一天）
+  - 若某景点在多天描述中再次提到，也不要再放进后几天的 highlights；改用当天其他未出现过的景点或美食
+- "daysList[].spots"：**景点对象数组**（不是字符串！），用于后续路线规划，每个对象必须包含：
+  - "name"：景点规范全名（如"故宫博物院"、"慕田峪长城"、"涠洲岛"）
   - "city"：景点所在城市（如"北京"、"北海"）
   - "lat"：景点纬度（数字，保留 2-4 位小数，必须真实可用）
   - "lng"：景点经度（数字，保留 2-4 位小数，必须真实可用）
@@ -657,24 +1274,44 @@ function buildPrompt() {
   【关键】坐标必须真实准确，是后续地图路线规划的核心数据，请务必输出
 
 ## 输出示例（仅作格式参考，不要照抄内容）
-{"destination":"大理","heroTags":["苍山洱海","白族文化","慢生活"],"reason":"大理兼具自然风光与少数民族文化，节奏舒缓适合休闲度假。","bestSeason":"3-5月、9-11月","estimateCost":"2000-3500元/人","hotel":"建议住在古城内或才村附近，客栈为主，150-300元/晚","tips":["苍山海拔较高，注意防晒","紫外线强，备好墨镜","租电动车环洱海更方便","古城石板路多，穿平底鞋"],"days":3,"cities":1,"budget":"3000","daysList":[{"title":"Day 1 · 抵达大理","desc":"抵达后入住古城客栈，下午漫步古城感受白族风情。","spots":[{"name":"大理古城","city":"大理","lat":25.69,"lng":100.16,"province":"云南"},{"name":"五华楼","city":"大理","lat":25.69,"lng":100.17,"province":"云南"},{"name":"洋人街","city":"大理","lat":25.69,"lng":100.16,"province":"云南"}]},{"title":"Day 2 · 环洱海","desc":"包车或电动车环洱海，途经喜洲、双廊等小镇。","spots":[{"name":"喜洲古镇","city":"大理","lat":25.84,"lng":100.13,"province":"云南"},{"name":"双廊","city":"大理","lat":25.91,"lng":100.19,"province":"云南"},{"name":"小普陀","city":"大理","lat":25.93,"lng":100.21,"province":"云南"}]},{"title":"Day 3 · 登苍山","desc":"乘坐索道上苍山，俯瞰洱海全景。","spots":[{"name":"苍山","city":"大理","lat":25.68,"lng":100.22,"province":"云南"},{"name":"洗马潭大索道","city":"大理","lat":25.66,"lng":100.23,"province":"云南"}]}]}`
+{"destination":"大理","heroTags":["苍山洱海","白族文化","洱海风光"],"reason":"大理兼具自然风光与少数民族文化，节奏舒缓适合休闲度假。","bestSeason":"3-5月、9-11月","estimateCost":"1000-3000元/人","hotel":"建议住在古城内或才村附近，客栈为主，150-300元/晚","tips":["苍山海拔较高，注意防晒","紫外线强，备好墨镜","租电动车环洱海更方便","古城石板路多，穿平底鞋"],"days":3,"cities":1,"budget":"2000","daysList":[{"title":"Day 1 · 抵达大理","desc":"晚间从广州南站出发，按高铁建议优先前往大理；抵达后入住古城客栈，仅安排附近轻松散步，可尝尝乳扇。","highlights":[{"type":"spot","label":"大理古城"},{"type":"spot","label":"五华楼"},{"type":"food","label":"大理乳扇"}],"spots":[{"name":"大理古城","city":"大理","lat":25.69,"lng":100.16,"province":"云南"},{"name":"五华楼","city":"大理","lat":25.69,"lng":100.17,"province":"云南"}]},{"title":"Day 2 · 环洱海","desc":"包车或电动车环洱海，途经喜洲、双廊，午餐可安排白族三道茶与特色小吃。","highlights":[{"type":"spot","label":"喜洲古镇"},{"type":"spot","label":"双廊"},{"type":"food","label":"白族三道茶"},{"type":"culture","label":"白族民居"}],"spots":[{"name":"喜洲古镇","city":"大理","lat":25.84,"lng":100.13,"province":"云南"},{"name":"双廊","city":"大理","lat":25.91,"lng":100.19,"province":"云南"},{"name":"小普陀","city":"大理","lat":25.93,"lng":100.21,"province":"云南"}]},{"title":"Day 3 · 登苍山","desc":"乘坐索道上苍山，俯瞰洱海全景。","highlights":[{"type":"spot","label":"苍山"},{"type":"spot","label":"洗马潭大索道"},{"type":"food","label":"大理饵丝"}],"spots":[{"name":"苍山","city":"大理","lat":25.68,"lng":100.22,"province":"云南"},{"name":"洗马潭大索道","city":"大理","lat":25.66,"lng":100.23,"province":"云南"}]}]}
+`
   prompt += `
 ## 每日行程真实性与路线数据规则（必须执行）
 1. 每天按上午、午餐/休息、下午、晚间安排真实活动，不要把一天默认压缩成一个景点。
 2. 大型景区、主题乐园、长城、国家公园、古镇深度游可以独占一天；普通博物馆、城市地标和街区通常安排 2 个左右；相邻的小型景点可合理组合为 3-4 个。
-3. 抵达日、离开日和跨城市移动日要扣除交通与入住时间，减少景点数量；不要为了凑数量安排距离很远或体验重复的景点。
-4. 同一天景点必须优先选择同一区域或交通顺路的地点，并在 daysList[].desc 中写清上午、下午、晚间安排和必要的交通衔接。
+3. 抵达日、离开日和跨城市移动日要扣除交通与入住时间，减少景点数量；不要为了凑数量安排距离很远或体验重复的景点。用户已填写出发地和出发时段时，Day 1 必须先写去程衔接（出发地 + 时段 + 交通偏好），再安排抵达、入住和附近轻松游览，不要默认排满景点。
+4. 同一天景点必须优先选择同一区域或交通顺路的地点，并在 daysList[].desc 中写清上午、下午、晚间安排和必要的交通衔接。Day 2 及之后不要再重复出发信息。
 5. 每个 daysList[].spots[] 景点对象必须包含 name、city、province、lat、lng；lat/lng 必须是与该景点对应的真实十进制度坐标，不能使用空值、0、城市中心点或虚构坐标。没有可靠坐标的景点不要作为正式行程景点输出。
 6. image 不属于 AI 输出字段；前端只使用与景点名称精确匹配的本地图片。没有对应图片时保持空值，不得使用其他景点图片代替。
+7. estimateCost 必须与用户预算范围保持一致，不要输出明显超出或低于所选预算档位的费用描述。
+8. 每天输出 highlights 3-5 个，类型仅限 spot/food/culture；优先当天景点名 + 具体美食/人文实体，禁止抽象氛围词（如抵达入住、独特体验、悠闲午后）。
+9. 整份行程的 highlights.label 必须全局唯一，禁止跨天重复同一标签（如 Day1 已有「八廓街」，后续天不得再出现）。
 `
   return prompt
 }
 
 async function generatePlan() {
   if (isGenerating.value) return
+
+  fieldErrors.origin = !form.origin?.trim()
+  fieldErrors.startDate = !form.startDate
+  if (fieldErrors.origin || fieldErrors.startDate) {
+    const missing = []
+    if (fieldErrors.origin) missing.push('出发地')
+    if (fieldErrors.startDate) missing.push('出发日期')
+    showActionToast(`请先填写${missing.join('和')}`, 'error')
+    const focusEl = fieldErrors.origin ? originInput.value : startDateInput.value
+    focusEl?.focus?.()
+    focusEl?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+    return
+  }
+
   isGenerating.value = true
   errorMsg.value = ''
   planGenerated.value = true
+  tagImageByKey.clear()
+  resetWeather()
 
   try {
     const prompt = buildPrompt()
@@ -689,7 +1326,7 @@ async function generatePlan() {
         contentParts.push({ type: 'image_url', image_url: { url: imgDataUrl } })
       })
       userMessage = { role: 'user', content: contentParts }
-      resp = await chatWithVision([userMessage], { maxTokens: 2048 })
+      resp = await chatWithVision([userMessage], { maxTokens: 4096, timeoutMs: 120000 })
     } else {
       // 纯文本 → DeepSeek
       userMessage = { role: 'user', content: prompt }
@@ -697,7 +1334,10 @@ async function generatePlan() {
     }
 
     // 解析响应
-    const content = resp.choices?.[0]?.message?.content || ''
+    const content = typeof resp.choices?.[0]?.message?.content === 'string'
+      ? resp.choices[0].message.content.trim()
+      : ''
+    if (!content) throw new Error('AI 服务未返回可用文本内容')
     console.log('[AI响应] 原始内容:', content)
     // 保存原始内容（用于 JSON 解析失败时的 Markdown 回退）
     rawContent.value = content
@@ -723,7 +1363,8 @@ async function generatePlan() {
     plan.tips = data.tips || []
     plan.days = data.days || form.days
     plan.cities = data.cities || 1
-    plan.budget = data.budget || '4500'
+    plan.transport = buildTransportSnapshot()
+    syncBudgetFields()
 
     // 尝试获取主目的地城市图（作为 hero 背景）
     if (plan.destination) {
@@ -732,33 +1373,40 @@ async function generatePlan() {
     }
     // 没找到时，用第一天第一个景点的图片
     if (!plan.heroImage && data.daysList?.[0]?.spots?.[0]) {
-      const firstSpotImg = getSpotImageByName(data.daysList[0].spots[0])
+      const firstSpot = data.daysList[0].spots[0]
+      const firstSpotName = typeof firstSpot === 'string' ? firstSpot : firstSpot?.name
+      const firstSpotImg = getSpotImageByName(firstSpotName)
       if (firstSpotImg) plan.heroImage = firstSpotImg
     }
 
-    // 解析每日行程，附加图片
-    plan.daysList = (data.daysList || []).map(day => {
-      const spots = (day.spots || []).map(spot => {
-        // 兼容两种格式：对象或字符串
-        const spotName = typeof spot === 'string' ? spot : (spot.name || '')
-        if (!spotName) return null
-        let url = getSpotImageByName(spotName)
-        // 提取坐标（如果 AI 返回了）
-        const lat = typeof spot === 'object' ? parseFloat(spot.lat) : NaN
-        const lng = typeof spot === 'object' ? parseFloat(spot.lng) : NaN
-        if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) return null
-        return {
-          name: spotName,
-          image: url || '',
-          city: typeof spot === 'object' ? (spot.city || '') : '',
-          province: typeof spot === 'object' ? (spot.province || '') : '',
-          lat: isNaN(lat) ? null : lat,
-          lng: isNaN(lng) ? null : lng
-        }
-      }).filter(Boolean)
-      return { title: day.title, desc: day.desc, spots }
-    })
+    // 解析每日行程，附加图片；并保证 Day 1 有去程衔接；标签整程去重
+    plan.daysList = normalizePlanHighlights(
+      ensureDay1InboundDesc((data.daysList || []).map(day => {
+        const spots = (day.spots || []).map(spot => {
+          // 兼容两种格式：对象或字符串
+          const spotName = typeof spot === 'string' ? spot : (spot.name || '')
+          if (!spotName) return null
+          let url = getSpotImageByName(spotName)
+          // 提取坐标（如果 AI 返回了）
+          const lat = typeof spot === 'object' ? parseFloat(spot.lat) : NaN
+          const lng = typeof spot === 'object' ? parseFloat(spot.lng) : NaN
+          if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) return null
+          return {
+            name: spotName,
+            image: url || '',
+            city: typeof spot === 'object' ? (spot.city || '') : '',
+            province: typeof spot === 'object' ? (spot.province || '') : '',
+            lat: isNaN(lat) ? null : lat,
+            lng: isNaN(lng) ? null : lng
+          }
+        }).filter(Boolean)
+        return { title: day.title, desc: day.desc, spots, highlights: day.highlights || [] }
+      }))
+    )
     if (plan.daysList.length === 0) throw new Error('AI 返回的行程为空')
+
+    // 行程生成后并行拉取目的地一周天气（失败不影响行程展示）
+    loadTripWeather(plan.destination || inputText.value, form.startDate)
 
     showActionToast('行程已生成', 'success')
   } catch (err) {
@@ -774,6 +1422,7 @@ async function generatePlan() {
       // 真正的网络/服务失败 → 使用预设模板兜底
       errorMsg.value = err.message || 'AI 服务暂时不可用，请稍后再试'
       fallbackGenerate()
+      loadTripWeather(plan.destination || inputText.value, form.startDate)
       showActionToast('已为你生成推荐行程', 'info')
     }
   } finally {
@@ -784,8 +1433,10 @@ async function generatePlan() {
 function fallbackGenerate() {
   plan.days = form.days
   plan.cities = Math.min(Math.max(Math.floor(form.days / 2), 1), 5)
-  const budgetMap = { '': '4500', '1000元以内': '800', '1000-3000元': '2000', '3000-5000元': '4000', '5000元以上': '8000' }
-  plan.budget = budgetMap[form.budget] || '4500'
+  plan.transport = buildTransportSnapshot()
+  syncBudgetFields()
+  plan.destination = plan.destination || '精选目的地'
+  plan.reason = plan.reason || `结合你从${form.origin || '出发地'}出发、偏好${transportPreferenceLabels[form.transportPreference]}的行程需求，已生成可执行的 ${form.days} 天方案。`
 
   let cityPool = ['北京', '上海', '杭州', '成都', '西安', '厦门', '丽江', '重庆', '长沙', '武汉']
   if (prefData.value) {
@@ -803,7 +1454,7 @@ function fallbackGenerate() {
   }
 
   const pickedCities = cityPool.slice(0, plan.cities)
-  plan.daysList = []
+  const rawDays = []
   for (let i = 0; i < form.days; i++) {
     const city = pickedCities[i % pickedCities.length]
     const spotsNames = spotPool[city] || ['当地景点']
@@ -813,8 +1464,23 @@ function fallbackGenerate() {
       let url = getSpotImageByName(name)
       return { name, image: url || '' }
     })
-    plan.daysList.push({ title: `Day ${i + 1} · ${city}`, desc: `在${city}感受独特的旅行魅力`, spots })
+    if (i === 0) {
+      rawDays.push({
+        title: `Day 1 · 抵达${city}`,
+        desc: `去程衔接：${formatDepartureSummary(plan.transport)}抵达后入住并安排附近轻松游览。`,
+        spots: spots.slice(0, 2),
+        highlights: spots.slice(0, 2).map((s) => ({ type: 'spot', label: s.name, image: s.image || '' })),
+      })
+    } else {
+      rawDays.push({
+        title: `Day ${i + 1} · ${city}`,
+        desc: `在${city}安排当地景点与特色体验。`,
+        spots,
+        highlights: spots.map((s) => ({ type: 'spot', label: s.name, image: s.image || '' })),
+      })
+    }
   }
+  plan.daysList = normalizePlanHighlights(rawDays)
 }
 
 // 图片加载失败时把 src 清空，让占位 SVG 显示
@@ -847,14 +1513,34 @@ async function savePlan() {
       imageInsight
     ].filter(Boolean).join('\n')
     const planData = {
-      title: `${plan.days}天${plan.cities}城行程`,
+      title: `${plan.days}天${plan.cities}城行程 · ${plan.destination || '精选目的地'}`,
+      destination: plan.destination,
       days: plan.days,
       cities: plan.cities,
       budget: plan.budget,
+      budgetLabel: plan.budgetLabel,
+      estimateCost: plan.estimateCost,
+      reason: plan.reason,
+      bestSeason: plan.bestSeason,
+      hotel: plan.hotel,
+      tips: plan.tips,
+      heroImage: plan.heroImage,
+      heroTags: plan.heroTags,
       daysList: plan.daysList,
+      weather: weather.days?.length
+        ? {
+            city: weather.city,
+            admin1: weather.admin1,
+            mode: weather.mode,
+            note: weather.note,
+            days: weather.days
+          }
+        : null,
       userInput: savedUserInput,
       imageAnalysis: imageInsight,
-      preferenceText: prefData.value ? JSON.stringify(prefData.value) : ''
+      preferenceText: prefData.value ? JSON.stringify(prefData.value) : '',
+      startDate: form.startDate,
+      transport: plan.transport || buildTransportSnapshot()
     }
 
     // 保存完整行程
@@ -864,11 +1550,17 @@ async function savePlan() {
       return
     }
 
-    // 同步添加到收藏
+    // 同步添加到收藏（与当前旅行规划报告结构一致）
     const favoriteResult = await favoriteStore.addFavorite({
       type: '行程',
       name: planData.title,
-      description: inputText.value || `AI 生成的 ${plan.days} 天行程，途经 ${plan.cities} 个城市`,
+      description: [
+        plan.destination ? `目的地：${plan.destination}` : '',
+        plan.estimateCost || plan.budgetLabel ? `预算：${plan.estimateCost || plan.budgetLabel}` : '',
+        form.startDate ? `出发：${form.startDate}` : '',
+        inputText.value ? `想法：${inputText.value}` : ''
+      ].filter(Boolean).join(' · ') || `AI 生成的 ${plan.days} 天行程`,
+      image: plan.heroImage || '',
       plan: planData
     })
 
@@ -891,7 +1583,28 @@ async function savePlan() {
 
 // 复制行程到剪贴板
 async function copyPlan() {
-  const text = plan.daysList.map(d => `${d.title}\n${d.desc}\n景点：${(d.spots || []).map(s => s.name || s).join('、')}`).join('\n\n')
+  const departure = plan.transport ? formatDepartureSummary(plan.transport) : ''
+  const header = [
+    plan.destination ? `目的地：${plan.destination}` : '',
+    departure ? `出发信息：${departure}` : '',
+    plan.estimateCost ? `预估费用：${plan.estimateCost}` : ''
+  ].filter(Boolean).join('\n')
+  const body = plan.daysList.map((d, i) => {
+    const highlightText = (d.highlights || []).map(h => h.label).join('、')
+    return `${d.title}${i === 0 ? '（去程衔接）' : ''}\n${d.desc}\n标签：${highlightText || '无'}`
+  }).join('\n\n')
+  const weatherText = weather.days?.length
+    ? [
+        `天气预报（${weather.city || plan.destination || ''} · ${weatherModeLabel(weather.mode)}）：`,
+        weather.note || '',
+        ...weather.days.map((d) => {
+          const pop = d.precipitation_probability != null ? `降水${d.precipitation_probability}%` : (d.precipitation_sum != null ? `降水${d.precipitation_sum}mm` : '')
+          const ref = d.source === 'historical' && d.reference_date ? `（参考${d.reference_date}）` : ''
+          return `${d.date} ${d.weekday} ${d.summary} ${formatTemp(d.temp_max)}/${formatTemp(d.temp_min)} ${pop}${ref}`.trim()
+        })
+      ].filter(Boolean).join('\n')
+    : ''
+  const text = [header, weatherText, body].filter(Boolean).join('\n\n')
   try {
     await navigator.clipboard.writeText(text)
     showActionToast('行程已复制', 'success')
@@ -1002,9 +1715,11 @@ async function copyPlan() {
 /* 附加选项 */
 .extra-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid #F0EDE6; }
 .option-group label { display: block; font-size: 12px; color: #8B8B9E; margin-bottom: 6px; }
+.field-required { color: #C23B22; }
 .day-val { color: #0D6B5C; font-weight: 600; }
 .option-input { width: 100%; padding: 8px 12px; border: 1px solid #E5E0D6; border-radius: 8px; font-size: 13px; font-family: 'Noto Sans SC', sans-serif; color: #1A1A2E; background: #F8F6F0; }
 .option-input:focus { outline: none; border-color: #0D6B5C; }
+.option-input.is-invalid { border-color: #C23B22; background: #FFF7F5; }
 .range-slider { width: 100%; accent-color: #0D6B5C; }
 
 .submit-btn { width: 100%; padding: 14px; margin-top: 20px; background: linear-gradient(135deg, #0D6B5C 0%, #1A8A7A 100%); color: #fff; border: none; border-radius: 14px; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.25s; font-family: 'Noto Sans SC', sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -1070,6 +1785,82 @@ async function copyPlan() {
 .info-label { font-size: 11px; color: #8B8B9E; font-weight: 500; }
 .info-value { font-size: 14px; color: #1A1A2E; font-weight: 600; line-height: 1.4; word-break: break-word; }
 
+.departure-card {
+  margin-bottom: 14px; padding: 14px 16px;
+  background: linear-gradient(145deg, #F6FBF8, #FFFDF8);
+  border: 1px solid #DCE8E2; border-radius: 12px;
+}
+.departure-head {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px; font-size: 14px; font-weight: 700; color: #0D6B5C;
+}
+.departure-summary { margin: 0 0 12px; font-size: 13px; line-height: 1.7; color: #3A3A4E; }
+.departure-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.departure-item {
+  padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,.82);
+  border: 1px solid #E7EFEA;
+}
+.departure-label { display: block; margin-bottom: 4px; font-size: 11px; color: #8B8B9E; }
+.departure-item strong { font-size: 13px; color: #183D36; font-weight: 700; line-height: 1.4; }
+.departure-note { margin: 10px 0 0; font-size: 12px; color: #8B8B9E; line-height: 1.6; }
+
+.weather-card {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  background: linear-gradient(145deg, #F7FBF9, #FFFDF8);
+  border: 1px solid #D7E8E1;
+  border-radius: 12px;
+}
+.weather-head {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  font-size: 13px; font-weight: 700; color: #183D36;
+}
+.weather-city { margin-left: auto; font-size: 12px; font-weight: 600; color: #5C5C6E; }
+.weather-note {
+  margin: 0 0 12px; font-size: 12px; line-height: 1.6; color: #5C5C6E;
+  padding: 8px 10px; background: rgba(13, 107, 92, 0.06); border-radius: 8px;
+}
+.weather-note.is-historical {
+  background: #FFF6E8; color: #8A5A16; border: 1px solid #F0D7B0;
+}
+.weather-loading, .weather-error {
+  margin: 0; font-size: 13px; color: #8B8B9E; line-height: 1.6;
+}
+.weather-error { color: #C23B22; }
+.weather-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+.weather-day {
+  position: relative;
+  padding: 10px 8px;
+  background: #fff;
+  border: 1px solid #E5E0D6;
+  border-radius: 10px;
+  text-align: center;
+  min-width: 0;
+}
+.weather-day.is-ref { border-color: #E7D59A; background: #FFFDF5; }
+.weather-day-top { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+.weather-weekday { font-size: 12px; font-weight: 700; color: #1A1A2E; }
+.weather-date { font-size: 11px; color: #8B8B9E; }
+.weather-summary {
+  font-size: 12px; font-weight: 600; color: #0D6B5C; margin-bottom: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.weather-temp { font-size: 12px; color: #3A3A4E; margin-bottom: 4px; }
+.weather-temp strong { color: #1A1A2E; }
+.weather-temp span { color: #8B8B9E; }
+.weather-meta { font-size: 10px; color: #8B8B9E; }
+.weather-badge {
+  margin-top: 6px; display: inline-block; padding: 1px 6px;
+  border-radius: 999px; background: #FBF3DD; color: #7A5A12;
+  font-size: 10px; font-weight: 700;
+}
+
 /* ===== 通用 Tip 卡片（住宿 / 旅行贴士） ===== */
 .tip-card { margin-bottom: 14px; padding: 14px 16px; background: #fff; border: 1px solid #E5E0D6; border-radius: 12px; transition: all 0.2s; }
 .tip-card:hover { border-color: #0D6B5C; box-shadow: 0 2px 8px rgba(13, 107, 92, 0.06); }
@@ -1083,18 +1874,83 @@ async function copyPlan() {
 
 /* ===== 每日行程 ===== */
 .days-section { margin-top: 18px; padding-top: 18px; border-top: 1px solid #F0EDE6; }
-.days-title { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 15px; font-weight: 700; color: #0D6B5C; }
+.days-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  margin: 0 0 14px; flex-wrap: wrap;
+}
+.days-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; font-weight: 700; color: #0D6B5C; }
 .days-title svg { flex-shrink: 0; }
+.days-hint { font-size: 12px; color: #8B8B9E; font-weight: 500; line-height: 1.4; }
 .day-card { display: flex; gap: 14px; margin-bottom: 14px; padding: 14px; background: #FAFAF5; border: 1px solid #F0EDE6; border-radius: 14px; transition: all 0.2s; }
 .day-card:last-child { margin-bottom: 0; }
 .day-card:hover { border-color: #0D6B5C; background: #fff; box-shadow: 0 2px 8px rgba(13, 107, 92, 0.06); }
+.day-card.is-arrival-day { border-color: #C8DDD4; background: linear-gradient(145deg, #F7FBF9, #FFFDF8); }
 .day-badge { flex-shrink: 0; width: 56px; height: 56px; border-radius: 12px; background: linear-gradient(135deg, #1A8A7A 0%, #0D6B5C 100%); color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(13, 107, 92, 0.25); }
 .day-body { flex: 1; min-width: 0; }
-.day-title { margin: 0 0 6px; font-size: 14.5px; font-weight: 700; color: #1A1A2E; }
+.day-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.day-title { margin: 0; font-size: 14.5px; font-weight: 700; color: #1A1A2E; }
+.day-tag { padding: 2px 8px; border-radius: 999px; background: #E4F2EC; color: #0D6B5C; font-size: 11px; font-weight: 700; }
 .day-desc { margin: 0 0 10px; font-size: 13px; line-height: 1.7; color: #5C5C6E; }
-.day-spots { display: flex; flex-wrap: wrap; gap: 6px; }
-.day-spot { padding: 4px 10px; background: #fff; border: 1px solid #E5E0D6; border-radius: 14px; font-size: 12px; color: #0D6B5C; transition: all 0.2s; }
-.day-spot:hover { background: rgba(13, 107, 92, 0.08); border-color: #0D6B5C; transform: translateY(-1px); }
+.day-highlights { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.day-highlight {
+  padding: 4px 10px; border-radius: 14px; font-size: 12px; font-weight: 600;
+  border: 1px solid transparent; line-height: 1.4;
+}
+.day-highlight.type-food { color: #9A5B16; background: #FFF6E8; border-color: #F0D7B0; }
+.day-highlight.type-culture { color: #2F4F8A; background: #EEF3FB; border-color: #C9D7F0; }
+.day-highlight.type-experience { color: #0D6B5C; background: #E8F5F1; border-color: #B9DDD4; }
+.day-highlight.type-vibe { color: #7A5A12; background: #FBF3DD; border-color: #E7D59A; }
+.day-highlight.type-spot { color: #3D5A80; background: #EEF2F7; border-color: #C5D0E0; }
+.day-highlight.has-preview { cursor: pointer; }
+
+.tag-preview-card {
+  position: fixed;
+  z-index: 9999;
+  width: 220px;
+  background: #fff;
+  border: 1px solid #E5E0D6;
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(26, 26, 46, 0.16);
+  overflow: hidden;
+  pointer-events: auto;
+}
+.tag-preview-media {
+  width: 100%;
+  height: 140px;
+  background: #F5F3EE;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tag-preview-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.tag-preview-state {
+  font-size: 12px;
+  color: #8B8B9E;
+  padding: 0 12px;
+  text-align: center;
+}
+.tag-preview-meta {
+  padding: 8px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tag-preview-meta strong {
+  font-size: 13px;
+  color: #1A1A2E;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.tag-preview-meta span {
+  font-size: 11px;
+  color: #8B8B9E;
+  line-height: 1.3;
+}
 
 /* ===== Markdown 回退渲染（JSON 解析失败时） ===== */
 .markdown-fallback { padding: 16px 18px; background: #F8F6F0; border: 1px solid #E5E0D6; border-radius: 12px; font-size: 13px; line-height: 1.85; color: #3A3A4E; white-space: pre-wrap; word-break: break-word; }
@@ -1192,10 +2048,13 @@ async function copyPlan() {
   .plan-layout { grid-template-columns: 1fr; }
   .input-card { position: static; }
   .result-card { min-height: auto; }
+  .weather-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {
   .page-container { width: 100%; padding: 24px 16px; }
   .input-card, .result-card { padding: 20px; border-radius: 16px; }
   .preview-item { width: 80px; height: 80px; }
+  .departure-grid, .info-row { grid-template-columns: 1fr; }
+  .weather-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 </style>

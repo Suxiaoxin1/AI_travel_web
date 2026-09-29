@@ -66,6 +66,44 @@
             <span class="plan-title">{{ selectedPlan.name }}</span>
             <span class="plan-meta">{{ selectedPlan.plan?.days }}天 · {{ selectedPlan.plan?.cities }}城</span>
           </div>
+          <section v-if="selectedPlan.plan?.transport" class="transport-card">
+            <div class="transport-card-head">
+              <div>
+                <span class="transport-eyebrow">DAY 1 · 去程交通</span>
+                <h3>从 {{ selectedPlan.plan.transport.origin }} 出发</h3>
+                <p>{{ selectedPlan.plan.transport.departureDate || '未设置日期' }} · {{ departurePeriodLabel(selectedPlan.plan.transport.departurePeriod) }} · {{ transportPreferenceLabel(selectedPlan.plan.transport.preference) }}</p>
+              </div>
+              <span class="transport-status">{{ inboundTransport ? '已生成' : '待规划' }}</span>
+            </div>
+            <button class="btn-plan-route transport-plan-btn" :disabled="transportPlanning" @click="planInboundTransport">
+              <span v-if="transportPlanning" class="btn-spinner"></span>
+              <span v-else>↗</span>
+              {{ transportPlanning ? '正在准备查询…' : '生成去程建议' }}
+            </button>
+            <div v-if="inboundTransport" class="transport-result">
+              <template v-if="inboundTransport.type === 'external'">
+                <strong>{{ inboundTransport.title }}</strong>
+                <p>{{ inboundTransport.description }}</p>
+                <a :href="inboundTransport.url" target="_blank" rel="noopener noreferrer">{{ inboundTransport.linkLabel || '前往外部平台查询 →' }}</a>
+              </template>
+              <template v-else>
+                <div class="transport-result-title">
+                  <strong>{{ inboundTransport.title }}</strong>
+                  <span>{{ inboundTransport.arrivalText }}</span>
+                </div>
+                <div class="transport-result-meta">
+                  <span>约 {{ formatTransportDuration(inboundTransport.time) }}</span>
+                  <span>{{ formatTransportDistance(inboundTransport.distance) }}</span>
+                  <span v-if="inboundTransport.mode === 'transit'">{{ inboundTransport.transfers ? `${inboundTransport.transfers} 次换乘` : '少换乘' }}</span>
+                  <span v-if="inboundTransport.cost">约 ¥{{ inboundTransport.cost }}</span>
+                </div>
+                <p v-if="inboundTransport.steps?.length" class="transport-steps">{{ inboundTransport.steps.slice(0, 3).join(' · ') }}</p>
+                <p class="transport-note">基于地图服务计算的地面路线，仅供行前参考。</p>
+                <button class="btn-outline-full transport-save-btn" @click="saveInboundTransport">保存并同步 Day 1</button>
+              </template>
+            </div>
+          </section>
+          <div v-else class="transport-missing">该历史行程未填写出发信息，请在“旅行规划”重新生成并保存。</div>
           <!-- 每天的景点 -->
           <div v-for="(day, dayIdx) in selectedPlan.plan?.daysList || []" :key="dayIdx" class="day-group">
             <div class="day-header">
@@ -73,7 +111,13 @@
               <span class="day-title">{{ day.title }}</span>
             </div>
             <div class="day-spots">
-              <div v-for="(spot, spotIdx) in day.spots || []" :key="spotIdx" class="day-spot">
+              <div
+                v-for="(spot, spotIdx) in day.spots || []"
+                :key="spotIdx"
+                class="day-spot"
+                :class="{ active: spotDetail.visible && spotDetail.dayIdx === dayIdx && spotDetail.spotIdx === spotIdx }"
+                @click="openSpotDetailFromList(dayIdx, spotIdx)"
+              >
                 <div class="ds-dot" :style="{ background: dayColors[dayIdx % dayColors.length] }"></div>
                 <span class="ds-name">{{ typeof spot === 'string' ? spot : spot.name }}</span>
               </div>
@@ -122,10 +166,15 @@
               <span class="day-title">{{ day.title }}</span>
             </div>
             <div class="day-spots">
-              <div v-for="(spot, spotIdx) in day.spots || []" :key="spotIdx" class="day-spot">
+              <div
+                v-for="(spot, spotIdx) in day.spots || []"
+                :key="spotIdx"
+                class="day-spot"
+                :class="{ active: spotDetail.visible && spotDetail.dayIdx === dayIdx && spotDetail.spotIdx === spotIdx }"
+              >
                 <div class="ds-dot" :style="{ background: dayColors[dayIdx % dayColors.length] }"></div>
-                <span class="day-spot-order">{{ spotIdx + 1 }}</span>
-                <span class="ds-name">{{ typeof spot === 'string' ? spot : spot.name }}</span>
+                <span class="day-spot-order" @click="openSpotDetailFromList(dayIdx, spotIdx)">{{ spotIdx + 1 }}</span>
+                <span class="ds-name" @click="openSpotDetailFromList(dayIdx, spotIdx)">{{ typeof spot === 'string' ? spot : spot.name }}</span>
                 <div class="day-spot-actions">
                   <button class="ds-move" :disabled="spotIdx === 0" @click="moveSpotInDay(dayIdx, spotIdx, -1)" title="上移">↑</button>
                   <button class="ds-move" :disabled="spotIdx === (day.spots?.length || 0) - 1" @click="moveSpotInDay(dayIdx, spotIdx, 1)" title="下移">↓</button>
@@ -199,12 +248,52 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m10-10h-4M6 12H2"/></svg>
           </button>
         </div>
+        <!-- 景点详情浮层卡片 -->
+        <div
+          v-if="spotDetail.visible"
+          class="spot-detail-card"
+          :style="{ left: `${spotDetail.x}px`, top: `${spotDetail.y}px`, borderColor: spotDetail.color }"
+          @click.stop
+        >
+          <button class="spot-detail-close" type="button" aria-label="关闭" @click="closeSpotDetail">✕</button>
+          <div class="spot-detail-media">
+            <img v-if="spotDetail.imageUrl" :src="spotDetail.imageUrl" :alt="spotDetail.name" />
+            <div v-else-if="spotDetail.loading" class="spot-detail-media-state">加载图片中…</div>
+            <div v-else class="spot-detail-media-state">暂无图片</div>
+          </div>
+          <div class="spot-detail-body">
+            <div class="spot-detail-meta">
+              <span class="spot-detail-day" :style="{ background: spotDetail.color }">Day {{ spotDetail.dayIdx + 1 }}</span>
+              <span>第 {{ spotDetail.spotIdx + 1 }} 站</span>
+              <span v-if="spotDetail.city">{{ spotDetail.city }}</span>
+            </div>
+            <h3 class="spot-detail-title">{{ spotDetail.name }}</h3>
+            <p class="spot-detail-desc">{{ spotDetail.desc }}</p>
+            <div v-if="spotDetail.tags.length" class="spot-detail-tags">
+              <span v-for="tag in spotDetail.tags" :key="tag" class="spot-detail-tag">{{ tag }}</span>
+            </div>
+            <div v-if="spotDetail.duration || spotDetail.hours || spotDetail.ticket" class="spot-detail-facts">
+              <span v-if="spotDetail.duration">⏱ {{ spotDetail.duration }}</span>
+              <span v-if="spotDetail.hours">🕒 {{ spotDetail.hours }}</span>
+              <span v-if="spotDetail.ticket">🎫 {{ spotDetail.ticket }}</span>
+            </div>
+            <p v-if="spotDetail.attribution" class="spot-detail-attr">{{ spotDetail.attribution }}</p>
+          </div>
+        </div>
       </div>
-      <!-- 底部信息栏 -->
-      <div class="map-info-bar">
+      <!-- 底部信息栏：点击恢复生成路线时的地图视野 -->
+      <button
+        v-if="mapInfoText"
+        type="button"
+        class="map-info-bar"
+        title="点击恢复到生成路线时的地图视野"
+        aria-label="恢复到生成路线时的地图视野"
+        @click="restoreRouteView"
+      >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#D4A84B" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
         <span>{{ mapInfoText }}</span>
-      </div>
+        <span class="map-info-hint">恢复视野</span>
+      </button>
     </div>
 
     <!-- Toast -->
@@ -214,10 +303,13 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, onBeforeUnmount, onMounted } from 'vue'
+import { ref, reactive, computed, nextTick, onBeforeUnmount, onMounted } from 'vue'
 import AMapLoader from '@amap/amap-jsapi-loader'
 import { getRouteCache, setRouteCache } from '../utils/routeCache'
+import { getPreciseSpotCoords, isIslandSpotName, resolveSegmentMode } from '../data/spotCoordinates.js'
 import apiClient from '../utils/apiClient.js'
+import { resolveTagPreview } from '../utils/tagPreview.js'
+import { getSpotImageByName } from '../data/provinces.js'
 import { chat } from '../utils/agnesApi.js'
 import { useAuthStore } from '../stores/authStore.js'
 import { usePlanStore } from '../stores/planStore.js'
@@ -240,7 +332,63 @@ let routeRequestId = 0
 // 多天路线：每天一条折线和一组标记
 let dayPolylines = []
 let dayMarkers = []
-const mapInfoText = ref('点击景点查看位置')
+let transportOverlays = []
+const mapInfoText = ref('')
+/** 生成路线并适配视野后的缩放/中心快照，供底部摘要一键恢复 */
+const routeViewSnapshot = ref(null)
+
+// ========== 景点详情浮层 ==========
+const spotDetail = reactive({
+  visible: false,
+  loading: false,
+  token: 0,
+  dayIdx: -1,
+  spotIdx: -1,
+  name: '',
+  city: '',
+  color: '#0D6B5C',
+  lng: 0,
+  lat: 0,
+  x: 16,
+  y: 16,
+  imageUrl: '',
+  attribution: '',
+  desc: '',
+  tags: [],
+  duration: '',
+  hours: '',
+  ticket: ''
+})
+let spotCardMoveHandler = null
+/** 当前行程内已分配给各途经点的图片，避免互相撞车 */
+const spotImageByKey = new Map()
+
+function spotImageKey(dayIdx, spotIdx) {
+  return `${dayIdx}:${spotIdx}`
+}
+
+function collectExcludeImageUrls(exceptKey = '') {
+  const urls = []
+  for (const [key, url] of spotImageByKey.entries()) {
+    if (key === exceptKey || !url) continue
+    urls.push(url)
+  }
+  return urls
+}
+
+function matchLocalSpot(name) {
+  const text = String(name || '').trim()
+  if (!text) return null
+  const exact = allSpots.find(s => s.name === text)
+  if (exact) return exact
+  let best = null
+  for (const s of allSpots) {
+    if (!(text.includes(s.name) || s.name.includes(text))) continue
+    if (s.name.length < 4) continue
+    if (!best || s.name.length > best.name.length) best = s
+  }
+  return best
+}
 
 // ========== 行程路线 ==========
 const routeStops = ref([])
@@ -261,12 +409,63 @@ const strategy = ref('')
 const optimizeOrder = ref(false)
 const planning = ref(false)
 const routeResult = ref(null)
+const transportPlanning = ref(false)
+const inboundTransport = ref(null)
 const strategies = [
   { key: 'time', label: '时间优先', icon: '⏱' },
   { key: 'distance', label: '路程优先', icon: '📏' },
   { key: 'smooth', label: '顺利优先', icon: '🛤' },
   { key: 'cost', label: '费用优先', icon: '💰' },
 ]
+
+const departurePeriods = {
+  morning: { label: '上午（08:00 左右）', minutes: 8 * 60 },
+  afternoon: { label: '下午（14:00 左右）', minutes: 14 * 60 },
+  evening: { label: '晚间（19:00 左右）', minutes: 19 * 60 }
+}
+
+const transportPreferences = {
+  smart: '智能推荐',
+  drive: '驾车优先',
+  transit: '公共交通优先',
+  rail: '高铁/动车建议优先',
+  flight: '飞机建议优先'
+}
+
+// 一期固定映射：仅用于生成 12306 官方查询链接，不请求或抓取外部站点数据。
+const railwayStationCodes = {
+  北京: { name: '北京', code: 'BJP' }, 北京南: { name: '北京南', code: 'VNP' },
+  上海: { name: '上海', code: 'SHH' }, 上海虹桥: { name: '上海虹桥', code: 'AOH' },
+  广州: { name: '广州', code: 'GZQ' }, 广州南: { name: '广州南', code: 'IZQ' },
+  深圳: { name: '深圳', code: 'SZQ' }, 深圳北: { name: '深圳北', code: 'IOQ' },
+  杭州: { name: '杭州', code: 'HZH' }, 杭州东: { name: '杭州东', code: 'HGH' },
+  南京: { name: '南京', code: 'NJH' }, 南京南: { name: '南京南', code: 'NKH' },
+  天津: { name: '天津', code: 'TJP' }, 天津西: { name: '天津西', code: 'TXP' },
+  重庆: { name: '重庆', code: 'CQW' }, 重庆北: { name: '重庆北', code: 'CUW' },
+  成都: { name: '成都', code: 'CDW' }, 成都东: { name: '成都东', code: 'ICW' },
+  武汉: { name: '武汉', code: 'WHN' }, 长沙: { name: '长沙', code: 'CSQ' },
+  郑州: { name: '郑州', code: 'ZZF' }, 西安: { name: '西安', code: 'XAY' }, 西安北: { name: '西安北', code: 'EAY' },
+  济南: { name: '济南', code: 'JNK' }, 青岛: { name: '青岛', code: 'QDK' },
+  厦门: { name: '厦门', code: 'XMS' }, 福州: { name: '福州', code: 'FZS' },
+  昆明: { name: '昆明', code: 'KMM' }, 贵阳: { name: '贵阳', code: 'GIW' },
+  南宁: { name: '南宁', code: 'NNZ' }, 海口: { name: '海口', code: 'VUQ' },
+  大连: { name: '大连', code: 'DLT' }, 沈阳: { name: '沈阳', code: 'SYT' },
+  哈尔滨: { name: '哈尔滨', code: 'HBB' }, 长春: { name: '长春', code: 'CCT' },
+  石家庄: { name: '石家庄', code: 'SJP' }, 太原: { name: '太原', code: 'TYV' },
+  呼和浩特: { name: '呼和浩特', code: 'HHC' }, 兰州: { name: '兰州', code: 'LZJ' },
+  西宁: { name: '西宁', code: 'XNO' }, 乌鲁木齐: { name: '乌鲁木齐', code: 'WAR' },
+  拉萨: { name: '拉萨', code: 'LSO' }, 银川: { name: '银川', code: 'YIJ' },
+  苏州: { name: '苏州', code: 'SZH' }, 宁波: { name: '宁波', code: 'NGH' },
+  张家界: { name: '张家界', code: 'DIQ' }, 大理: { name: '大理', code: 'DKM' },
+  丽江: { name: '丽江', code: 'LHM' }, 桂林: { name: '桂林', code: 'GLZ' },
+  // 用户行程常见站（此前缺失会导致回退到 12306 首页）
+  佛山西: { name: '佛山西', code: 'FOQ' }, 佛山: { name: '佛山西', code: 'FOQ' },
+  珠海: { name: '珠海', code: 'ZHQ' }, 中山: { name: '中山', code: 'ZSQ' },
+  东莞: { name: '东莞', code: 'RTQ' }, 东莞南: { name: '东莞南', code: 'WGQ' },
+  惠州南: { name: '惠州南', code: 'KNQ' },
+  香格里拉: { name: '香格里拉', code: 'EUM' }, 迪庆: { name: '香格里拉', code: 'EUM' },
+  西双版纳: { name: '西双版纳', code: 'ENM' }, 景洪: { name: '西双版纳', code: 'ENM' }
+}
 
 // ========== 保存路线 ==========
 const savedRoutes = computed(() => routeStore.routes)
@@ -325,6 +524,8 @@ const allSpots = [
   { name: '长白山', province: '吉林', lat: 41.70, lng: 128.18, rating: 4.7, price: 800, tag: '全年可游', category: 'nature', image: '/images/landmarks/长白山.jpg', desc: '东北第一高峰' },
   { name: '峨眉山', province: '四川', lat: 29.53, lng: 103.34, rating: 4.6, price: 700, tag: '全年可游', category: 'nature', image: '/images/landmarks/峨眉山.jpg', desc: '峨眉天下秀' },
   { name: '武夷山', province: '福建', lat: 27.72, lng: 117.93, rating: 4.5, price: 600, tag: '全年可游', category: 'nature', image: '/images/landmarks/武夷山.jpg', desc: '九曲溪竹筏漂流' },
+  { name: '厦门大学', province: '福建', lat: 24.44, lng: 118.09, rating: 4.8, price: 0, tag: '热门景点', category: 'culture', image: '/images/landmarks/xiamen_01_xida.jpg', desc: '芙蓉湖与海边校园，常被称作中国最美大学之一' },
+  { name: '鼓浪屿', province: '福建', lat: 24.45, lng: 118.06, rating: 4.7, price: 0, tag: '热门景点', category: 'culture', image: '/images/landmarks/fujian_02_gulangyu.jpg', desc: '万国建筑与钢琴之岛' },
   { name: '庐山', province: '江西', lat: 29.58, lng: 115.97, rating: 4.5, price: 500, tag: '全年可游', category: 'nature', image: '/images/landmarks/庐山.jpg', desc: '不识庐山真面目' },
   { name: '故宫', province: '北京', lat: 39.92, lng: 116.40, rating: 4.9, price: 60, tag: '热门景点', category: 'culture', image: '/images/landmarks/故宫.jpg', desc: '世界最大宫殿建筑群' },
   { name: '兵马俑', province: '陕西', lat: 34.38, lng: 109.28, rating: 4.9, price: 120, tag: '热门景点', category: 'culture', image: '/images/landmarks/秦始皇兵马俑.jpg', desc: '世界第八大奇迹' },
@@ -336,7 +537,8 @@ const allSpots = [
   { name: '成都宽窄巷子', province: '四川', lat: 30.67, lng: 104.06, rating: 4.5, price: 0, tag: '热门景点', category: 'food', image: '/images/landmarks/宽窄巷子.jpg', desc: '老成都生活缩影' },
   { name: '西安回民街', province: '陕西', lat: 34.27, lng: 108.95, rating: 4.4, price: 0, tag: '热门景点', category: 'food', image: '/images/landmarks/回民街.jpg', desc: '肉夹馍羊肉泡馍' },
   { name: '广州上下九', province: '广东', lat: 23.12, lng: 113.25, rating: 4.3, price: 0, tag: '热门景点', category: 'food', image: '/images/landmarks/上下九.jpg', desc: '早茶点心一条龙' },
-  { name: '厦门中山路', province: '福建', lat: 24.45, lng: 118.08, rating: 4.4, price: 0, tag: '热门景点', category: 'food', image: '/images/landmarks/中山路.jpg', desc: '闽南小吃荟萃' },
+  { name: '厦门中山路', province: '福建', lat: 24.45, lng: 118.08, rating: 4.4, price: 0, tag: '热门景点', category: 'food', image: '/images/landmarks/xiamen_03_zhongshan.jpg', desc: '闽南小吃荟萃' },
+  { name: '中山路', province: '福建', lat: 24.45, lng: 118.08, rating: 4.4, price: 0, tag: '热门景点', category: 'food', image: '/images/landmarks/xiamen_03_zhongshan.jpg', desc: '厦门老城骑楼商业街' },
   { name: '长沙坡子街', province: '湖南', lat: 28.20, lng: 112.98, rating: 4.5, price: 0, tag: '热门景点', category: 'food', image: '/images/landmarks/坡子街.jpg', desc: '湘菜美食一条街' },
   { name: '四姑娘山', province: '四川', lat: 31.05, lng: 102.82, rating: 4.6, price: 700, tag: '小众秘境', category: 'adventure', image: '/images/landmarks/四姑娘山.jpg', desc: '东方阿尔卑斯' },
   { name: '虎跳峡', province: '云南', lat: 27.18, lng: 100.11, rating: 4.7, price: 65, tag: '小众秘境', category: 'adventure', image: '/images/landmarks/虎跳峡.jpg', desc: '世界最深峡谷之一' },
@@ -349,7 +551,8 @@ const allSpots = [
   { name: '少林寺', province: '河南', lat: 34.51, lng: 112.94, rating: 4.5, price: 80, tag: '热门景点', category: 'temple', image: '/images/landmarks/少林寺.jpg', desc: '天下武功出少林' },
   { name: '五台山', province: '山西', lat: 38.71, lng: 113.56, rating: 4.7, price: 135, tag: '热门景点', category: 'temple', image: '/images/landmarks/五台山.jpg', desc: '四大佛教名山之首' },
   { name: '普陀山', province: '浙江', lat: 30.01, lng: 122.39, rating: 4.6, price: 160, tag: '热门景点', category: 'temple', image: '/images/landmarks/普陀山.jpg', desc: '海天佛国' },
-  { name: '南普陀寺', province: '福建', lat: 24.44, lng: 118.09, rating: 4.5, price: 0, tag: '热门景点', category: 'temple', image: '/images/landmarks/南普陀寺.jpg', desc: '闽南佛教胜地' },
+  { name: '南普陀寺', province: '福建', lat: 24.44, lng: 118.09, rating: 4.5, price: 0, tag: '热门景点', category: 'temple', image: '/images/landmarks/xiamen_02_nanputuo.jpg', desc: '闽南佛教胜地' },
+  { name: '南普陀', province: '福建', lat: 24.44, lng: 118.09, rating: 4.5, price: 0, tag: '热门景点', category: 'temple', image: '/images/landmarks/xiamen_02_nanputuo.jpg', desc: '闽南佛教胜地' },
 ]
 
 // ========== 地图功能 ==========
@@ -471,55 +674,686 @@ function resolveRouteSpot(spot) {
 
 function createDayMarker(AMap, spot, dayIdx, spotIdx) {
   const color = dayColors[dayIdx % dayColors.length]
+  const label = String(spotIdx + 1)
+
+  // 全部用内联样式：高德会把 content 挂到地图层，依赖外部 stylesheet 时偶发丢样式
   const el = document.createElement('div')
   el.style.cssText = `
-    width: 28px; height: 28px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 10px; font-weight: 700; color: #fff;
-    background: ${color}; box-shadow: 0 2px 8px rgba(0,0,0,0.35);
-    border: 2.5px solid #fff; cursor: pointer;
+    width: 40px; height: 40px; position: relative;
+    cursor: pointer; color: #fff;
+    font: 800 12px/1 "Segoe UI","PingFang SC",sans-serif;
+    text-shadow: 0 0 8px rgba(255,255,255,0.7);
   `
-  el.textContent = String(spotIdx + 1)
+
+  const aura = document.createElement('span')
+  aura.style.cssText = `
+    position: absolute; inset: 2px; border-radius: 50%;
+    border: 2px solid ${color}; opacity: 0.45;
+    box-shadow: 0 0 10px ${color}; pointer-events: none;
+    animation: sw-mk-aura 1.9s ease-out infinite;
+  `
+
+  const aura2 = document.createElement('span')
+  aura2.style.cssText = `
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 2px solid ${color}; opacity: 0.22;
+    pointer-events: none;
+    animation: sw-mk-aura 1.9s ease-out 0.75s infinite;
+  `
+
+  // 菱形与数字都绝对居中，避免 rotate 占位把数字挤偏
+  const gem = document.createElement('span')
+  gem.style.cssText = `
+    position: absolute; left: 50%; top: 50%;
+    width: 22px; height: 22px; border-radius: 5px;
+    transform: translate(-50%, -50%) rotate(45deg);
+    background:
+      linear-gradient(135deg, rgba(255,255,255,0.8), transparent 42%),
+      linear-gradient(320deg, rgba(0,0,0,0.28), transparent 48%),
+      ${color};
+    box-shadow:
+      0 0 0 2px rgba(255,255,255,0.9),
+      0 0 14px ${color},
+      0 5px 12px rgba(0,0,0,0.3);
+    pointer-events: none;
+  `
+
+  const num = document.createElement('span')
+  num.textContent = label
+  num.style.cssText = `
+    position: absolute; left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2; width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none; line-height: 1;
+  `
+
+  el.append(aura, aura2, gem, num)
   el.title = `Day ${dayIdx + 1} · ${spotIdx + 1}. ${spot.name}`
   el.setAttribute('aria-label', `Day ${dayIdx + 1} 第${spotIdx + 1}个景点：${spot.name}`)
-  return new AMap.Marker({
+
+  if (typeof document !== 'undefined' && !document.getElementById('starwalk-map-marker-fx-keyframes')) {
+    const style = document.createElement('style')
+    style.id = 'starwalk-map-marker-fx-keyframes'
+    style.textContent = `
+      @keyframes sw-mk-aura {
+        0% { transform: scale(0.72); opacity: 0.48; }
+        100% { transform: scale(1.4); opacity: 0; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        [data-sw-mk-fx] span[data-aura] { animation: none !important; opacity: 0.3 !important; }
+      }
+    `
+    document.head.appendChild(style)
+  }
+  el.dataset.swMkFx = '1'
+  aura.dataset.aura = '1'
+  aura2.dataset.aura = '1'
+
+  const marker = new AMap.Marker({
     content: el,
     anchor: 'center',
     position: [spot.lng, spot.lat],
     title: `Day ${dayIdx + 1} · ${spotIdx + 1}. ${spot.name}`,
     extData: { dayIndex: dayIdx, spotIndex: spotIdx, name: spot.name },
-    map: amapInstance
+    map: amapInstance,
+    zIndex: 120
   })
+  marker.on('click', () => {
+    ignoreMapBlankClick = true
+    openSpotDetail({ dayIdx, spotIdx, spot })
+    setTimeout(() => { ignoreMapBlankClick = false }, 50)
+  })
+  return marker
+}
+
+function bindSpotCardMapEvents() {
+  if (!amapInstance || spotCardMoveHandler) return
+  spotCardMoveHandler = () => updateSpotCardPosition()
+  amapInstance.on('mapmove', spotCardMoveHandler)
+  amapInstance.on('zoomchange', spotCardMoveHandler)
+  amapInstance.on('click', onMapBlankClick)
+}
+
+function unbindSpotCardMapEvents() {
+  if (!amapInstance || !spotCardMoveHandler) return
+  amapInstance.off('mapmove', spotCardMoveHandler)
+  amapInstance.off('zoomchange', spotCardMoveHandler)
+  amapInstance.off('click', onMapBlankClick)
+  spotCardMoveHandler = null
+}
+
+let ignoreMapBlankClick = false
+function onMapBlankClick() {
+  if (ignoreMapBlankClick) return
+  closeSpotDetail()
+}
+
+function updateSpotCardPosition() {
+  if (!spotDetail.visible || !amapInstance || !mapEl.value) return
+  const pixel = amapInstance.lngLatToContainer([spotDetail.lng, spotDetail.lat])
+  const box = mapEl.value.getBoundingClientRect()
+  const cardW = Math.min(300, box.width - 24)
+  const cardH = 340
+  let x = pixel.x - cardW / 2
+  let y = pixel.y - cardH - 18
+  x = Math.max(12, Math.min(x, box.width - cardW - 12))
+  y = Math.max(12, Math.min(y, box.height - Math.min(cardH, box.height - 24)))
+  spotDetail.x = x
+  spotDetail.y = y
+}
+
+function closeSpotDetail() {
+  spotDetail.visible = false
+  spotDetail.loading = false
+  spotDetail.token += 1
+  spotDetail.dayIdx = -1
+  spotDetail.spotIdx = -1
+  spotDetail.imageUrl = ''
+  spotDetail.attribution = ''
+  spotDetail.desc = ''
+  spotDetail.tags = []
+  spotDetail.duration = ''
+  spotDetail.hours = ''
+  spotDetail.ticket = ''
+}
+
+function openSpotDetailFromList(dayIdx, spotIdx) {
+  const raw = selectedPlan.value?.plan?.daysList?.[dayIdx]?.spots?.[spotIdx]
+  if (raw == null) return
+  const resolved = resolveRouteSpot(raw)
+  if (!resolved) {
+    showToast('该景点缺少坐标，无法在地图定位', 'warn')
+    return
+  }
+  if (!mapActive.value) {
+    mapActive.value = true
+    nextTick(async () => {
+      await initMap()
+      openSpotDetail({ dayIdx, spotIdx, spot: resolved })
+    })
+    return
+  }
+  openSpotDetail({ dayIdx, spotIdx, spot: resolved })
+}
+
+async function openSpotDetail({ dayIdx, spotIdx, spot }) {
+  if (
+    spotDetail.visible &&
+    spotDetail.dayIdx === dayIdx &&
+    spotDetail.spotIdx === spotIdx
+  ) {
+    closeSpotDetail()
+    return
+  }
+
+  const name = spot.name
+  const color = dayColors[dayIdx % dayColors.length]
+  const city = selectedPlan.value?.plan?.destination || ''
+  const localHit = matchLocalSpot(name)
+  const localImage = getSpotImageByName(name) || localHit?.image || ''
+  const imageKey = spotImageKey(dayIdx, spotIdx)
+  const excludeUrls = collectExcludeImageUrls(imageKey)
+  const token = spotDetail.token + 1
+
+  spotDetail.token = token
+  spotDetail.visible = true
+  spotDetail.loading = true
+  spotDetail.dayIdx = dayIdx
+  spotDetail.spotIdx = spotIdx
+  spotDetail.name = name
+  spotDetail.city = city
+  spotDetail.color = color
+  spotDetail.lng = Number(spot.lng)
+  spotDetail.lat = Number(spot.lat)
+  spotDetail.imageUrl = (localImage && !excludeUrls.includes(localImage)) ? localImage : ''
+  spotDetail.attribution = spotDetail.imageUrl ? '本地景点图库' : ''
+  spotDetail.desc = localHit?.desc
+    || `行程第 ${dayIdx + 1} 天的第 ${spotIdx + 1} 站「${name}」${city ? `，位于${city}` : ''}。`
+  spotDetail.tags = localHit?.tag ? [localHit.tag] : []
+  spotDetail.duration = ''
+  spotDetail.hours = ''
+  spotDetail.ticket = ''
+
+  bindSpotCardMapEvents()
+  updateSpotCardPosition()
+  if (amapInstance) {
+    amapInstance.setZoomAndCenter(Math.max(amapInstance.getZoom(), 13), [spot.lng, spot.lat])
+    nextTick(() => updateSpotCardPosition())
+  }
+
+  // 后台景点库补全简介 / 封面
+  try {
+    const { data } = await apiClient.get('/attractions/lookup', { params: { name } })
+    if (spotDetail.token !== token) return
+    const item = data?.data
+    if (item) {
+      if (item.short_desc || item.description) {
+        spotDetail.desc = item.short_desc || String(item.description).slice(0, 120)
+      }
+      if (item.cover_image_url && !excludeUrls.includes(item.cover_image_url)) {
+        spotDetail.imageUrl = item.cover_image_url
+        spotDetail.attribution = '星际行者景点库'
+        spotDetail.loading = false
+        spotImageByKey.set(imageKey, spotDetail.imageUrl)
+      }
+      spotDetail.tags = Array.isArray(item.tags) ? item.tags.slice(0, 4) : spotDetail.tags
+      spotDetail.duration = item.recommended_duration || ''
+      spotDetail.hours = item.opening_hours || ''
+      spotDetail.ticket = item.ticket_hint || ''
+      if (item.city) spotDetail.city = item.city
+    }
+  } catch {
+    // 忽略库查询失败，继续图搜兜底
+  }
+
+  if (spotDetail.token !== token) return
+  if (spotDetail.imageUrl) {
+    spotImageByKey.set(imageKey, spotDetail.imageUrl)
+    spotDetail.loading = false
+    return
+  }
+
+  try {
+    const preview = await resolveTagPreview({
+      label: name,
+      tagType: 'spot',
+      city,
+      localImage: '',
+      excludeUrls
+    })
+    if (spotDetail.token !== token) return
+    spotDetail.imageUrl = preview.image_url || ''
+    spotDetail.attribution = preview.attribution || ''
+    if (spotDetail.imageUrl) spotImageByKey.set(imageKey, spotDetail.imageUrl)
+  } catch {
+    if (spotDetail.token !== token) return
+    spotDetail.attribution = ''
+  } finally {
+    if (spotDetail.token === token) spotDetail.loading = false
+  }
 }
 
 async function requestDrivingRoute(spots, policy) {
   const points = spots.map(spot => ({ lng: spot.lng, lat: spot.lat }))
-  const { data } = await apiClient.post('/map/driving', {
+  const body = {
     origin: points[0],
     destination: points[points.length - 1],
     waypoints: points.slice(1, -1),
     strategy: policy
+  }
+  let lastError
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const { data } = await apiClient.post('/map/driving', body)
+      if (!data?.data?.path?.length) throw new Error('后端未返回有效路线轨迹')
+      return { ...data.data, mode: 'drive' }
+    } catch (error) {
+      lastError = error
+      const status = error?.response?.status
+      // 高德偶发 502：短延时后重试一次
+      if (attempt === 0 && (status === 502 || status === 504)) {
+        await new Promise(resolve => setTimeout(resolve, 600))
+        continue
+      }
+      break
+    }
+  }
+  const detail = lastError?.response?.data?.detail
+  throw new Error(typeof detail === 'string' ? detail : (lastError?.message || '路线规划失败'))
+}
+
+async function requestWalkingRoute(origin, destination) {
+  const { data } = await apiClient.post('/map/walking', {
+    origin: { lng: origin.lng, lat: origin.lat },
+    destination: { lng: destination.lng, lat: destination.lat },
   })
-  if (!data?.data?.path?.length) throw new Error('后端未返回有效路线轨迹')
-  return data.data
+  if (!data?.data?.path?.length) throw new Error('后端未返回有效步行轨迹')
+  return { ...data.data, mode: 'walk' }
+}
+
+function buildFerrySegment(origin, destination) {
+  return {
+    mode: 'ferry',
+    path: [[origin.lng, origin.lat], [destination.lng, destination.lat]],
+    distance: haversine(origin.lat, origin.lng, destination.lat, destination.lng) * 1000,
+    time: 0,
+  }
+}
+
+function planCityHint() {
+  const plan = selectedPlan.value?.plan || {}
+  const fromSpot = plan.daysList?.[0]?.spots?.find((s) => typeof s === 'object' && s?.city)?.city
+  return (
+    plan.destination
+    || plan.city
+    || fromSpot
+    || (typeof plan.cities === 'string' ? plan.cities : '')
+    || ''
+  )
+}
+
+/**
+ * 精定位：高德 POI/地理编码（带城市）→ 本地精坐标 → 粗坐标兜底。
+ * 规划/渲染前总会走这条链路，避免 AI 两位小数坐标落海。
+ */
+async function locateSpotAccurate(name, options = {}) {
+  const spotName = String(name || '').trim()
+  if (!spotName) throw new Error('景点名称为空')
+  const city = String(options.city || planCityHint() || '').trim()
+  const existing = options.existing || null
+
+  try {
+    const { data } = await apiClient.post('/map/locate', {
+      keyword: city ? `${spotName}` : spotName,
+      city: city || null,
+    })
+    const point = data?.data
+    if (point && Number.isFinite(Number(point.lat)) && Number.isFinite(Number(point.lng))) {
+      const preciseMeta = getPreciseSpotCoords(spotName)
+      return {
+        name: spotName,
+        lat: Number(point.lat),
+        lng: Number(point.lng),
+        location: point.formatted_address || '',
+        zone: preciseMeta?.zone || (isIslandSpotName(spotName) ? 'island' : ''),
+        source: point.source || 'amap_poi',
+      }
+    }
+  } catch {
+    // 继续本地兜底
+  }
+
+  const precise = getPreciseSpotCoords(spotName)
+  if (precise) {
+    return {
+      name: spotName,
+      lat: precise.lat,
+      lng: precise.lng,
+      location: precise.city || '',
+      zone: precise.zone,
+      source: 'local_precise',
+    }
+  }
+
+  if (existing) {
+    const lat = Number(existing.lat)
+    const lng = Number(existing.lng)
+    if (Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0) {
+      return {
+        name: spotName,
+        lat,
+        lng,
+        location: existing.location || '',
+        zone: existing.zone || (isIslandSpotName(spotName) ? 'island' : ''),
+        source: 'existing',
+      }
+    }
+  }
+
+  const coarse = resolveRouteSpot({ name: spotName })
+  if (coarse) {
+    return {
+      ...coarse,
+      zone: isIslandSpotName(spotName) ? 'island' : '',
+      source: 'local_coarse',
+    }
+  }
+  throw new Error(`无法定位景点“${spotName}”`)
 }
 
 async function geocodeSpot(name) {
-  const localSpot = resolveRouteSpot({ name, lat: null, lng: null })
-  if (localSpot) return localSpot
-
-  const city = typeof selectedPlan.value?.plan?.city === 'string' ? selectedPlan.value.plan.city : ''
-  const { data } = await apiClient.post('/map/geocode', { address: name, city })
-  const point = data?.data
-  if (!point || !Number.isFinite(Number(point.lat)) || !Number.isFinite(Number(point.lng))) {
-    throw new Error(`无法定位景点“${name}”`)
-  }
-  return { name, lat: Number(point.lat), lng: Number(point.lng), location: point.formatted_address || '' }
+  return locateSpotAccurate(name, { city: planCityHint() })
 }
 
-// 使用高德驾车规划返回的道路轨迹，按天绘制不同颜色的真实路线。
+function departurePeriodLabel(period) {
+  return departurePeriods[period]?.label || departurePeriods.morning.label
+}
+
+function transportPreferenceLabel(preference) {
+  return transportPreferences[preference] || transportPreferences.smart
+}
+
+function formatTransportDuration(seconds) {
+  const totalMinutes = Math.max(1, Math.round(Number(seconds || 0) / 60))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return hours ? `${hours}小时${minutes ? `${minutes}分` : ''}` : `${minutes}分`
+}
+
+function formatTransportDistance(meters) {
+  const value = Number(meters || 0)
+  return value >= 1000 ? `${(value / 1000).toFixed(value >= 100 ? 0 : 1)} 公里` : `${Math.round(value)} 米`
+}
+
+function inferCity(address, fallback = '') {
+  const cityMatch = String(address || '').match(/([^省自治区特别行政区]+市)/)
+  return cityMatch?.[1] || fallback
+}
+
+function buildArrivalText(date, period, seconds) {
+  if (!date) return `预计 ${formatTransportDuration(seconds)} 后抵达`
+  const start = new Date(`${date}T00:00:00`)
+  start.setMinutes((departurePeriods[period]?.minutes || departurePeriods.morning.minutes) + Math.round(Number(seconds || 0) / 60))
+  const month = String(start.getMonth() + 1).padStart(2, '0')
+  const day = String(start.getDate()).padStart(2, '0')
+  const hour = String(start.getHours()).padStart(2, '0')
+  const minute = String(start.getMinutes()).padStart(2, '0')
+  return `预计 ${month}-${day} ${hour}:${minute} 抵达`
+}
+
+async function geocodePlace(address, city = '') {
+  const { data } = await apiClient.post('/map/geocode', { address, city })
+  const point = data?.data
+  if (!point || !Number.isFinite(Number(point.lat)) || !Number.isFinite(Number(point.lng))) {
+    throw new Error(`无法定位“${address}”`)
+  }
+  return {
+    name: address,
+    lat: Number(point.lat),
+    lng: Number(point.lng),
+    location: point.formatted_address || ''
+  }
+}
+
+function externalTransportSuggestion(preference, origin, destination, date, options = {}) {
+  const isRail = preference === 'rail'
+  return {
+    type: 'external',
+    title: isRail ? '高铁/动车查询建议' : '航班查询建议',
+    description: options.prefilled
+      ? `已为你预填 ${origin} → ${destination}、${date}，点击后将打开 12306 并直接查询；实际班次、价格与余票以 12306 为准。`
+      : `请以 ${date || '出发日期'} 从 ${origin} 前往 ${destination} 查询实际班次、价格与余票；本项目一期不接入实时票务数据。`,
+    url: options.url || (isRail ? 'https://www.12306.cn/index/' : 'https://flights.ctrip.com/'),
+    linkLabel: options.prefilled ? '前往 12306 查询车票 →' : undefined
+  }
+}
+
+function normalizeRailwayPlaceName(value) {
+  return String(value || '')
+    .replace(/\s/g, '')
+    .replace(/站$/, '')
+    .replace(/市$/, '')
+    .replace(/特别行政区$/, '')
+    .replace(/地区$/, '')
+    .replace(/自治州$/, '')
+}
+
+function resolveRailwayStation(...candidates) {
+  const keys = Object.keys(railwayStationCodes)
+  for (const raw of candidates) {
+    const name = normalizeRailwayPlaceName(raw)
+    if (!name) continue
+    if (railwayStationCodes[name]) return railwayStationCodes[name]
+    // 佛山市 / 香格里拉市 等：去掉“市”后再匹配
+    const city = name.replace(/市$/, '')
+    if (city !== name && railwayStationCodes[city]) return railwayStationCodes[city]
+    // 佛山西站、广州南站：名称包含已配置站名时取最长匹配
+    const fuzzy = keys
+      .filter(key => name.includes(key) || key.includes(name))
+      .sort((a, b) => b.length - a.length)[0]
+    if (fuzzy) return railwayStationCodes[fuzzy]
+  }
+  return null
+}
+
+async function buildRailwayQueryUrl(trip, destinationName) {
+  if (!trip.departureDate) throw new Error('缺少出发日期，无法预填 12306 查询条件')
+
+  // 优先按用户填写的出发地 / 目的地直接匹配车站码，避免依赖地理编码城市名
+  let originStation = resolveRailwayStation(trip.origin)
+  let destinationStation = resolveRailwayStation(destinationName)
+
+  if (!originStation || !destinationStation) {
+    try {
+      const [origin, destination] = await Promise.all([
+        geocodePlace(trip.origin),
+        geocodePlace(destinationName, destinationName)
+      ])
+      const originCity = inferCity(origin.location, '')
+      const destinationCity = inferCity(destination.location, '')
+      originStation = originStation || resolveRailwayStation(trip.origin, originCity, origin.location)
+      destinationStation = destinationStation || resolveRailwayStation(destinationName, destinationCity, destination.location)
+    } catch {
+      // 地理编码失败时仍可用上面的直接匹配结果
+    }
+  }
+
+  if (!originStation || !destinationStation) {
+    const missing = [
+      !originStation ? `出发地「${trip.origin}」` : null,
+      !destinationStation ? `目的地「${destinationName}」` : null
+    ].filter(Boolean).join('、')
+    throw new Error(`${missing}暂未配置 12306 车站码`)
+  }
+
+  // 官方余票页深链：fs/ts 必须是「站名,电报码」，逗号不能被编成 %2C，否则 12306 会把整串填进站名框
+  const params = [
+    'linktypeid=dc',
+    `fs=${encodeURIComponent(originStation.name)},${originStation.code}`,
+    `ts=${encodeURIComponent(destinationStation.name)},${destinationStation.code}`,
+    `date=${encodeURIComponent(trip.departureDate)}`,
+    'flag=N,N,Y'
+  ]
+  return `https://kyfw.12306.cn/otn/leftTicket/init?${params.join('&')}`
+}
+
+async function renderTransportOnMap(origin, destination, transport) {
+  if (!mapActive.value) {
+    mapActive.value = true
+    await nextTick()
+    await initMap()
+  }
+  if (!amapInstance) return
+  const AMap = await AMapLoader.load({
+    key: import.meta.env.VITE_AMAP_KEY || '',
+    securityJsCode: import.meta.env.VITE_AMAP_SECURITY_CODE || undefined,
+    version: '2.0'
+  })
+  transportOverlays.forEach(overlay => amapInstance.remove(overlay))
+  transportOverlays = [
+    new AMap.Marker({ position: [origin.lng, origin.lat], title: `出发地：${origin.name}`, map: amapInstance }),
+    new AMap.Marker({ position: [destination.lng, destination.lat], title: `目的地：${destination.name}`, map: amapInstance })
+  ]
+  if (Array.isArray(transport.path) && transport.path.length >= 2) {
+    transportOverlays.push(new AMap.Polyline({
+      path: transport.path,
+      strokeColor: '#D4A84B',
+      strokeWeight: 6,
+      strokeOpacity: 0.9,
+      strokeStyle: 'solid',
+      map: amapInstance
+    }))
+  }
+  amapInstance.setFitView(transportOverlays, false, [60, 60, 60, 60])
+  mapInfoText.value = `${origin.name} → ${destination.name} · ${formatTransportDuration(transport.time)}`
+}
+
+async function planInboundTransport() {
+  const trip = selectedPlan.value?.plan?.transport
+  const destinationName = selectedPlan.value?.plan?.destination
+    || selectedPlan.value?.plan?.daysList?.[0]?.spots?.[0]?.city
+  if (!trip?.origin || !destinationName) {
+    showToast('缺少出发地或目的城市，无法生成去程建议', 'warn')
+    return
+  }
+  transportPlanning.value = true
+  try {
+    if (trip.preference === 'rail') {
+      try {
+        const url = await buildRailwayQueryUrl(trip, destinationName)
+        inboundTransport.value = externalTransportSuggestion(
+          trip.preference, trip.origin, destinationName, trip.departureDate, { url, prefilled: true }
+        )
+      } catch (error) {
+        inboundTransport.value = externalTransportSuggestion(trip.preference, trip.origin, destinationName, trip.departureDate)
+        showToast(`${error.message || '车站解析失败'}，已改为打开 12306 首页`, 'warn')
+      }
+      return
+    }
+    if (trip.preference === 'flight') {
+      inboundTransport.value = externalTransportSuggestion(trip.preference, trip.origin, destinationName, trip.departureDate)
+      return
+    }
+    const [origin, destination] = await Promise.all([
+      geocodePlace(trip.origin),
+      geocodePlace(destinationName, destinationName)
+    ])
+    const originCity = inferCity(origin.location, trip.origin)
+    const destinationCity = inferCity(destination.location, destinationName)
+    const sameCity = originCity.replace(/市$/, '') === destinationCity.replace(/市$/, '')
+    const mode = trip.preference === 'smart' ? (sameCity ? 'transit' : 'drive') : trip.preference
+    let result
+    if (mode === 'transit') {
+      try {
+        const { data } = await apiClient.post('/map/transit', {
+          origin: { lng: origin.lng, lat: origin.lat },
+          destination: { lng: destination.lng, lat: destination.lat },
+          origin_city: originCity,
+          destination_city: destinationCity,
+          strategy: 0
+        })
+        result = data?.data
+      } catch (error) {
+        if (trip.preference !== 'smart') throw error
+        const { data } = await apiClient.post('/map/driving', {
+          origin: { lng: origin.lng, lat: origin.lat },
+          destination: { lng: destination.lng, lat: destination.lat },
+          waypoints: [], strategy: 0
+        })
+        result = { ...data?.data, mode: 'drive', fallbackNote: '公共交通方案暂不可用，已切换为驾车建议' }
+      }
+    } else {
+      const { data } = await apiClient.post('/map/driving', {
+        origin: { lng: origin.lng, lat: origin.lat },
+        destination: { lng: destination.lng, lat: destination.lat },
+        waypoints: [], strategy: 0
+      })
+      result = { ...data?.data, mode: 'drive' }
+    }
+    if (!result?.time) throw new Error('未获得可用的地面交通方案')
+    inboundTransport.value = {
+      ...result,
+      type: 'ground',
+      origin,
+      destination,
+      title: result.mode === 'transit' ? '公共交通推荐方案' : '驾车推荐方案',
+      arrivalText: buildArrivalText(trip.departureDate, trip.departurePeriod, result.time)
+    }
+    await renderTransportOnMap(origin, destination, inboundTransport.value)
+    if (result.fallbackNote) showToast(result.fallbackNote, 'info')
+  } catch (error) {
+    showToast(error.message || '去程建议生成失败，请稍后重试', 'error')
+  } finally {
+    transportPlanning.value = false
+  }
+}
+
+async function saveInboundTransport() {
+  if (!inboundTransport.value || inboundTransport.value.type !== 'ground' || !selectedPlan.value?.id) return
+  const currentPlan = selectedPlan.value.plan
+  const dayOne = currentPlan.daysList?.[0]
+  if (!dayOne) return
+  const summary = `去程交通：${inboundTransport.value.title}，${formatTransportDuration(inboundTransport.value.time)}，${inboundTransport.value.arrivalText}。`
+  const oldSummary = dayOne.transportSummary || ''
+  const existingDesc = dayOne.desc || ''
+  dayOne.transportSummary = summary
+  if (!existingDesc.includes(summary) && oldSummary && existingDesc.includes(oldSummary)) {
+    dayOne.desc = dayOne.desc.replace(oldSummary, summary)
+  } else if (!existingDesc.includes(summary)) {
+    dayOne.desc = `${summary}${existingDesc ? ` ${existingDesc}` : ''}`
+  }
+  const updatedPlan = {
+    ...currentPlan,
+    transport: { ...currentPlan.transport, selected: inboundTransport.value },
+    daysList: [...currentPlan.daysList]
+  }
+  const result = await planStore.updatePlan(selectedPlan.value.id, {
+    title: selectedPlan.value.name,
+    preference_text: selectedPlan.value.preference_text,
+    content_json: updatedPlan,
+    input_text: selectedPlan.value.input_text,
+    input_images: selectedPlan.value.input_images,
+    style: selectedPlan.value.style,
+    people: selectedPlan.value.people,
+    budget: selectedPlan.value.budget,
+    start_date: selectedPlan.value.start_date,
+    days: updatedPlan.days
+  })
+  if (result.ok) {
+    selectedPlan.value.plan = updatedPlan
+    const cached = favoritePlans.value.find(plan => plan.id === selectedPlan.value.id)
+    if (cached) cached.plan = updatedPlan
+    showToast('去程建议已保存，并同步到 Day 1', 'success')
+  } else {
+    showToast(result.msg || '保存去程建议失败', 'error')
+  }
+}
+
+// 使用高德真实轨迹按天绘制；跨海分段用轮渡虚线，近距优先步行。
 async function renderRoute() {
   if (!amapInstance) return
+  closeSpotDetail()
   const requestId = ++routeRequestId
   dayPolylines.forEach(p => amapInstance.remove(p)); dayPolylines = []
   dayMarkers.forEach(m => amapInstance.remove(m)); dayMarkers = []
@@ -540,11 +1374,38 @@ async function renderRoute() {
   const planId = selectedPlan.value.id || selectedPlan.value.plan?.id || selectedPlan.value.name || 'draft'
   let totalDistance = 0
   let totalTime = 0
+  const ferryTips = []
 
   for (let dayIdx = 0; dayIdx < daysList.length; dayIdx++) {
     const day = daysList[dayIdx]
     const rawSpots = day.spots || []
-    const spots = rawSpots.map(resolveRouteSpot)
+    const spots = []
+    for (let spotIdx = 0; spotIdx < rawSpots.length; spotIdx++) {
+      const raw = rawSpots[spotIdx]
+      const name = typeof raw === 'string' ? raw.trim() : String(raw?.name || '').trim()
+      if (!name) {
+        spots.push(null)
+        continue
+      }
+      try {
+        const located = await locateSpotAccurate(name, {
+          city: (typeof raw === 'object' && raw?.city) || planCityHint(),
+          existing: typeof raw === 'object' ? raw : null,
+        })
+        spots.push(located)
+        // 写回行程，避免下次仍用 AI 粗坐标
+        rawSpots[spotIdx] = {
+          ...(typeof raw === 'object' ? raw : {}),
+          name: located.name,
+          lat: located.lat,
+          lng: located.lng,
+          location: located.location || '',
+          zone: located.zone || '',
+        }
+      } catch {
+        spots.push(null)
+      }
+    }
     if (spots.some(spot => !spot)) {
       const unresolved = rawSpots.filter((spot, index) => !spots[index]).map(spot => typeof spot === 'string' ? spot : spot?.name).filter(Boolean)
       showToast(`Day ${dayIdx + 1} 有景点缺少坐标：${unresolved.join('、')}，请重新添加`, 'error')
@@ -553,32 +1414,57 @@ async function renderRoute() {
     spots.forEach((spot, spotIdx) => dayMarkers.push(createDayMarker(AMap, spot, dayIdx, spotIdx)))
 
     if (spots.length < 2) continue
+    const color = dayColors[dayIdx % dayColors.length]
     try {
-      const cacheParams = {
-        planId,
-        dayIndex: dayIdx,
-        strategy: strategy.value,
-        spots
+      for (let i = 0; i < spots.length - 1; i++) {
+        const a = spots[i]
+        const b = spots[i + 1]
+        const distKm = haversine(a.lat, a.lng, b.lat, b.lng)
+        const mode = resolveSegmentMode(a, b, distKm)
+        const cacheParams = {
+          planId,
+          dayIndex: dayIdx,
+          segment: i,
+          strategy: strategy.value,
+          mode,
+          spots: [a, b],
+        }
+        let route = getRouteCache(cacheParams)
+        if (!route) {
+          if (mode === 'ferry') {
+            route = buildFerrySegment(a, b)
+            ferryTips.push(`${a.name}→${b.name}`)
+          } else if (mode === 'walk') {
+            try {
+              route = await requestWalkingRoute(a, b)
+            } catch {
+              // 步行失败时短距用直线示意，避免错误驾车穿海
+              route = {
+                mode: 'walk',
+                path: [[a.lng, a.lat], [b.lng, b.lat]],
+                distance: distKm * 1000,
+                time: Math.round(distKm / 4.5 * 3600),
+              }
+            }
+          } else {
+            route = await requestDrivingRoute([a, b], policy)
+          }
+          setRouteCache(cacheParams, route)
+        }
+        if (requestId !== routeRequestId || !amapInstance) return
+        dayPolylines.push(new AMap.Polyline({
+          path: route.path,
+          strokeColor: color,
+          strokeWeight: mode === 'ferry' ? 4 : 5,
+          strokeOpacity: mode === 'ferry' ? 0.75 : 0.9,
+          strokeStyle: mode === 'ferry' ? 'dashed' : 'solid',
+          lineJoin: 'round',
+          lineCap: 'round',
+          map: amapInstance
+        }))
+        totalDistance += Number(route.distance || 0)
+        totalTime += Number(route.time || 0)
       }
-      let route = getRouteCache(cacheParams)
-      if (!route) {
-        route = await requestDrivingRoute(spots, policy)
-        setRouteCache(cacheParams, route)
-      }
-      if (requestId !== routeRequestId || !amapInstance) return
-      const color = dayColors[dayIdx % dayColors.length]
-      dayPolylines.push(new AMap.Polyline({
-        path: route.path,
-        strokeColor: color,
-        strokeWeight: 5,
-        strokeOpacity: 0.9,
-        strokeStyle: 'solid',
-        lineJoin: 'round',
-        lineCap: 'round',
-        map: amapInstance
-      }))
-      totalDistance += route.distance
-      totalTime += route.time
     } catch (err) {
       showToast(`Day ${dayIdx + 1} 路线规划失败：${err.message}`, 'error')
     }
@@ -591,14 +1477,62 @@ async function renderRoute() {
       time: minutes >= 60 ? `${Math.floor(minutes / 60)}h${minutes % 60}m` : `${minutes}min`
     }
   }
-  if (requestId === routeRequestId) fitRouteView()
+  if (requestId === routeRequestId) {
+    if (ferryTips.length) {
+      mapInfoText.value = `跨海路段请换乘轮渡：${ferryTips.slice(0, 3).join('；')}${ferryTips.length > 3 ? '…' : ''}（虚线示意，非驾车轨迹）`
+    }
+    fitRouteView()
+  }
 }
 
-// 只适配当前行程的景点和真实路线，避免把省份文字等其他覆盖物纳入范围。
+// 只按景点标记适配视野：折线若含异常绕路会把缩放拉得过远（如图一）。
 function fitRouteView() {
   if (!amapInstance || dayMarkers.length === 0) return
-  const overlays = [...dayMarkers, ...dayPolylines]
-  amapInstance.setFitView(overlays, false, [60, 60, 60, 60], 15)
+
+  // immediately=true，避免动画中途快照/恢复到半拉状态
+  // 下边距略大，避开底部「恢复视野」摘要条
+  amapInstance.setFitView(dayMarkers, true, [52, 52, 100, 52], 17)
+
+  const positions = dayMarkers
+    .map((m) => (typeof m.getPosition === 'function' ? m.getPosition() : null))
+    .filter(Boolean)
+
+  if (positions.length === 1) {
+    amapInstance.setZoomAndCenter(13, [positions[0].lng, positions[0].lat], true)
+  } else if (positions.length >= 2) {
+    const lngs = positions.map((p) => p.lng)
+    const lats = positions.map((p) => p.lat)
+    const span = Math.max(Math.max(...lngs) - Math.min(...lngs), Math.max(...lats) - Math.min(...lats))
+    // 行程点较集中时，避免仍停在过小的缩放级别
+    let minZoom = 9
+    if (span < 0.08) minZoom = 13
+    else if (span < 0.2) minZoom = 12
+    else if (span < 0.45) minZoom = 11
+    else if (span < 1) minZoom = 10
+    const zoom = amapInstance.getZoom()
+    if (Number.isFinite(zoom) && zoom < minZoom) {
+      const center = amapInstance.getCenter()
+      if (center) amapInstance.setZoomAndCenter(minZoom, [center.lng, center.lat], true)
+    }
+  }
+
+  captureRouteView()
+}
+
+function captureRouteView() {
+  if (!amapInstance) return
+  const center = amapInstance.getCenter()
+  if (!center) return
+  routeViewSnapshot.value = {
+    zoom: amapInstance.getZoom(),
+    lng: center.lng,
+    lat: center.lat,
+  }
+}
+
+/** 重新按景点紧适配，达到生成路线后的预期视野（图二） */
+function restoreRouteView() {
+  fitRouteView()
 }
 
 // 适配当前路线范围
@@ -609,29 +1543,6 @@ function fitAll() {
 // 重置视图到中国中心
 function resetView() {
   if (amapInstance) amapInstance.setZoomAndCenter(4, [105, 35])
-}
-
-// ========== 景点交互 ==========
-// 点击景点聚焦
-function clickSpot(spot) {
-  if (mapActive.value && amapInstance) {
-    amapInstance.setZoomAndCenter(10, [spot.lng, spot.lat])
-  }
-  mapInfoText.value = spot.name + ' · ' + spot.province
-}
-
-function isInRoute(spot) { return routeStops.value.some(s => s.name === spot.name) }
-
-function toggleRoute(spot) {
-  const idx = routeStops.value.findIndex(s => s.name === spot.name)
-  if (idx >= 0) {
-    routeStops.value.splice(idx, 1)
-  } else {
-    if (routeStops.value.length >= 10) { showToast('路线最多包含 10 个景点', 'info'); return }
-    routeStops.value.push({ ...spot })
-  }
-  routeResult.value = null
-  if (mapActive.value) renderRoute()
 }
 
 // ========== 路线操作 ==========
@@ -652,17 +1563,22 @@ function moveStop(idx, dir) {
 }
 
 function clearRoute() {
+  closeSpotDetail()
+  spotImageByKey.clear()
   selectedPlan.value = null
   routeStops.value = []
   routeResult.value = null
+  inboundTransport.value = null
   editingDayIdx.value = -1
   newSpotName.value = ''
   // 清除地图上的路线
   if (amapInstance) {
     dayPolylines.forEach(p => amapInstance.remove(p)); dayPolylines = []
     dayMarkers.forEach(m => amapInstance.remove(m)); dayMarkers = []
+    transportOverlays.forEach(overlay => amapInstance.remove(overlay)); transportOverlays = []
   }
-  mapInfoText.value = '点击景点查看位置'
+  mapInfoText.value = ''
+  routeViewSnapshot.value = null
   showToast('路线已清空', 'info')
 }
 
@@ -893,28 +1809,34 @@ async function deleteSavedRoute(id) {
 async function selectPlan(fp) {
   selectedPlan.value = fp
   strategy.value = ''
+  inboundTransport.value = fp.plan?.transport?.selected || null
   panelMode.value = 'single'
   showToast(`已选择：${fp.name}`, 'success')
 }
 
-// 兼容历史上已保存但没有经纬度的景点，重新规划前补齐坐标。
+// 规划前强制精定位（高德 POI → 本地精坐标），覆盖 AI 粗坐标。
 async function ensurePlanCoordinates() {
   const daysList = selectedPlan.value?.plan?.daysList || []
+  const city = planCityHint()
   for (let dayIdx = 0; dayIdx < daysList.length; dayIdx++) {
     const spots = daysList[dayIdx].spots || []
     for (let spotIdx = 0; spotIdx < spots.length; spotIdx++) {
       const spot = spots[spotIdx]
       const name = typeof spot === 'string' ? spot.trim() : String(spot?.name || '').trim()
       if (!name) continue
-      const resolved = resolveRouteSpot(spot)
-      if (resolved) {
-        if (typeof spot === 'string' || spot.lat == null || spot.lng == null) {
-          spots[spotIdx] = { ...(typeof spot === 'string' ? {} : spot), ...resolved }
-        }
-        continue
-      }
       try {
-        spots[spotIdx] = await geocodeSpot(name)
+        const located = await locateSpotAccurate(name, {
+          city: (typeof spot === 'object' && spot?.city) || city,
+          existing: typeof spot === 'object' ? spot : null,
+        })
+        spots[spotIdx] = {
+          ...(typeof spot === 'object' ? spot : {}),
+          name: located.name,
+          lat: located.lat,
+          lng: located.lng,
+          location: located.location || '',
+          zone: located.zone || '',
+        }
       } catch (err) {
         throw new Error(`Day ${dayIdx + 1} 的“${name}”无法定位，请修改景点名称后重试`)
       }
@@ -1100,6 +2022,8 @@ function showToast(message, type = 'info') {
 }
 
 onBeforeUnmount(() => {
+  closeSpotDetail()
+  unbindSpotCardMapEvents()
   // 销毁高德地图实例
   if (amapInstance) { amapInstance.destroy(); amapInstance = null }
   if (toastTimer) clearTimeout(toastTimer)
@@ -1116,18 +2040,22 @@ onBeforeUnmount(() => {
   max-width: 1400px; width: 70%; margin: 0 auto;
   padding: 24px 24px 40px;
   display: flex; gap: 20px;
-  /* 内容区最小高度，避免地图区域塌陷 */
-  min-height: calc(100vh - 64px - 64px);
+  align-items: stretch;
+  /* 与地图同高，避免左侧列表把整页撑长 */
+  --route-pane-height: calc(100vh - 64px - 64px - 40px);
 }
 
 /* ===== 左侧面板 ===== */
 .nav-panel {
   width: 380px; flex-shrink: 0; background: #fff;
   border-right: 1px solid #E5E0D6; display: flex; flex-direction: column;
+  height: var(--route-pane-height);
+  min-height: 520px;
+  max-height: var(--route-pane-height);
   overflow: hidden; z-index: 10;
   box-shadow: 4px 0 20px rgba(26,58,42,0.08);
 }
-.nav-panel-header { padding: 20px 20px 0; border-bottom: 1px solid #E5E0D6; }
+.nav-panel-header { padding: 20px 20px 0; border-bottom: 1px solid #E5E0D6; flex-shrink: 0; }
 .nav-title {
   font-size: 1.2rem; font-weight: 600; color: #1A3A2A;
   margin: 0 0 12px; display: flex; align-items: center; gap: 8px;
@@ -1147,7 +2075,9 @@ onBeforeUnmount(() => {
 /* 面板主体 */
 .panel-body {
   padding: 16px 20px; display: flex; flex-direction: column; gap: 12px;
-  flex: 1; overflow-y: auto;
+  flex: 1; min-height: 0; overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 .panel-hint { font-size: 0.88rem; color: #8B8B9E; margin: 0; line-height: 1.5; }
 
@@ -1188,6 +2118,23 @@ onBeforeUnmount(() => {
 .plan-header { display: flex; flex-direction: column; gap: 2px; padding-bottom: 8px; border-bottom: 1px solid #E5E0D6; }
 .plan-title { font-size: 14px; font-weight: 600; color: #1A1A2E; }
 .plan-meta { font-size: 12px; color: #8B8B9E; }
+
+.transport-card { padding: 14px; border: 1px solid #DCE8E2; border-radius: 12px; background: linear-gradient(145deg, #F6FBF8, #FFFDF8); }
+.transport-card-head { display: flex; justify-content: space-between; gap: 12px; }
+.transport-card h3 { margin: 3px 0 5px; font-size: 14px; color: #183D36; }
+.transport-card p { margin: 0; font-size: 12px; line-height: 1.65; color: #65726E; }
+.transport-eyebrow { color: #0D6B5C; font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+.transport-status { align-self: flex-start; padding: 3px 7px; border-radius: 999px; background: #E4F2EC; color: #0D6B5C; font-size: 11px; white-space: nowrap; }
+.transport-plan-btn { margin-top: 12px; padding: 9px; font-size: 12px; }
+.transport-result { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #C8DDD4; }
+.transport-result-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #1A1A2E; font-size: 12px; }
+.transport-result-title span { color: #0D6B5C; font-size: 11px; white-space: nowrap; }
+.transport-result-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 7px; color: #52645E; font-size: 12px; }
+.transport-steps { margin-top: 8px !important; color: #465853 !important; }
+.transport-note { margin-top: 6px !important; color: #8B8B9E !important; font-size: 11px !important; }
+.transport-result a { display: inline-block; margin-top: 9px; color: #0D6B5C; font-size: 12px; font-weight: 600; text-decoration: none; }
+.transport-save-btn { margin-top: 10px; padding: 8px; font-size: 12px; }
+.transport-missing { padding: 10px 12px; border-radius: 8px; background: #F8F6F0; color: #8B8B9E; font-size: 12px; }
 .day-group { display: flex; flex-direction: column; gap: 6px; }
 .day-header { display: flex; align-items: center; gap: 8px; }
 .day-tag {
@@ -1196,7 +2143,16 @@ onBeforeUnmount(() => {
 }
 .day-title { font-size: 13px; font-weight: 500; color: #1A1A2E; }
 .day-spots { display: flex; flex-direction: column; gap: 4px; padding-left: 12px; border-left: 2px solid #E5E0D6; margin-left: 18px; }
-.day-spot { display: flex; align-items: center; gap: 6px; }
+.day-spot {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 6px; border-radius: 8px; cursor: pointer;
+  transition: background 0.15s;
+}
+.day-spot:hover { background: #F4F1EA; }
+.day-spot.active {
+  background: rgba(13, 107, 92, 0.08);
+  outline: 1px solid rgba(13, 107, 92, 0.22);
+}
 .ds-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .day-spot-order {
   width: 16px; height: 16px; border-radius: 50%; flex: 0 0 16px;
@@ -1204,6 +2160,7 @@ onBeforeUnmount(() => {
   background: #F2EFE7; color: #8B8B9E; font-size: 10px;
 }
 .ds-name { font-size: 12px; color: #5C5C6E; flex: 1; }
+.day-spot.active .ds-name { color: #1A3A2A; font-weight: 600; }
 .day-spot-actions { display: flex; align-items: center; gap: 2px; margin-left: auto; }
 .ds-move, .ds-del {
   width: 18px; height: 18px; border: none; background: transparent;
@@ -1394,8 +2351,7 @@ onBeforeUnmount(() => {
 .map-container {
   flex: 1; min-width: 0;
   position: relative; z-index: 1;
-  /* 显式高度：让内部 height: 100% 生效 */
-  height: calc(100vh - 64px - 64px - 40px);  /* 视口高 - 顶栏 - 底栏 - 容器padding */
+  height: var(--route-pane-height);
   min-height: 520px;
   border-radius: 8px;
   overflow: hidden;
@@ -1431,6 +2387,75 @@ onBeforeUnmount(() => {
   padding: 8px 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.1);
   font-size: 0.85rem; color: #1A3A2A; font-weight: 500; white-space: nowrap;
   display: flex; align-items: center; gap: 6px;
+  border: none; cursor: pointer; font-family: inherit;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.map-info-bar:hover {
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(13, 107, 92, 0.18);
+}
+.map-info-bar:active { transform: translateX(-50%) scale(0.98); }
+.map-info-hint {
+  margin-left: 4px; padding: 2px 8px; border-radius: 999px;
+  background: rgba(13, 107, 92, 0.1); color: #0D6B5C;
+  font-size: 0.72rem; font-weight: 600;
+}
+
+.spot-detail-card {
+  position: absolute;
+  z-index: 1200;
+  width: min(300px, calc(100% - 24px));
+  background: #fffdf8;
+  border: 1.5px solid #0D6B5C;
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(26, 46, 36, 0.18);
+  overflow: hidden;
+  pointer-events: auto;
+}
+.spot-detail-close {
+  position: absolute; top: 8px; right: 8px; z-index: 2;
+  width: 28px; height: 28px; border: none; border-radius: 50%;
+  background: rgba(0,0,0,0.45); color: #fff; cursor: pointer;
+  font-size: 12px; line-height: 1;
+}
+.spot-detail-media {
+  height: 148px; background: #e8efe9;
+  display: flex; align-items: center; justify-content: center;
+}
+.spot-detail-media img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.spot-detail-media-state {
+  color: #6b7a70; font-size: 0.82rem;
+}
+.spot-detail-body { padding: 12px 14px 14px; }
+.spot-detail-meta {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  font-size: 0.72rem; color: #6b7a70; margin-bottom: 6px;
+}
+.spot-detail-day {
+  color: #fff; border-radius: 999px; padding: 2px 8px; font-weight: 600;
+}
+.spot-detail-title {
+  margin: 0 0 6px; font-size: 1rem; color: #1A3A2A; font-weight: 700;
+  line-height: 1.3;
+}
+.spot-detail-desc {
+  margin: 0; font-size: 0.82rem; color: #4a5a52; line-height: 1.55;
+}
+.spot-detail-tags {
+  display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px;
+}
+.spot-detail-tag {
+  font-size: 0.7rem; color: #0D6B5C; background: rgba(13,107,92,0.08);
+  border-radius: 999px; padding: 2px 8px;
+}
+.spot-detail-facts {
+  display: flex; flex-direction: column; gap: 3px;
+  margin-top: 8px; font-size: 0.74rem; color: #5c6b62;
+}
+.spot-detail-attr {
+  margin: 8px 0 0; font-size: 0.68rem; color: #9aa39c;
 }
 
 /* ===== 响应式 ===== */
@@ -1441,8 +2466,14 @@ onBeforeUnmount(() => {
 @media (max-width: 768px) {
   .routes-page { padding-top: 16px; }
   .routes-page > .page-hero { width: calc(100% - 32px); }
-  .navigate-layout { width: 100%; padding: 16px; flex-direction: column; min-height: auto; }
-  .nav-panel { width: 100%; border-right: none; border-bottom: 1px solid #E5E0D6; max-height: 420px; }
+  .navigate-layout {
+    width: 100%; padding: 16px; flex-direction: column;
+    --route-pane-height: auto;
+  }
+  .nav-panel {
+    width: 100%; border-right: none; border-bottom: 1px solid #E5E0D6;
+    height: auto; min-height: 0; max-height: min(42vh, 420px);
+  }
   .map-container { height: 55vw; min-height: 260px; }
 }
 

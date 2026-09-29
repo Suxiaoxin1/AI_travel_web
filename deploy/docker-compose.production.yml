@@ -27,14 +27,41 @@ services:
       AUTO_CREATE_TABLES: "false"
       APP_PUBLIC_URL: ${APP_PUBLIC_URL}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      # 容器内访问 film 服务（浏览器走 /film-api，后端建任务走内网）
+      FILM_API_BASE: ${FILM_API_BASE:-http://film:3000}
+      # 首个管理员仅在其首次成功登录时授予 admin 角色；完成初始化后应从部署环境中清空。
+      ADMIN_BOOTSTRAP_ACCOUNT: ${ADMIN_BOOTSTRAP_ACCOUNT:-}
     volumes:
       - uploads_data:/app/uploads
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      film:
+        condition: service_started
     expose:
       - "8000"
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+
+  film:
+    build:
+      context: ../services/film
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ${DEPLOY_ENV_FILE:-./.env.production}
+    environment:
+      PORT: "3000"
+      UPLOAD_DIR: /data/uploads
+      # 万相密钥优先由管理后台注入；此处仅作兜底（可选）
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      BAILIAN_WORKSPACE_ID: ${BAILIAN_WORKSPACE_ID:-}
+      BAILIAN_REGION: ${BAILIAN_REGION:-cn-beijing}
+    volumes:
+      - film_uploads_data:/data/uploads
+    expose:
+      - "3000"
 
   migrate:
     build:
@@ -50,17 +77,32 @@ services:
     command: ["alembic", "upgrade", "head"]
     profiles: ["migrate"]
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   web:
     build:
       context: ..
       dockerfile: Dockerfile.web
       args:
         VITE_API_BASE_URL: /api
+        # 同源反代到 film 容器，勿写成 localhost
+        VITE_FILM_API_BASE: /film-api
         VITE_AMAP_KEY: ${VITE_AMAP_KEY}
         VITE_AMAP_SECURITY_CODE: ${VITE_AMAP_SECURITY_CODE}
     restart: unless-stopped
     depends_on:
       - backend
+      - film
     ports:
       # Keep the existing Nginx site on host port 80 untouched.
       - "8001:80"
@@ -68,3 +110,5 @@ services:
 volumes:
   postgres_data:
   uploads_data:
+  redis_data:
+  film_uploads_data:

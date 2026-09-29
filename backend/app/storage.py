@@ -98,7 +98,8 @@ def _upload_local(file_bytes: bytes, key: str) -> str:
     local_path = local_root.joinpath(*PurePosixPath(key).parts)
     local_path.parent.mkdir(parents=True, exist_ok=True)
     local_path.write_bytes(file_bytes)
-    return f"{settings.APP_PUBLIC_URL.rstrip('/')}/uploads/{key}"
+    # 返回相对路径，避免 HTTPS 站点混入 http://host:port 导致 Mixed Content。
+    return f"/uploads/{key}"
 
 
 def public_url(key: str) -> str:

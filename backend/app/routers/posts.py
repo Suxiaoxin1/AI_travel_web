@@ -37,7 +37,7 @@ def _post_response(post: models.Post, current_user: Optional[models.User] = None
             author_avatar=c.user.avatar_bg,
             content=c.content,
             created_at=c.created_at,
-        ) for c in post.comments],
+        ) for c in post.comments if c.status == "published"],
     ).model_dump()
 
 
@@ -47,7 +47,7 @@ def list_posts(
     current_user: Optional[models.User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
-    query = db.query(models.Post).order_by(models.Post.created_at.desc())
+    query = db.query(models.Post).filter(models.Post.status == "published").order_by(models.Post.created_at.desc())
     if search:
         q = f"%{search}%"
         query = query.filter(
@@ -68,7 +68,7 @@ def get_post(
     current_user: Optional[models.User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db),
 ):
-    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    post = db.query(models.Post).filter(models.Post.id == post_id, models.Post.status == "published").first()
     if not post:
         raise HTTPException(status_code=404, detail="游记不存在")
     return schemas.CommonResponse(data=_post_response(post, current_user))
@@ -107,6 +107,7 @@ def delete_post(
     ).first()
     if not post:
         raise HTTPException(status_code=404, detail="游记不存在或无权限")
-    db.delete(post)
+    post.status = "deleted"
+    post.deleted_at = models.now_utc()
     db.commit()
     return schemas.CommonResponse(message="已删除游记")

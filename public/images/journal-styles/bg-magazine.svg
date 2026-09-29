@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="stock" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#EFEAE0"/>
+      <stop offset="100%" stop-color="#DDD6C8"/>
+    </linearGradient>
+    <pattern id="halftone" width="5" height="5" patternUnits="userSpaceOnUse">
+      <circle cx="1.2" cy="1.2" r="0.7" fill="#2D3835" fill-opacity="0.09"/>
+    </pattern>
+  </defs>
+  <rect width="900" height="1200" fill="url(#stock)"/>
+  <rect width="900" height="1200" fill="url(#halftone)"/>
+  <!-- edge bars only -->
+  <rect x="0" y="0" width="900" height="22" fill="#1B2221"/>
+  <rect x="0" y="1178" width="900" height="22" fill="#1B2221"/>
+  <!-- crop marks at corners — no folio text, no column rails through content -->
+  <g stroke="#1B2221" stroke-width="2.5" fill="none" stroke-linecap="square">
+    <path d="M20 64V20h44"/>
+    <path d="M880 64V20h-44"/>
+    <path d="M20 1136v44h44"/>
+    <path d="M880 1136v44h-44"/>
+  </g>
+  <!-- thin outer guide, quiet -->
+  <rect x="48" y="48" width="804" height="1104" fill="none" stroke="#1B2221" stroke-opacity="0.12" stroke-width="1"/>
+</svg>

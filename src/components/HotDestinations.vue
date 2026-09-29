@@ -7,8 +7,8 @@
     <div class="carousel-wrapper" ref="carouselRef">
       <div class="carousel-track" :style="{ transform: `translateX(-${currentIndex * cardWidth}px)` }">
         <div v-for="dest in destinations" :key="dest.id" class="dest-card">
-          <div class="dest-image" :style="{ background: getDestBg(dest) }">
-            <div class="dest-season">{{ dest.season }}</div>
+          <div class="dest-image" :style="getDestStyle(dest)">
+            <div class="dest-season">{{ dest.best_season || dest.season || '全年' }}</div>
             <div class="dest-rating">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="#D4A84B">
                 <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"/>
@@ -18,8 +18,8 @@
           </div>
           <div class="dest-info">
             <h3 class="dest-name">{{ dest.name }}</h3>
-            <span class="dest-province">{{ dest.province }}</span>
-            <p class="dest-desc">{{ dest.shortDesc }}</p>
+            <span class="dest-province">{{ dest.province }}{{ dest.city ? ' · ' + dest.city : '' }}</span>
+            <p class="dest-desc">{{ dest.short_desc || dest.shortDesc }}</p>
           </div>
         </div>
       </div>
@@ -38,20 +38,21 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { hotDestinations } from '../data/provinces.js'
+import { hotDestinations, getSpotImageByName } from '../data/provinces.js'
+import apiClient from '../utils/apiClient.js'
 
-const destinations = hotDestinations
+const destinations = ref([...hotDestinations])
 const currentIndex = ref(0)
 const cardWidth = 260
 const showCount = ref(4)
 const carouselRef = ref(null)
 
-const maxIndex = computed(() => Math.max(0, destinations.length * cardWidth - showCount.value * cardWidth))
-const dotsCount = computed(() => Math.ceil(destinations.length / showCount.value))
+const maxIndex = computed(() => Math.max(0, destinations.value.length * cardWidth - showCount.value * cardWidth))
+const dotsCount = computed(() => Math.ceil(destinations.value.length / showCount.value))
 
 let autoTimer = null
 
-function getDestBg(dest) {
+function getDestStyle(dest) {
   const bgMap = {
     '九寨沟': 'linear-gradient(135deg, #0D6B5C 0%, #2EA89A 50%, #D4A84B 100%)',
     '西湖': 'linear-gradient(135deg, #1A8A7A 0%, #2EA89A 50%, #E8C87A 100%)',
@@ -62,7 +63,24 @@ function getDestBg(dest) {
     '外滩': 'linear-gradient(135deg, #0D6B5C 0%, #1A8A7A 50%, #D4A84B 100%)',
     '亚龙湾': 'linear-gradient(135deg, #2EA89A 0%, #1A8A7A 50%, #D4A84B 100%)',
   }
-  return bgMap[dest.name] || 'linear-gradient(135deg, #1A8A7A, #0D6B5C)'
+  const fallback = bgMap[dest.name] || 'linear-gradient(135deg, #1A8A7A, #0D6B5C)'
+  const imageUrl = dest.cover_image_url || dest.image || getSpotImageByName(dest.name)
+  return imageUrl
+    ? { backgroundImage: `linear-gradient(180deg, rgba(6, 49, 42, .08), rgba(6, 49, 42, .42)), url(${imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : { background: fallback }
+}
+
+async function loadPublishedDestinations() {
+  try {
+    const response = await apiClient.get('/attractions/hot', { params: { limit: 60 } })
+    const items = response.data?.data || []
+    if (items.length) {
+      destinations.value = items
+      currentIndex.value = 0
+    }
+  } catch {
+    // 后台未初始化景点库时使用原有静态内容，避免首页热点区域为空。
+  }
 }
 
 function nextSlide() {
@@ -90,6 +108,7 @@ function updateShowCount() {
 
 onMounted(() => {
   updateShowCount()
+  loadPublishedDestinations()
   window.addEventListener('resize', updateShowCount)
   autoTimer = setInterval(() => {
     if (currentIndex.value < maxIndex.value) {

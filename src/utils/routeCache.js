@@ -1,11 +1,13 @@
-const STORAGE_KEY = 'travel-route-cache:v1'
+const STORAGE_KEY = 'travel-route-cache:v2'
 const DEFAULT_TTL = 2 * 60 * 60 * 1000
 const memoryCache = new Map()
 
-function buildCacheKey({ planId, dayIndex, strategy, spots }) {
+function buildCacheKey({ planId, dayIndex, strategy, spots, mode, segment }) {
   return JSON.stringify({
     planId: planId || 'draft',
     dayIndex,
+    segment: segment ?? null,
+    mode: mode || 'drive',
     strategy: strategy || 'time',
     spots: spots.map(spot => [Number(spot.lng), Number(spot.lat)])
   })

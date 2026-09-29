@@ -27,30 +27,23 @@
             </a>
           </div>
         </div>
-        <div class="footer-links">
-          <div class="footer-col">
-            <h4>功能入口</h4>
+        <nav class="footer-links" aria-label="产品功能入口">
+          <h4>探索星际行者</h4>
+          <div class="footer-nav-list">
             <router-link to="/plan">旅行规划</router-link>
             <router-link to="/destinations">热门景点</router-link>
             <router-link to="/routes">行程路线</router-link>
             <router-link to="/share">旅途分享</router-link>
             <router-link to="/journal">旅游手账</router-link>
           </div>
-          <div class="footer-col">
-            <h4>关于平台</h4>
-            <a href="#">关于我们</a>
-            <a href="#">联系方式</a>
-            <a href="#">加入我们</a>
-            <a href="#">品牌合作</a>
+          <div class="footer-legal" aria-label="服务约定">
+            <h4>服务约定</h4>
+            <div class="footer-legal-list">
+              <router-link to="/terms">用户协议</router-link>
+              <router-link to="/privacy">隐私政策</router-link>
+            </div>
           </div>
-          <div class="footer-col">
-            <h4>帮助支持</h4>
-            <a href="#">帮助中心</a>
-            <a href="#">反馈建议</a>
-            <a href="#">隐私政策</a>
-            <a href="#">用户协议</a>
-          </div>
-        </div>
+        </nav>
       </div>
       <div class="footer-bottom">
         <span>&copy; 2026 星际行者 Interstellar Traveler. All rights reserved.</span>
@@ -59,15 +52,11 @@
   </footer>
 </template>
 
-<script setup>
-import { useRouter } from 'vue-router'
-</script>
-
 <style scoped>
 .footer {
   background: #1A1A2E;
   color: #B8C5B0;
-  padding: 64px 32px 28px;
+  padding: 48px 32px 24px;
   font-family: 'Noto Sans SC', sans-serif;
 }
 
@@ -79,8 +68,8 @@ import { useRouter } from 'vue-router'
 .footer-top {
   display: flex;
   justify-content: space-between;
-  gap: 60px;
-  padding-bottom: 40px;
+  gap: 72px;
+  padding-bottom: 32px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
@@ -128,49 +117,92 @@ import { useRouter } from 'vue-router'
 }
 
 .footer-links {
-  display: flex;
-  gap: 60px;
+  flex: 1;
+  max-width: 700px;
+  padding-top: 2px;
 }
 
-.footer-col h4 {
+.footer-links h4,
+.footer-legal h4 {
   font-size: 14px;
   font-weight: 600;
   color: #fff;
   margin: 0 0 18px 0;
 }
 
-.footer-col a {
-  display: block;
-  font-size: 13px;
-  color: #8B8B9E;
-  margin-bottom: 12px;
-  transition: color 0.25s;
-  text-decoration: none;
+.footer-nav-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px 20px;
 }
 
-.footer-col a:hover {
+.footer-nav-list a {
+  font-size: 13px;
+  color: #8B8B9E;
+  transition: color 0.25s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.footer-nav-list a:hover,
+.footer-nav-list a.router-link-active {
   color: #D4A84B;
 }
 
 .footer-bottom {
-  padding-top: 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 22px;
   font-size: 12px;
   color: #6B6B7D;
   text-align: center;
+}
+
+.footer-legal {
+  margin: 0;
+  margin-top: 26px;
+}
+
+.footer-legal h4 { margin-bottom: 18px; }
+
+.footer-legal-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px 20px;
+}
+
+.footer-legal-list a {
+  color: #8B8B9E;
+  font-size: 13px;
+  text-decoration: none;
+  transition: color .2s ease;
+  white-space: nowrap;
+}
+
+.footer-legal-list a:hover,
+.footer-legal-list a.router-link-active {
+  color: #D4A84B;
 }
 
 @media (max-width: 760px) {
   .footer { padding: 42px 16px 22px; }
   .footer-top { display: block; padding-bottom: 28px; }
   .footer-brand { max-width: none; }
-  .footer-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; margin-top: 30px; }
-  .footer-col h4 { font-size: 12px; margin-bottom: 12px; }
-  .footer-col a { font-size: 11px; margin-bottom: 9px; }
-  .footer-bottom { padding-top: 20px; font-size: 10px; }
+  .footer-links { max-width: none; margin-top: 30px; }
+  .footer-links h4, .footer-legal h4 { font-size: 12px; margin-bottom: 12px; }
+  .footer-nav-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 18px; }
+  .footer-nav-list a, .footer-legal-list a { font-size: 11px; }
+  .footer-legal { margin-top: 22px; }
+  .footer-legal-list { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 18px; }
+  .footer-bottom { gap: 5px; padding-top: 20px; font-size: 10px; }
 }
 
 @media (max-width: 420px) {
-  .footer-links { gap: 10px; }
-  .footer-col a { white-space: normal; overflow-wrap: anywhere; }
+  .footer-nav-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .footer-legal-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .footer-nav-list a, .footer-legal-list a { white-space: normal; overflow-wrap: anywhere; }
 }
 </style>

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="28"/>
+    </filter>
+    <filter id="soft2" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="36"/>
+    </filter>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F7FBF6"/>
+      <stop offset="100%" stop-color="#EEF4EF"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="1200" fill="url(#paper)"/>
+  <!-- watercolor washes -->
+  <g filter="url(#soft)" opacity="0.7">
+    <circle cx="120" cy="100" r="160" fill="#A8D4C8"/>
+    <circle cx="780" cy="160" r="140" fill="#F0C4B8"/>
+    <circle cx="200" cy="980" r="180" fill="#C8D8F0"/>
+    <circle cx="760" cy="1050" r="150" fill="#D4E8C8"/>
+    <circle cx="450" cy="600" r="100" fill="#F5DCC8" opacity="0.6"/>
+  </g>
+  <g filter="url(#soft2)" opacity="0.45">
+    <ellipse cx="700" cy="480" rx="120" ry="90" fill="#B8C8E8"/>
+    <ellipse cx="160" cy="520" rx="100" ry="80" fill="#E8C8D4"/>
+    <ellipse cx="500" cy="180" rx="90" ry="70" fill="#C8E0D0"/>
+  </g>
+  <!-- paper fiber hints -->
+  <g stroke="#8AAB9A" stroke-opacity="0.12" stroke-width="1.2" fill="none">
+    <path d="M60 200q40 20 80 0"/>
+    <path d="M700 300q50-15 90 10"/>
+    <path d="M120 800q60 25 110-5"/>
+    <path d="M650 900q40 30 100 5"/>
+  </g>
+  <!-- soft deckle edge suggestion -->
+  <rect x="16" y="16" width="868" height="1168" fill="none" stroke="#7BA89A" stroke-opacity="0.2" stroke-width="2" rx="28"/>
+</svg>

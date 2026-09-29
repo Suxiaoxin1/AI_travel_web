@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFEFB"/>
+      <stop offset="100%" stop-color="#F0F6F2"/>
+    </linearGradient>
+    <radialGradient id="mint" cx="92%" cy="6%" r="38%">
+      <stop offset="0%" stop-color="#B7DBC8" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FFFEFB" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gutter" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#D7E5DE"/>
+      <stop offset="100%" stop-color="#F7FBF8"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="1200" fill="url(#paper)"/>
+  <rect width="900" height="1200" fill="url(#mint)"/>
+  <rect x="0" y="0" width="64" height="1200" fill="url(#gutter)"/>
+  <g fill="#EAF1ED" stroke="#B7C9C0" stroke-width="2.5">
+    <circle cx="32" cy="180" r="11"/>
+    <circle cx="32" cy="380" r="11"/>
+    <circle cx="32" cy="580" r="11"/>
+    <circle cx="32" cy="780" r="11"/>
+    <circle cx="32" cy="980" r="11"/>
+  </g>
+  <g fill="#C2D2CA">
+    <circle cx="32" cy="180" r="4.5"/>
+    <circle cx="32" cy="380" r="4.5"/>
+    <circle cx="32" cy="580" r="4.5"/>
+    <circle cx="32" cy="780" r="4.5"/>
+    <circle cx="32" cy="980" r="4.5"/>
+  </g>
+  <g stroke="#7E9A8E" stroke-opacity="0.11" stroke-width="1">
+    <path d="M104 160h760M104 208h760M104 256h760M104 304h760M104 352h760M104 400h760M104 448h760M104 496h760M104 544h760M104 592h760M104 640h760M104 688h760M104 736h760M104 784h760M104 832h760M104 880h760M104 928h760M104 976h760M104 1024h760"/>
+  </g>
+  <rect x="18" y="18" width="864" height="1164" fill="none" stroke="#B7C9C0" stroke-opacity="0.35" stroke-width="1.5"/>
+</svg>

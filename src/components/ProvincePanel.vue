@@ -12,23 +12,22 @@
               <span class="modal-count">{{ data.hotspots?.length || 0 }} 个景点</span>
             </div>
             <div class="modal-header-actions">
-              <!-- 携程按钮：点击跳转到携程搜索对应省份的旅行团 -->
-              <button class="ctrip-btn" @click="goToCtrip(data.name)" title="在携程平台查看旅行团">
+              <!-- 省份级：跟团游搜索 -->
+              <button class="ctrip-btn" @click="goProvinceBooking('ctrip')" title="在携程查看该省跟团游">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M3 12l9-9 9 9"/>
                   <path d="M5 10v10h14V10"/>
                   <path d="M9 20v-6h6v6"/>
                 </svg>
-                <span>携程</span>
+                <span>携程跟团</span>
               </button>
-              <!-- 飞猪按钮：点击跳转到飞猪搜索对应省份的旅行团 -->
-              <button class="fliggy-btn" @click="goToFliggy(data.name)" title="在飞猪平台查看旅行团">
+              <button class="fliggy-btn" @click="goProvinceBooking('fliggy')" title="在飞猪查看该省跟团游">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M2 16l9-13 9 13"/>
                   <path d="M5 16v5h14v-5"/>
                   <circle cx="12" cy="20" r="1.5" fill="currentColor"/>
                 </svg>
-                <span>飞猪</span>
+                <span>飞猪跟团</span>
               </button>
               <button class="modal-close" @click="$emit('close')" aria-label="关闭">✕</button>
             </div>
@@ -71,6 +70,24 @@
                   <div class="spot-tags">
                     <span v-for="t in (spot.tags || [])" :key="t" class="spot-tag">{{ t }}</span>
                   </div>
+                  <div class="spot-booking-row">
+                    <button
+                      type="button"
+                      class="spot-book-btn spot-book-ctrip"
+                      title="在携程搜索该景点门票"
+                      @click="goSpotBooking('ctrip', spot.name)"
+                    >
+                      携程门票
+                    </button>
+                    <button
+                      type="button"
+                      class="spot-book-btn spot-book-fliggy"
+                      title="在飞猪搜索该景点门票"
+                      @click="goSpotBooking('fliggy', spot.name)"
+                    >
+                      飞猪门票
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -90,86 +107,100 @@
 import { reactive, watch, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/authStore.js'
-import { useBookingStore } from '../stores/bookingStore.js'
+import {
+  buildCtripSearchUrl,
+  buildFliggySearchUrl,
+  platformLabel,
+  writePendingBooking
+} from '../utils/bookingLinks.js'
 
 // 省份弹窗组件 props：province 为省份 adcode（用于控制显隐），data 为该省份完整数据
 const props = defineProps({ province: String, data: Object })
 defineEmits(['close'])
 const router = useRouter()
 const authStore = useAuthStore()
-const bookingStore = useBookingStore()
 
-// 内部 toast：登录提示 / 预订成功提示
+// 内部 toast：登录提示 / 跳转提示
 const toast = ref({ visible: false, message: '', type: 'info' })
 let toastTimer = null
-// 显示一条 toast 通知，3 秒后自动隐藏
 function showToast(message, type = 'info') {
   if (toastTimer) clearTimeout(toastTimer)
   toast.value = { visible: true, message, type }
   toastTimer = setTimeout(() => { toast.value.visible = false }, 3000)
 }
 
-// 图片加载状态 Map：用 reactive 包裹，key 为景点名，value 为 true/false
-// 用响应式 Map 而不是直接改 props.spot._imgLoaded，避免深层属性修改无法触发更新
 const imgLoadedMap = reactive({})
 const imgErrorMap = reactive({})
 
-// 切换省份时清空状态，避免上一次的加载状态影响新省份的图片显示
 watch(() => props.province, () => {
   Object.keys(imgLoadedMap).forEach(k => delete imgLoadedMap[k])
   Object.keys(imgErrorMap).forEach(k => delete imgErrorMap[k])
 })
 
-// 图片加载完成回调：在响应式 Map 中标记该景点图片已加载，触发淡入动画
 function onSpotImgLoad(name) {
   imgLoadedMap[name] = true
 }
 
-// 图片加载失败回调：在错误 Map 中标记，显示占位图标
 function onSpotImgError(name) {
   imgErrorMap[name] = true
 }
 
-// 携程跳转：打开携程搜索结果页，并标记待确认预定
-async function goToCtrip(provinceName) {
-  const keyword = `${provinceName}跟团游`
-  const ctripUrl = `https://vacations.ctrip.com/list/whole/sc.html?sv=${encodeURIComponent(provinceName)}&keyword=${encodeURIComponent(keyword)}`
-  if (!authStore.currentUser) {
-    showToast('请先登录后再添加预订', 'warn')
-    setTimeout(() => router.push('/auth'), 1200)
-    return
-  }
-  // 记录待确认预定，用户下单返回后可上传截图确认
-  localStorage.setItem('pendingBooking', JSON.stringify({
-    province: provinceName,
-    keyword,
-    platform: '携程',
-    url: ctripUrl,
-    createdAt: Date.now()
-  }))
-  window.open(ctripUrl, '_blank', 'noopener,noreferrer')
-  showToast('已跳转携程，下单完成后请返回上传订单截图', 'success')
+function ensureLoggedIn() {
+  if (authStore.currentUser) return true
+  showToast('请先登录后再收藏旅行链接', 'warn')
+  setTimeout(() => router.push('/auth'), 1200)
+  return false
 }
 
-// 飞猪跳转：打开飞猪对应省份搜索页，并标记待确认预定
-async function goToFliggy(provinceName) {
-  const keyword = `${provinceName}跟团游`
-  const fliggyUrl = `https://www.fliggy.com/search.htm?q=${encodeURIComponent(keyword)}`
-  if (!authStore.currentUser) {
-    showToast('请先登录后再添加预订', 'warn')
-    setTimeout(() => router.push('/auth'), 1200)
-    return
-  }
-  // 记录待确认预定，用户下单返回后可上传截图确认
-  localStorage.setItem('pendingBooking', JSON.stringify({
-    province: provinceName,
+function openOtaAndPend({ platform, url, keyword, sourceType, sourceName, province }) {
+  if (!ensureLoggedIn()) return
+  writePendingBooking({
+    platform,
+    url,
     keyword,
-    platform: '飞猪',
-    url: fliggyUrl,
-    createdAt: Date.now()
-  }))
-  window.open(fliggyUrl, '_blank', 'noopener,noreferrer')
-  showToast('已跳转飞猪，下单完成后请返回上传订单截图', 'success')
+    sourceType,
+    sourceName,
+    province
+  })
+  window.open(url, '_blank', 'noopener,noreferrer')
+  const label = platformLabel(platform)
+  showToast(`已跳转${label}，返回后可保存链接到「我的预定」`, 'success')
+}
+
+/** 省份级：跟团游 */
+function goProvinceBooking(platform) {
+  const provinceName = props.data?.name
+  if (!provinceName) return
+  const keyword = `${provinceName}跟团游`
+  const url = platform === 'ctrip'
+    ? buildCtripSearchUrl(keyword, provinceName)
+    : buildFliggySearchUrl(keyword)
+  openOtaAndPend({
+    platform,
+    url,
+    keyword,
+    sourceType: 'province',
+    sourceName: provinceName,
+    province: provinceName
+  })
+}
+
+/** 景点级：门票 */
+function goSpotBooking(platform, spotName) {
+  if (!spotName) return
+  const provinceName = props.data?.name || ''
+  const keyword = `${spotName}门票`
+  const url = platform === 'ctrip'
+    ? buildCtripSearchUrl(keyword, spotName)
+    : buildFliggySearchUrl(keyword)
+  openOtaAndPend({
+    platform,
+    url,
+    keyword,
+    sourceType: 'spot',
+    sourceName: spotName,
+    province: provinceName
+  })
 }
 </script>
 
@@ -543,6 +574,39 @@ async function goToFliggy(provinceName) {
   background: rgba(13, 107, 92, 0.08);
   color: #0D6B5C;
   border-radius: 8px;
+}
+
+.spot-booking-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.spot-book-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'Noto Sans SC', sans-serif;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.spot-book-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.spot-book-ctrip {
+  background: #0086f6;
+  color: #fff;
+}
+
+.spot-book-fliggy {
+  background: #ff8a1f;
+  color: #fff;
 }
 
 .panel-empty {

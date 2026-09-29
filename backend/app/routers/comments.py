@@ -15,7 +15,7 @@ def create_comment(
     current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    post = db.query(models.Post).filter(models.Post.id == post_id).first()
+    post = db.query(models.Post).filter(models.Post.id == post_id, models.Post.status == "published").first()
     if not post:
         raise HTTPException(status_code=404, detail="游记不存在")
 
@@ -28,7 +28,7 @@ def create_comment(
     db.commit()
     db.refresh(comment)
 
-    post.comments_count = db.query(models.Comment).filter(models.Comment.post_id == post_id).count()
+    post.comments_count = db.query(models.Comment).filter(models.Comment.post_id == post_id, models.Comment.status == "published").count()
     db.commit()
     db.refresh(post)
 
@@ -57,12 +57,13 @@ def delete_comment(
     if not comment:
         raise HTTPException(status_code=404, detail="评论不存在或无权限")
 
-    db.delete(comment)
+    comment.status = "deleted"
+    comment.deleted_at = models.now_utc()
     db.commit()
 
     post = db.query(models.Post).filter(models.Post.id == post_id).first()
     if post:
-        post.comments_count = db.query(models.Comment).filter(models.Comment.post_id == post_id).count()
+        post.comments_count = db.query(models.Comment).filter(models.Comment.post_id == post_id, models.Comment.status == "published").count()
         db.commit()
 
     return schemas.CommonResponse(message="已删除评论")

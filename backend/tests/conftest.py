@@ -2,6 +2,7 @@ import os
 
 os.environ["DATABASE_URL"] = "postgresql+psycopg://postgres:postgres@localhost:5432/starwalk_test"
 os.environ["SECRET_KEY"] = "test-secret-key"
+os.environ["APP_ENV"] = "test"
 
 import pytest
 from fastapi.testclient import TestClient
@@ -41,12 +42,21 @@ def client():
     return TestClient(app)
 
 
+@pytest.fixture
+def db_session():
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
 @pytest.fixture(scope="session")
 def auth_headers(client):
     # 创建测试用户
     db = TestingSessionLocal()
     user = models.User(
-        phone="13800138000",
+        account="tester_01",
         nickname="tester",
         hashed_password=get_password_hash("123456"),
         avatar_bg="linear-gradient(135deg, #0D6B5C, #1A8A7A)",
@@ -56,6 +66,6 @@ def auth_headers(client):
     db.refresh(user)
     db.close()
 
-    resp = client.post("/api/auth/login", json={"phone": "13800138000", "password": "123456"})
+    resp = client.post("/api/auth/login", json={"account": "tester_01", "password": "123456"})
     token = resp.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}

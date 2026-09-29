@@ -1,3 +1,8 @@
+"""手账 CRUD：保存 / 列表 / 读取 / 更新 / 删除。
+
+手账「生成」不在本路由。旧 Agnes 视觉+文案生成已从前端移除；
+后续模板排版生成将通过独立 diary 服务接入，本模块仅负责存取。
+"""
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session

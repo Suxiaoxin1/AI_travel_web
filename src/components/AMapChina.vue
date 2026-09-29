@@ -16,6 +16,8 @@ let map = null
 let markers = []
 let tooltipEl = null
 let tooltipUnbind = null
+let resizeHandler = null
+let intersectionObserver = null
 
 onMounted(async () => {
   const AMap = await AMapLoader.load({
@@ -33,13 +35,38 @@ onMounted(async () => {
     suppressMapPluginBlock: true
   })
 
+  const refreshMapSize = () => {
+    if (!map) return
+    try {
+      map.resize()
+    } catch {
+      /* ignore */
+    }
+  }
+
   map.once('complete', () => {
-    const tileLayer = new AMap.TileLayer({ opacity: 0.3 })
+    const tileLayer = new AMap.TileLayer({ opacity: 0.55 })
     tileLayer.setMap(map)
+    refreshMapSize()
+    window.setTimeout(refreshMapSize, 120)
+    window.setTimeout(refreshMapSize, 480)
   })
 
   map.add(new AMap.ToolBar())
   map.add(new AMap.Scale())
+
+  resizeHandler = () => refreshMapSize()
+  window.addEventListener('resize', resizeHandler)
+
+  if (typeof IntersectionObserver !== 'undefined' && mapContainer.value) {
+    intersectionObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) refreshMapSize()
+      },
+      { threshold: 0.15 }
+    )
+    intersectionObserver.observe(mapContainer.value)
+  }
 
   // 隐藏高德 logo
   const hideLogo = () => {
@@ -90,7 +117,13 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (tooltipUnbind) tooltipUnbind()
+  if (resizeHandler) window.removeEventListener('resize', resizeHandler)
+  if (intersectionObserver) {
+    intersectionObserver.disconnect()
+    intersectionObserver = null
+  }
   if (map) map.destroy()
+  map = null
 })
 
 function addProvinceMarkers(AMap) {
@@ -240,5 +273,9 @@ function hideTooltip() {
 .amap-container {
   width: 100%;
   height: 100%;
+  min-height: 100%;
+  background: #fff;
+  transform: none;
+  filter: none;
 }
 </style>

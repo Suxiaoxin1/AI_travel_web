@@ -11,19 +11,20 @@
         <button class="go-plan-btn" @click="$router.push('/plan')">前往旅行规划</button>
       </div>
       <div v-for="item in favorites" :key="item.id" class="fav-card">
-        <div class="fav-image" :style="{ background: getCardBackground(item) }">
-          <div v-if="item.plan_json" class="fav-days-badge">{{ item.plan_json.days }}天{{ (item.plan_json.cities || []).length || 1 }}城</div>
+        <div class="fav-image" :style="{ backgroundImage: getCardBackground(item), backgroundSize: 'cover', backgroundPosition: 'center' }">
+          <div v-if="item.plan_json" class="fav-days-badge">{{ item.plan_json.days || (item.plan_json.daysList || []).length }}天{{ formatCities(item.plan_json) }}城</div>
         </div>
         <div class="fav-body">
           <div class="fav-type">{{ item.type }}</div>
           <h3 class="fav-name">{{ item.name }}</h3>
           <p class="fav-desc">{{ item.description }}</p>
-          <!-- 行程卡片额外展示景点缩略图 -->
-          <div v-if="item.plan_json && item.plan_json.daysList" class="fav-spots">
-            <div v-for="spot in getAllSpots(item.plan_json).slice(0, 6)" :key="spot.name" :class="['fav-spot-thumb', { 'fav-spot-name-only': !spot.image }]" :title="spot.name">
-              <img v-if="spot.image" :src="spot.image" :alt="spot.name" />
-              <span v-else class="fav-spot-name">{{ spot.name }}</span>
-            </div>
+          <div v-if="getPreviewTags(item.plan_json).length" class="fav-tags">
+            <span
+              v-for="tag in getPreviewTags(item.plan_json).slice(0, 5)"
+              :key="tag.label"
+              class="fav-tag"
+              :class="`type-${tag.type || 'experience'}`"
+            >{{ tag.label }}</span>
           </div>
           <div class="fav-footer">
             <span class="fav-date">{{ formatDate(item.created_at) }}</span>
@@ -39,23 +40,54 @@
       </div>
     </div>
 
-    <!-- 行程详情弹窗 -->
     <div v-if="viewingPlan" class="plan-modal" @click.self="viewingPlan = null">
       <div class="plan-modal-card">
         <button class="modal-close" @click="viewingPlan = null">✕</button>
         <h2>{{ viewingPlan.name }}</h2>
-        <p class="modal-meta" v-if="viewingPlan.plan_json">{{ viewingPlan.plan_json.days }}天 · {{ (viewingPlan.plan_json.cities || []).length || 1 }}城 · 预算 ¥{{ viewingPlan.plan_json.budget || '未知' }}</p>
-        <div v-if="viewingPlan.plan_json && viewingPlan.plan_json.userInput" class="modal-user-input">用户输入：{{ viewingPlan.plan_json.userInput }}</div>
-        <div class="modal-timeline" v-if="viewingPlan.plan_json">
+        <p class="modal-meta" v-if="viewingPlan.plan_json">
+          {{ viewingPlan.plan_json.destination || '目的地待定' }}
+          · {{ viewingPlan.plan_json.days || (viewingPlan.plan_json.daysList || []).length }}天
+          · {{ formatCities(viewingPlan.plan_json) }}城
+          · {{ viewingPlan.plan_json.estimateCost || viewingPlan.plan_json.budgetLabel || (viewingPlan.plan_json.budget ? `¥${viewingPlan.plan_json.budget}` : '预算灵活') }}
+        </p>
+        <div v-if="viewingPlan.plan_json?.userInput" class="modal-user-input">用户输入：{{ viewingPlan.plan_json.userInput }}</div>
+        <div v-if="viewingPlan.plan_json?.reason" class="modal-block">
+          <div class="modal-block-title">推荐理由</div>
+          <p class="modal-block-text">{{ viewingPlan.plan_json.reason }}</p>
+        </div>
+        <div v-if="viewingPlan.plan_json?.transport" class="modal-block">
+          <div class="modal-block-title">出发信息</div>
+          <p class="modal-block-text">{{ formatTransport(viewingPlan.plan_json.transport) }}</p>
+        </div>
+        <div v-if="viewingPlan.plan_json?.hotel" class="modal-block">
+          <div class="modal-block-title">住宿建议</div>
+          <p class="modal-block-text">{{ viewingPlan.plan_json.hotel }}</p>
+        </div>
+        <div v-if="viewingPlan.plan_json?.tips?.length" class="modal-block">
+          <div class="modal-block-title">旅行贴士</div>
+          <ul class="modal-tips">
+            <li v-for="(t, i) in viewingPlan.plan_json.tips" :key="i">{{ t }}</li>
+          </ul>
+        </div>
+        <div class="modal-timeline" v-if="viewingPlan.plan_json?.daysList">
+          <div class="modal-block-title">每日行程安排</div>
           <div v-for="(day, i) in viewingPlan.plan_json.daysList" :key="i" class="modal-day">
             <div class="modal-day-dot">{{ i + 1 }}</div>
             <div class="modal-day-content">
               <h4>{{ day.title }}</h4>
               <p>{{ day.desc }}</p>
-              <div class="modal-spots">
-                <div v-for="s in day.spots" :key="s.name" class="modal-spot">
-                  <img v-if="s.image" :src="s.image" :alt="s.name" />
-                  <span>{{ s.name }}</span>
+              <div v-if="day.highlights?.length" class="modal-highlights">
+                <span
+                  v-for="(h, j) in day.highlights"
+                  :key="`${h.type}-${h.label}-${j}`"
+                  class="modal-highlight"
+                  :class="`type-${h.type || 'experience'}`"
+                >{{ h.label }}</span>
+              </div>
+              <div v-else-if="day.spots?.length" class="modal-spots">
+                <div v-for="s in day.spots" :key="s.name || s" class="modal-spot">
+                  <img v-if="s.image" :src="s.image" :alt="s.name || s" />
+                  <span>{{ s.name || s }}</span>
                 </div>
               </div>
             </div>
@@ -79,39 +111,73 @@ onMounted(() => {
   favoriteStore.loadFavorites()
 })
 
-// 取消收藏
 async function removeFavorite(id) {
   await favoriteStore.removeFavorite(id)
 }
 
-// 查看行程详情
 function viewPlan(item) {
   viewingPlan.value = item
 }
 
-// 格式化日期
 function formatDate(iso) {
   if (!iso) return ''
   return iso.slice(0, 10)
 }
 
-// 获取卡片背景
+function formatCities(plan) {
+  if (!plan) return 1
+  if (typeof plan.cities === 'number') return plan.cities
+  if (Array.isArray(plan.cities)) return plan.cities.length || 1
+  return 1
+}
+
+function formatTransport(transport) {
+  if (!transport) return ''
+  const periodMap = { morning: '上午', afternoon: '下午', evening: '晚间' }
+  const prefMap = {
+    smart: '智能推荐', drive: '驾车优先', transit: '公共交通优先',
+    rail: '高铁/动车建议优先', flight: '飞机建议优先'
+  }
+  const dateText = transport.departureDate || '待定日期'
+  const period = periodMap[transport.departurePeriod] || '灵活时段'
+  const origin = transport.origin || '出发地'
+  const pref = prefMap[transport.preference] || transport.preference || '智能推荐'
+  return `${dateText} ${period}从${origin}出发，交通偏好：${pref}。`
+}
+
 function getCardBackground(item) {
+  if (item.plan_json?.heroImage) return `url(${item.plan_json.heroImage})`
   if (item.image_url) return `url(${item.image_url})`
   if (item.color) return item.color
   return defaultColor
 }
 
-// 从 plan.daysList 提取所有景点（去重）
 function getAllSpots(plan) {
   if (!plan || !plan.daysList) return []
   const map = new Map()
   plan.daysList.forEach(day => {
     (day.spots || []).forEach(s => {
-      if (!map.has(s.name)) map.set(s.name, s)
+      const name = typeof s === 'string' ? s : s?.name
+      if (name && !map.has(name)) map.set(name, typeof s === 'string' ? { name } : s)
     })
   })
   return Array.from(map.values())
+}
+
+function getPreviewTags(plan) {
+  if (!plan || !plan.daysList) return []
+  const seen = new Set()
+  const tags = []
+  for (const day of plan.daysList) {
+    for (const h of day.highlights || []) {
+      const label = String(h.label || h.name || '').trim()
+      if (!label || seen.has(label)) continue
+      seen.add(label)
+      tags.push({ type: h.type || 'experience', label })
+    }
+  }
+  if (tags.length) return tags
+  return getAllSpots(plan).map((s) => ({ type: 'spot', label: s.name }))
 }
 </script>
 
@@ -126,7 +192,7 @@ function getAllSpots(plan) {
 .fav-card { background: #fff; border: 1px solid #E5E0D6; border-radius: 16px; overflow: hidden; transition: all 0.3s; display: flex; flex-direction: column; }
 .fav-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
 
-.fav-image { height: 120px; position: relative; }
+.fav-image { height: 120px; position: relative; background: linear-gradient(135deg, #0D6B5C, #1A8A7A); }
 .fav-days-badge {
   position: absolute; top: 12px; right: 12px;
   padding: 4px 10px; background: rgba(255,255,255,0.95); border-radius: 12px;
@@ -138,11 +204,16 @@ function getAllSpots(plan) {
 .fav-name { font-size: 16px; font-weight: 600; color: #1A1A2E; margin: 0 0 6px; }
 .fav-desc { font-size: 13px; color: #5C5C6E; margin: 0 0 12px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-.fav-spots { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
-.fav-spot-thumb { width: 44px; height: 44px; border-radius: 6px; overflow: hidden; border: 1px solid #F0EDE6; background: #F8F6F0; display: flex; align-items: center; justify-content: center; }
-.fav-spot-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.fav-spot-name-only { width: auto; height: auto; max-width: 160px; padding: 5px 8px; background: #fff; }
-.fav-spot-name { font-size: 11px; line-height: 1.25; color: #5C5C6E; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fav-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.fav-tag {
+  padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;
+  border: 1px solid transparent;
+}
+.fav-tag.type-food { color: #9A5B16; background: #FFF6E8; border-color: #F0D7B0; }
+.fav-tag.type-culture { color: #2F4F8A; background: #EEF3FB; border-color: #C9D7F0; }
+.fav-tag.type-experience { color: #0D6B5C; background: #E8F5F1; border-color: #B9DDD4; }
+.fav-tag.type-vibe { color: #7A5A12; background: #FBF3DD; border-color: #E7D59A; }
+.fav-tag.type-spot { color: #3D5A80; background: #EEF2F7; border-color: #C5D0E0; }
 
 .fav-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #F0EDE6; padding-top: 12px; margin-top: auto; }
 .fav-date { font-size: 11px; color: #8B8B9E; }
@@ -158,7 +229,6 @@ function getAllSpots(plan) {
 .go-plan-btn { padding: 10px 24px; background: #0D6B5C; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Noto Sans SC', sans-serif; }
 .go-plan-btn:hover { background: #1A8A7A; }
 
-/* 行程详情弹窗 */
 .plan-modal {
   position: fixed; inset: 0; background: rgba(0,0,0,0.5);
   display: flex; align-items: center; justify-content: center;
@@ -174,12 +244,26 @@ function getAllSpots(plan) {
 .plan-modal-card h2 { font-size: 20px; font-weight: 700; color: #1A1A2E; margin: 0 0 8px; padding-right: 40px; }
 .modal-meta { font-size: 13px; color: #0D6B5C; margin: 0 0 12px; }
 .modal-user-input { font-size: 13px; color: #5C5C6E; padding: 10px 14px; background: #F8F6F0; border-radius: 8px; margin-bottom: 16px; line-height: 1.6; }
+.modal-block { margin-bottom: 14px; padding: 12px 14px; background: #F7FBF9; border: 1px solid #E5E0D6; border-radius: 12px; }
+.modal-block-title { font-size: 13px; font-weight: 700; color: #0D6B5C; margin-bottom: 8px; }
+.modal-block-text { margin: 0; font-size: 13px; line-height: 1.7; color: #3A3A4E; }
+.modal-tips { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.8; color: #3A3A4E; }
 .modal-timeline { padding-left: 4px; }
 .modal-day { display: flex; gap: 12px; margin-bottom: 16px; }
 .modal-day-dot { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #1A8A7A, #0D6B5C); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 .modal-day-content { flex: 1; min-width: 0; }
 .modal-day-content h4 { font-size: 14px; font-weight: 600; color: #1A1A2E; margin: 0 0 4px; }
 .modal-day-content p { font-size: 13px; color: #5C5C6E; margin: 0 0 8px; line-height: 1.5; }
+.modal-highlights { display: flex; flex-wrap: wrap; gap: 6px; }
+.modal-highlight {
+  padding: 4px 10px; border-radius: 14px; font-size: 12px; font-weight: 600;
+  border: 1px solid transparent;
+}
+.modal-highlight.type-food { color: #9A5B16; background: #FFF6E8; border-color: #F0D7B0; }
+.modal-highlight.type-culture { color: #2F4F8A; background: #EEF3FB; border-color: #C9D7F0; }
+.modal-highlight.type-experience { color: #0D6B5C; background: #E8F5F1; border-color: #B9DDD4; }
+.modal-highlight.type-vibe { color: #7A5A12; background: #FBF3DD; border-color: #E7D59A; }
+.modal-highlight.type-spot { color: #3D5A80; background: #EEF2F7; border-color: #C5D0E0; }
 .modal-spots { display: flex; gap: 8px; flex-wrap: wrap; }
 .modal-spot { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; background: #F8F6F0; border-radius: 8px; border: 1px solid #F0EDE6; }
 .modal-spot img { width: 28px; height: 28px; border-radius: 4px; object-fit: cover; }

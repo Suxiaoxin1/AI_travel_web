@@ -27,12 +27,12 @@ export const pageHeroConfig = {
     theme: 'share'
   },
   journal: {
-    eyebrow: 'TRAVEL JOURNAL STUDIO · 旅游手账',
+    eyebrow: 'TRAVEL JOURNAL STUDIO · 旅行记忆',
     title: '把旅途整理成一页值得收藏的记忆',
-    description: '选择喜欢的风格，上传 3—9 张照片，让 AI 生成可编辑、可保存的旅行手账。',
-    primaryLabel: '创建手账',
+    description: '选择风格、上传 3—9 张照片并补充旅途信息，由模板排版生成可保存的旅行记忆。',
+    primaryLabel: '创建旅行记忆',
     primaryTo: '#journal-form',
-    note: '自动拼贴 · 内容识别 · 支持继续编辑',
+    note: '选风格 · 传照片 · 填信息 · AI 排版预览',
     theme: 'journal'
   },
   preference: {

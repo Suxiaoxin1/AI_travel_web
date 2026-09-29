@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <filter id="grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="3" stitchTiles="stitch" result="n"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.35  0 0 0 0 0.25  0 0 0 0 0.12  0 0 0 0.22 0" in="n" result="g"/>
+      <feBlend in="SourceGraphic" in2="g" mode="multiply"/>
+    </filter>
+    <radialGradient id="stain1" cx="22%" cy="18%" r="28%">
+      <stop offset="0%" stop-color="#C4A078" stop-opacity="0.45"/>
+      <stop offset="55%" stop-color="#D8B896" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#E8D4B0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="stain2" cx="78%" cy="72%" r="32%">
+      <stop offset="0%" stop-color="#B8956A" stop-opacity="0.38"/>
+      <stop offset="60%" stop-color="#D4BC94" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#E8D4B0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F3E6CF"/>
+      <stop offset="50%" stop-color="#E4CFAE"/>
+      <stop offset="100%" stop-color="#D9C09A"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="1200" fill="url(#edge)"/>
+  <rect width="900" height="1200" fill="url(#stain1)"/>
+  <rect width="900" height="1200" fill="url(#stain2)"/>
+  <g stroke="#B8956A" stroke-opacity="0.18" stroke-width="1">
+    <path d="M40 0v1200M860 0v1200"/>
+    <path d="M0 48h900M0 1152h900"/>
+  </g>
+  <!-- film sprocket strip -->
+  <g fill="#8B6B45" fill-opacity="0.12">
+    <rect x="0" y="0" width="28" height="1200"/>
+    <rect x="872" y="0" width="28" height="1200"/>
+  </g>
+  <g fill="#F6ECD8" fill-opacity="0.55">
+    <rect x="6" y="24" width="16" height="12" rx="2"/>
+    <rect x="6" y="60" width="16" height="12" rx="2"/>
+    <rect x="6" y="96" width="16" height="12" rx="2"/>
+    <rect x="6" y="132" width="16" height="12" rx="2"/>
+    <rect x="6" y="168" width="16" height="12" rx="2"/>
+    <rect x="6" y="204" width="16" height="12" rx="2"/>
+    <rect x="6" y="240" width="16" height="12" rx="2"/>
+    <rect x="6" y="276" width="16" height="12" rx="2"/>
+    <rect x="6" y="312" width="16" height="12" rx="2"/>
+    <rect x="6" y="348" width="16" height="12" rx="2"/>
+    <rect x="6" y="384" width="16" height="12" rx="2"/>
+    <rect x="6" y="420" width="16" height="12" rx="2"/>
+    <rect x="6" y="456" width="16" height="12" rx="2"/>
+    <rect x="6" y="492" width="16" height="12" rx="2"/>
+    <rect x="6" y="528" width="16" height="12" rx="2"/>
+    <rect x="6" y="564" width="16" height="12" rx="2"/>
+    <rect x="6" y="600" width="16" height="12" rx="2"/>
+    <rect x="6" y="636" width="16" height="12" rx="2"/>
+    <rect x="6" y="672" width="16" height="12" rx="2"/>
+    <rect x="6" y="708" width="16" height="12" rx="2"/>
+    <rect x="6" y="744" width="16" height="12" rx="2"/>
+    <rect x="6" y="780" width="16" height="12" rx="2"/>
+    <rect x="6" y="816" width="16" height="12" rx="2"/>
+    <rect x="6" y="852" width="16" height="12" rx="2"/>
+    <rect x="6" y="888" width="16" height="12" rx="2"/>
+    <rect x="6" y="924" width="16" height="12" rx="2"/>
+    <rect x="6" y="960" width="16" height="12" rx="2"/>
+    <rect x="6" y="996" width="16" height="12" rx="2"/>
+    <rect x="6" y="1032" width="16" height="12" rx="2"/>
+    <rect x="6" y="1068" width="16" height="12" rx="2"/>
+    <rect x="6" y="1104" width="16" height="12" rx="2"/>
+    <rect x="6" y="1140" width="16" height="12" rx="2"/>
+    <rect x="878" y="24" width="16" height="12" rx="2"/>
+    <rect x="878" y="60" width="16" height="12" rx="2"/>
+    <rect x="878" y="96" width="16" height="12" rx="2"/>
+    <rect x="878" y="132" width="16" height="12" rx="2"/>
+    <rect x="878" y="168" width="16" height="12" rx="2"/>
+    <rect x="878" y="204" width="16" height="12" rx="2"/>
+    <rect x="878" y="240" width="16" height="12" rx="2"/>
+    <rect x="878" y="276" width="16" height="12" rx="2"/>
+    <rect x="878" y="312" width="16" height="12" rx="2"/>
+    <rect x="878" y="348" width="16" height="12" rx="2"/>
+    <rect x="878" y="384" width="16" height="12" rx="2"/>
+    <rect x="878" y="420" width="16" height="12" rx="2"/>
+    <rect x="878" y="456" width="16" height="12" rx="2"/>
+    <rect x="878" y="492" width="16" height="12" rx="2"/>
+    <rect x="878" y="528" width="16" height="12" rx="2"/>
+    <rect x="878" y="564" width="16" height="12" rx="2"/>
+    <rect x="878" y="600" width="16" height="12" rx="2"/>
+    <rect x="878" y="636" width="16" height="12" rx="2"/>
+    <rect x="878" y="672" width="16" height="12" rx="2"/>
+    <rect x="878" y="708" width="16" height="12" rx="2"/>
+    <rect x="878" y="744" width="16" height="12" rx="2"/>
+    <rect x="878" y="780" width="16" height="12" rx="2"/>
+    <rect x="878" y="816" width="16" height="12" rx="2"/>
+    <rect x="878" y="852" width="16" height="12" rx="2"/>
+    <rect x="878" y="888" width="16" height="12" rx="2"/>
+    <rect x="878" y="924" width="16" height="12" rx="2"/>
+    <rect x="878" y="960" width="16" height="12" rx="2"/>
+    <rect x="878" y="996" width="16" height="12" rx="2"/>
+    <rect x="878" y="1032" width="16" height="12" rx="2"/>
+    <rect x="878" y="1068" width="16" height="12" rx="2"/>
+    <rect x="878" y="1104" width="16" height="12" rx="2"/>
+    <rect x="878" y="1140" width="16" height="12" rx="2"/>
+  </g>
+  <!-- faint grid -->
+  <g stroke="#A88458" stroke-opacity="0.08" stroke-width="1">
+    <path d="M60 80h780M60 112h780M60 144h780M60 176h780M60 208h780M60 240h780M60 272h780M60 304h780M60 336h780M60 368h780M60 400h780M60 432h780M60 464h780M60 496h780M60 528h780M60 560h780M60 592h780M60 624h780M60 656h780M60 688h780M60 720h780M60 752h780M60 784h780M60 816h780M60 848h780M60 880h780M60 912h780M60 944h780M60 976h780M60 1008h780M60 1040h780M60 1072h780M60 1104h780"/>
+    <path d="M92 60v1060M124 60v1060M156 60v1060M188 60v1060M220 60v1060M252 60v1060M284 60v1060M316 60v1060M348 60v1060M380 60v1060M412 60v1060M444 60v1060M476 60v1060M508 60v1060M540 60v1060M572 60v1060M604 60v1060M636 60v1060M668 60v1060M700 60v1060M732 60v1060M764 60v1060M796 60v1060"/>
+  </g>
+  <rect width="900" height="1200" fill="#E8D4B0" filter="url(#grain)" opacity="0.35" style="mix-blend-mode:multiply"/>
+  <rect width="900" height="1200" fill="none" stroke="#8B6B45" stroke-opacity="0.22" stroke-width="3"/>
+</svg>

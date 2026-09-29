@@ -38,3 +38,13 @@ dist-ssr
 .env.*
 deploy/.env.production
 !.env.example
+!backend/.env.example
+
+# Local QA / large media / deploy snapshots (keep out of GitHub)
+/assets/
+/videos/
+/public/videos/
+/public/images/视频/
+/scene-04-*.png
+/deploy/_local_journal_backup_*/
+/deploy/_prod_journal_snapshot/

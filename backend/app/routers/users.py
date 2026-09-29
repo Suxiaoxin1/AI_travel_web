@@ -25,6 +25,12 @@ def update_me(
         current_user.nickname = payload.nickname.strip()
     if payload.avatar_bg is not None:
         current_user.avatar_bg = payload.avatar_bg
+    if payload.avatar_url is not None:
+        current_user.avatar_url = payload.avatar_url.strip() or None
+    if payload.bio is not None:
+        current_user.bio = payload.bio.strip() or None
+    if payload.home_city is not None:
+        current_user.home_city = payload.home_city.strip() or None
     db.commit()
     db.refresh(current_user)
     return schemas.CommonResponse(

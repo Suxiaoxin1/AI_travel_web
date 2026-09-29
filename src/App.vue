@@ -1,22 +1,29 @@
 <template>
-  <div class="app">
-    <NavBar />
-    <main class="main-content">
+  <div class="app" :class="{ 'admin-mode': isAdminRoute }">
+    <NavBar v-if="!isAdminRoute" />
+    <main class="main-content" :class="{ 'admin-main-host': isAdminRoute }">
       <router-view />
     </main>
-    <AppFooter />
+    <AppFooter v-if="!isAdminRoute" />
     <!-- 全局右侧抽屉：我的收藏/我的预定/我的日记 -->
-    <MyDrawer />
+    <MyDrawer v-if="!isAdminRoute" />
     <!-- 订单确认弹窗：从 OTA 平台返回后询问用户 -->
-    <BookingConfirmModal />
+    <BookingConfirmModal v-if="!isAdminRoute" />
+    <AppToast v-if="!isAdminRoute" />
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import NavBar from './components/NavBar.vue'
 import AppFooter from './components/AppFooter.vue'
 import MyDrawer from './components/MyDrawer.vue'
 import BookingConfirmModal from './components/BookingConfirmModal.vue'
+import AppToast from './components/AppToast.vue'
+
+const route = useRoute()
+const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 </script>
 
 <style>
@@ -25,7 +32,9 @@ html{scroll-behavior:smooth;scroll-padding-top:84px;-webkit-font-smoothing:antia
 body{font-family:'Noto Sans SC','Inter',sans-serif;background:#F8F6F0;color:#1A1A2E;line-height:1.5;overflow-x:hidden}
 ::selection{background:rgba(13,107,92,0.2);color:#1A1A2E}
 .app{min-height:100vh;display:flex;flex-direction:column}
+.app.admin-mode{min-height:100dvh}
 .main-content{margin-top:72px;display:flex;flex-direction:column;flex:1}
+.main-content.admin-main-host{margin-top:0;min-height:100dvh}
 .main-content .page-header {
   position: relative; overflow: hidden; isolation: isolate;
   padding: 30px 34px 28px; margin-bottom: 28px; border: 1px solid rgba(13,107,92,.12);

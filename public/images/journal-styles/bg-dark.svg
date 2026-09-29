@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1200" viewBox="0 0 900 1200" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <radialGradient id="vignette" cx="50%" cy="42%" r="74%">
+      <stop offset="0%" stop-color="#2F3B40"/>
+      <stop offset="50%" stop-color="#1B2529"/>
+      <stop offset="100%" stop-color="#0A0E10"/>
+    </radialGradient>
+    <filter id="leather">
+      <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" stitchTiles="stitch" result="n"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.78  0 0 0 0 0.62  0 0 0 0 0.38  0 0 0 0.22 0" in="n" result="g"/>
+      <feBlend in="SourceGraphic" in2="g" mode="soft-light"/>
+    </filter>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F8E6B0"/>
+      <stop offset="50%" stop-color="#D4A84B"/>
+      <stop offset="100%" stop-color="#F3D18B"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="1200" fill="url(#vignette)" filter="url(#leather)"/>
+  <!-- quiet gold frame only — no center text/diamonds -->
+  <rect x="30" y="30" width="840" height="1140" fill="none" stroke="url(#gold)" stroke-opacity="0.72" stroke-width="4"/>
+  <rect x="46" y="46" width="808" height="1108" fill="none" stroke="#F3D18B" stroke-opacity="0.22" stroke-width="1.5"/>
+  <g stroke="url(#gold)" stroke-width="3" fill="none" stroke-linecap="square">
+    <path d="M56 108V56h52"/>
+    <path d="M844 108V56h-52"/>
+    <path d="M56 1092v52h52"/>
+    <path d="M844 1092v52h-52"/>
+  </g>
+  <!-- sparse gold dust near edges only -->
+  <g fill="#F8E6B0">
+    <circle cx="120" cy="90" r="2.2" opacity="0.45"/>
+    <circle cx="780" cy="110" r="2.4" opacity="0.4"/>
+    <circle cx="100" cy="1080" r="2.2" opacity="0.4"/>
+    <circle cx="800" cy="1060" r="2.6" opacity="0.45"/>
+    <circle cx="860" cy="400" r="1.8" opacity="0.3"/>
+    <circle cx="70" cy="700" r="1.8" opacity="0.3"/>
+  </g>
+</svg>

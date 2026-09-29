@@ -1618,7 +1618,7 @@ export const provinceData = {
     nameEn: 'Fujian',
     description: '山海交响的东南明珠。厦门的文艺小资、土楼的古老神秘、武夷山的碧水丹霞。',
     color: '#1A8A7A',
-    hotspotCount: 16,
+    hotspotCount: 19,
     bestSeason: '春秋两季',
     avgRating: 4.5,
     hotspots: [
@@ -1643,6 +1643,39 @@ export const provinceData = {
         shortDesc: '世界文化遗产，厦门思明区西南面小岛。岛上没有机动车，万国建筑群错落有致，钢琴之声萦绕巷弄，日光岩俯瞰全岛和台湾海峡，文艺',
         tags: ['湖泊', '城市'],
         imageUrl: '/images/landmarks/fujian_02_gulangyu.jpg'
+      },
+      {
+        name: '厦门大学',
+        nameEn: '厦门大学',
+        type: 'urban',
+        rating: 4.8,
+        duration: '2小时',
+        price: '免费',
+        shortDesc: '被誉为「中国最美大学」之一。芙蓉湖、建南大礼堂与海边校区连成一片，白墙红瓦与凤凰木相映，是厦门行程里最常打卡的校园风景',
+        tags: ['城市', '校园'],
+        imageUrl: '/images/landmarks/xiamen_01_xida.jpg'
+      },
+      {
+        name: '南普陀寺',
+        nameEn: '南普陀寺',
+        type: 'cultural',
+        rating: 4.6,
+        duration: '2小时',
+        price: '免费',
+        shortDesc: '闽南著名佛教寺院，背靠五老峰、面向厦门港。大雄宝殿香火鼎盛，寺后登山可俯瞰厦大与海湾，常与厦门大学连成一日游',
+        tags: ['佛教', '文化'],
+        imageUrl: '/images/landmarks/xiamen_02_nanputuo.jpg'
+      },
+      {
+        name: '厦门中山路',
+        nameEn: '厦门中山路',
+        type: 'urban',
+        rating: 4.4,
+        duration: '2小时',
+        price: '免费',
+        shortDesc: '厦门老城骑楼商业街，闽南小吃与海风夜市交织。步行可达轮渡码头，是逛鼓浪屿前后补一口沙茶面、海鲜的热门去处',
+        tags: ['城市', '美食'],
+        imageUrl: '/images/landmarks/xiamen_03_zhongshan.jpg'
       },
       {
         name: '福建土楼（永定）',
@@ -4402,15 +4435,46 @@ function buildSpotImageMap() {
 }
 
 // 根据景点名查本地图片 URL
-// 支持精确匹配 + 模糊匹配（包含关键词）
+// 支持精确匹配 + 最长模糊匹配（避免短词如「大理」乱配）
+const GENERIC_PLACE_KEYS = new Set([
+  '大理', '丽江', '昆明', '香格里拉', '北京', '上海', '广州', '成都', '重庆',
+  '西安', '杭州', '南京', '苏州', '厦门', '桂林', '拉萨', '云南', '四川', '西藏',
+  '古城', '古镇', '公园', '景区', '码头', '索道', '寺庙', '海', '山'
+])
+
+// 行程常见别名 → 本地封面（补全 provinces 热门点未覆盖的叫法）
+const SPOT_IMAGE_ALIASES = {
+  '厦门大学': '/images/landmarks/xiamen_01_xida.jpg',
+  '厦大': '/images/landmarks/xiamen_01_xida.jpg',
+  '南普陀寺': '/images/landmarks/xiamen_02_nanputuo.jpg',
+  '南普陀': '/images/landmarks/xiamen_02_nanputuo.jpg',
+  '厦门中山路': '/images/landmarks/xiamen_03_zhongshan.jpg',
+  '中山路': '/images/landmarks/xiamen_03_zhongshan.jpg',
+  '鼓浪屿': '/images/landmarks/fujian_02_gulangyu.jpg',
+}
+
 export function getSpotImageByName(name) {
-  if (!name) return ''
+  const normalizedName = typeof name === 'string' ? name.trim() : ''
+  if (!normalizedName) return ''
+  if (SPOT_IMAGE_ALIASES[normalizedName]) return SPOT_IMAGE_ALIASES[normalizedName]
   const map = buildSpotImageMap()
   // 1. 精确匹配
-  if (map.has(name)) return map.get(name)
-  // 2. 模糊匹配：找包含输入名的景点，或被输入名包含的景点
+  if (map.has(normalizedName)) return map.get(normalizedName)
+  // 2. 模糊：收集候选，取最长键；过短/泛化地名不作为唯一依据
+  let bestKey = ''
+  let bestUrl = ''
   for (const [spotName, url] of map.entries()) {
-    if (spotName.includes(name) || name.includes(spotName)) return url
+    if (!(spotName.includes(normalizedName) || normalizedName.includes(spotName))) continue
+    if (spotName.length < 3 && GENERIC_PLACE_KEYS.has(spotName)) continue
+    if (GENERIC_PLACE_KEYS.has(spotName) && spotName.length <= 3 && normalizedName !== spotName) continue
+    if (spotName.length > bestKey.length) {
+      bestKey = spotName
+      bestUrl = url
+    }
+  }
+  // 模糊命中必须足够具体：键长 ≥ 4，或与输入名长度接近
+  if (bestKey && (bestKey.length >= 4 || Math.abs(bestKey.length - normalizedName.length) <= 1)) {
+    return bestUrl
   }
   return ''
 }

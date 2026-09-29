@@ -1,292 +1,345 @@
 <template>
-  <!-- 询问弹窗：是否添加刚才的预定 -->
+  <!-- 回站确认：双路径保存搜索入口 / 粘贴商品链接 -->
   <Teleport to="body">
     <Transition name="fade">
-      <div v-if="showAsk" class="modal-mask" @click.self="cancelAsk">
+      <div v-if="showPanel" class="modal-mask" @click.self="dismissPanel">
         <div class="modal-card">
-          <h3>检测到您查看了旅游产品</h3>
+          <h3>保存到「我的预定」</h3>
           <p class="modal-desc">
-            您刚刚在 <strong>{{ pending.platform }}</strong> 查看了「{{ pending.province }}」的
-            <span class="keyword">{{ pending.keyword }}</span>，是否上传订单截图添加到「我的预定」？
+            您刚在 <strong>{{ platformText }}</strong> 查看了
+            「{{ pending.sourceName || pending.province || '目的地' }}」的
+            <span class="keyword">{{ pending.keyword }}</span>。
+            可先收藏本次搜索入口，或粘贴具体商品页链接以便下次直达。
           </p>
-          <div class="modal-actions">
-            <button class="btn-cancel" @click="cancelAsk">暂不添加</button>
-            <button class="btn-confirm" @click="confirmAsk">确定添加</button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
 
-  <!-- 上传截图弹窗 -->
-  <Teleport to="body">
-    <Transition name="fade">
-      <div v-if="showUpload" class="modal-mask" @click.self="cancelUpload">
-        <div class="modal-card">
-          <h3>上传订单截图</h3>
-          <p class="modal-desc">请上传携程/飞猪的订单详情页截图，系统将自动识别订单信息。</p>
-          <div class="upload-area" @click="triggerUpload" @dragover.prevent @drop.prevent="handleDrop">
-            <div v-if="previewUrl" class="preview-box">
-              <img :src="previewUrl" alt="订单截图预览" />
+          <div class="form-group">
+            <label>标题</label>
+            <input v-model="form.title" type="text" maxlength="255" placeholder="列表中显示的名称" />
+          </div>
+
+          <div class="form-group">
+            <label>备注（可选）</label>
+            <input v-model="form.note" type="text" maxlength="500" placeholder="例如：想看早场 / 含接驳" />
+          </div>
+
+          <div class="path-block">
+            <div class="path-label">方式一：保存搜索入口</div>
+            <p class="path-hint">使用刚才跳转的搜索页，一键收藏（可稍后在列表升级为商品链接）。</p>
+            <button class="btn-confirm btn-block" :disabled="saving" @click="saveSearchLink">
+              {{ saving && saveMode === 'search' ? '保存中…' : '保存搜索入口' }}
+            </button>
+          </div>
+
+          <div class="path-divider"><span>或</span></div>
+
+          <div class="path-block">
+            <div class="path-label">方式二：粘贴商品链接</div>
+            <p class="path-hint">在携程/飞猪打开商品页后复制地址栏链接，粘贴到下方（手机可长按粘贴）。</p>
+            <div class="url-row">
+              <input
+                v-model="form.productUrl"
+                type="url"
+                placeholder="https://… 商品页链接"
+                :class="{ invalid: !!urlError && form.productUrl.trim(), valid: urlOk }"
+                @keydown.enter.prevent="saveProductLink"
+              />
+              <button type="button" class="btn-secondary" :disabled="saving" @click="pasteFromClipboard">
+                剪贴板
+              </button>
             </div>
-            <div v-else class="upload-placeholder">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#B8C5B0" stroke-width="1.5">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <circle cx="8.5" cy="8.5" r="1.5"/>
-                <path d="M21 15l-5-5L5 21"/>
-              </svg>
-              <span>点击或拖拽上传订单截图</span>
-            </div>
-            <input ref="fileInput" type="file" accept="image/*" hidden @change="handleFileSelect" />
+            <p v-if="urlError" class="field-error">{{ urlError }}</p>
+            <p v-else-if="urlOk" class="field-ok">链接可用，可保存为商品页</p>
+            <button
+              class="btn-confirm btn-block"
+              :disabled="saving || !urlOk"
+              @click="saveProductLink"
+            >
+              {{ saving && saveMode === 'product' ? '保存中…' : '保存商品链接' }}
+            </button>
           </div>
+
           <div class="modal-actions">
-            <button class="btn-cancel" @click="cancelUpload">取消</button>
-            <button class="btn-confirm" :disabled="!selectedFile" @click="startOcr">开始识别</button>
+            <button class="btn-cancel" :disabled="saving" @click="discardPending">放弃本次</button>
+            <button class="btn-ghost" :disabled="saving" @click="dismissPanel">稍后再说</button>
           </div>
+          <p v-if="statusMsg" class="status-msg" :class="statusType">{{ statusMsg }}</p>
         </div>
       </div>
     </Transition>
   </Teleport>
 
-  <!-- OCR 结果确认弹窗 -->
-  <Teleport to="body">
-    <Transition name="fade">
-      <div v-if="showResult" class="modal-mask" @click.self="cancelResult">
-        <div class="modal-card result-card">
-          <h3>识别结果</h3>
-          <p class="modal-desc">请核对识别结果，如有误可手动修改。</p>
-          <div class="form-group">
-            <label>平台</label>
-            <input v-model="form.platform" type="text" />
-          </div>
-          <div class="form-group">
-            <label>省份/目的地</label>
-            <input v-model="form.province" type="text" />
-          </div>
-          <div class="form-group">
-            <label>订单号</label>
-            <input v-model="form.orderNo" type="text" placeholder="如：CT12345678" />
-          </div>
-          <div class="form-group">
-            <label>产品名称</label>
-            <input v-model="form.productName" type="text" />
-          </div>
-          <div class="form-group">
-            <label>出行日期</label>
-            <input v-model="form.travelDate" type="date" />
-          </div>
-          <div class="form-group">
-            <label>金额（元）</label>
-            <input v-model="form.amount" type="number" />
-          </div>
-          <div class="modal-actions">
-            <button class="btn-cancel" @click="cancelResult">重新上传</button>
-            <button class="btn-confirm" @click="saveBooking">确认添加到我的预定</button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
-
-  <!-- 浮动入口：存在待确认预定时显示，方便用户随时上传截图 -->
+  <!-- 悬浮入口：pending 仍在且弹窗关闭时显示来源 -->
   <Teleport to="body">
     <Transition name="fab-slide">
       <button
         v-if="showFab"
         class="booking-fab"
-        @click="openUploadFromFab"
-        title="已完成下单？上传截图保存到「我的预定」"
+        :title="fabTitle"
+        @click="openPanelFromFab"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/>
-          <line x1="12" y1="3" x2="12" y2="15"/>
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
         </svg>
-        <span>上传订单截图</span>
+        <span class="fab-text">
+          <strong>保存链接</strong>
+          <em>{{ fabSource }}</em>
+        </span>
       </button>
     </Transition>
   </Teleport>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { useBookingStore } from '../stores/bookingStore.js'
+import { useUiStore } from '../stores/uiStore.js'
+import {
+  clearPendingBooking,
+  defaultBookingTitle,
+  isAllowedBookingUrl,
+  markPendingAskDismissed,
+  normalizePlatform,
+  platformLabel,
+  readPendingBooking
+} from '../utils/bookingLinks.js'
 
 const bookingStore = useBookingStore()
+const ui = useUiStore()
 
-const showAsk = ref(false)
-const showUpload = ref(false)
-const showResult = ref(false)
+const showPanel = ref(false)
 const showFab = ref(false)
-const pending = reactive({ platform: '', province: '', keyword: '', url: '' })
+const saving = ref(false)
+const saveMode = ref('')
+const urlError = ref('')
+const statusMsg = ref('')
+const statusType = ref('ok')
 
-const selectedFile = ref(null)
-const previewUrl = ref('')
-const fileInput = ref(null)
-
-const form = reactive({
+const pending = reactive({
   platform: '',
   province: '',
-  orderNo: '',
-  productName: '',
-  travelDate: '',
-  amount: ''
+  sourceName: '',
+  sourceType: 'province',
+  keyword: '',
+  url: '',
+  askDismissed: false
 })
 
-let isRecognizing = false
+const form = reactive({
+  title: '',
+  note: '',
+  productUrl: ''
+})
 
-function checkPendingBooking() {
-  const raw = localStorage.getItem('pendingBooking')
-  if (!raw) {
-    showFab.value = false
-    return false
+const platformText = computed(() => platformLabel(pending.platform))
+
+const fabSource = computed(() => {
+  const place = pending.sourceName || pending.province || '旅行'
+  const plat = platformLabel(pending.platform)
+  const text = `${place}·${plat}`
+  return text.length > 14 ? `${text.slice(0, 13)}…` : text
+})
+
+const fabTitle = computed(() => {
+  const place = pending.sourceName || pending.province || '目的地'
+  return `保存「${place}」在${platformLabel(pending.platform)}的浏览链接`
+})
+
+const urlOk = computed(() => {
+  const text = form.productUrl.trim()
+  return !!text && !validateProductUrl(text)
+})
+
+watch(() => form.productUrl, (value) => {
+  const text = String(value || '').trim()
+  if (!text) {
+    urlError.value = ''
+    return
   }
-  try {
-    const data = JSON.parse(raw)
-    // 超过 30 分钟的待确认记录自动过期
-    if (Date.now() - data.createdAt > 30 * 60 * 1000) {
-      localStorage.removeItem('pendingBooking')
-      showFab.value = false
-      return false
-    }
-    Object.assign(pending, data)
-    return true
-  } catch {
-    localStorage.removeItem('pendingBooking')
-    showFab.value = false
-    return false
+  urlError.value = validateProductUrl(text)
+})
+
+function syncPendingFromStorage() {
+  const data = readPendingBooking()
+  if (!data) {
+    Object.assign(pending, {
+      platform: '',
+      province: '',
+      sourceName: '',
+      sourceType: 'province',
+      keyword: '',
+      url: '',
+      askDismissed: false
+    })
+    return null
   }
+  Object.assign(pending, {
+    platform: normalizePlatform(data.platform, data.url),
+    province: data.province || '',
+    sourceName: data.sourceName || data.province || '',
+    sourceType: data.sourceType || 'province',
+    keyword: data.keyword || '',
+    url: data.url || '',
+    askDismissed: !!data.askDismissed
+  })
+  return data
+}
+
+function fillFormDefaults() {
+  form.title = defaultBookingTitle(pending.sourceName || pending.province, pending.platform)
+  form.note = ''
+  form.productUrl = ''
+  urlError.value = ''
+  statusMsg.value = ''
 }
 
 function updateFab() {
-  // 任意弹窗打开时不显示浮动入口
-  showFab.value = checkPendingBooking() && !showAsk.value && !showUpload.value && !showResult.value
+  const data = syncPendingFromStorage()
+  showFab.value = !!data && !showPanel.value
+}
+
+function openPanel() {
+  if (!syncPendingFromStorage()) {
+    showPanel.value = false
+    updateFab()
+    return
+  }
+  fillFormDefaults()
+  showPanel.value = true
+  updateFab()
+}
+
+function openPanelFromFab() {
+  openPanel()
+}
+
+function dismissPanel() {
+  markPendingAskDismissed()
+  showPanel.value = false
+  updateFab()
+}
+
+function discardPending() {
+  clearPendingBooking()
+  showPanel.value = false
+  saving.value = false
+  updateFab()
+}
+
+function autoOpenOnce() {
+  const data = syncPendingFromStorage()
+  if (!data || data.askDismissed || showPanel.value) {
+    updateFab()
+    return
+  }
+  markPendingAskDismissed()
+  openPanel()
 }
 
 function onVisibilityChange() {
-  if (document.visibilityState === 'visible' && checkPendingBooking()) {
-    showAsk.value = true
+  if (document.visibilityState !== 'visible') return
+  autoOpenOnce()
+}
+
+async function pasteFromClipboard() {
+  urlError.value = ''
+  try {
+    if (!navigator.clipboard?.readText) {
+      urlError.value = '当前浏览器不支持读取剪贴板，请手动粘贴'
+      return
+    }
+    const text = (await navigator.clipboard.readText()).trim()
+    if (!text) {
+      urlError.value = '剪贴板为空，请先复制商品页链接'
+      return
+    }
+    form.productUrl = text
+    urlError.value = validateProductUrl(text)
+  } catch {
+    urlError.value = '无法读取剪贴板，请手动长按粘贴'
   }
-  updateFab()
 }
 
-function cancelAsk() {
-  showAsk.value = false
-  localStorage.removeItem('pendingBooking')
-  updateFab()
+function validateProductUrl(url) {
+  const text = String(url || '').trim()
+  if (!text) return '请粘贴商品页链接'
+  if (!/^https?:\/\//i.test(text)) return '请粘贴以 http(s):// 开头的完整链接'
+  if (!isAllowedBookingUrl(text)) return '仅支持携程/飞猪等旅行平台商品链接'
+  return ''
 }
 
-function confirmAsk() {
-  showAsk.value = false
-  showUpload.value = true
-  updateFab()
-}
-
-function openUploadFromFab() {
-  showUpload.value = true
-  updateFab()
-}
-
-function triggerUpload() {
-  fileInput.value?.click()
-}
-
-function handleFileSelect(e) {
-  const file = e.target.files[0]
-  if (file) setFile(file)
-}
-
-function handleDrop(e) {
-  const file = e.dataTransfer.files[0]
-  if (file) setFile(file)
-}
-
-function setFile(file) {
-  selectedFile.value = file
-  const reader = new FileReader()
-  reader.onload = (ev) => { previewUrl.value = ev.target.result }
-  reader.readAsDataURL(file)
-}
-
-function cancelUpload() {
-  showUpload.value = false
-  selectedFile.value = null
-  previewUrl.value = ''
-  updateFab()
-}
-
-// 模拟 OCR 识别：从 pending 信息生成基础数据
-// 真实项目中可替换为 Tesseract.js 或后端 OCR 接口
-async function startOcr() {
-  if (!selectedFile.value || isRecognizing) return
-  isRecognizing = true
-
-  // 这里模拟识别耗时
-  await new Promise(resolve => setTimeout(resolve, 800))
-
-  // 基于 pending 信息填充表单（真实 OCR 应解析图片内容）
-  form.platform = pending.platform
-  form.province = pending.province
-  form.productName = pending.keyword
-  form.orderNo = generateOrderNo(pending.platform)
-  form.travelDate = formatDate(new Date())
-  form.amount = ''
-
-  isRecognizing = false
-  showUpload.value = false
-  showResult.value = true
-}
-
-function generateOrderNo(platform) {
-  const prefix = platform === '携程' ? 'CT' : (platform === '飞猪' ? 'FZ' : 'BK')
-  const random = Math.floor(Math.random() * 90000000) + 10000000
-  return `${prefix}${random}`
-}
-
-function formatDate(date) {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-function cancelResult() {
-  showResult.value = false
-  selectedFile.value = null
-  previewUrl.value = ''
-  showUpload.value = true
-  updateFab()
-}
-
-async function saveBooking() {
-  const result = await bookingStore.addBooking({
-    province: form.province,
-    keyword: form.productName || pending.keyword,
-    url: pending.url,
-    platform: form.platform,
-    orderNo: form.orderNo,
-    travelDate: form.travelDate,
-    amount: form.amount ? Number(form.amount) : null
-  })
-  if (result.ok) {
-    localStorage.removeItem('pendingBooking')
-    showResult.value = false
-    selectedFile.value = null
-    previewUrl.value = ''
+async function persistIntent({ url, linkType }) {
+  saving.value = true
+  statusMsg.value = ''
+  try {
+    const result = await bookingStore.addBooking({
+      url,
+      kind: 'intent',
+      title: form.title.trim() || defaultBookingTitle(pending.sourceName || pending.province, pending.platform),
+      note: form.note.trim() || null,
+      sourceType: pending.sourceType || 'province',
+      sourceName: pending.sourceName || pending.province || '',
+      linkType,
+      province: pending.province || pending.sourceName || '',
+      keyword: pending.keyword || '',
+      platform: pending.platform
+    })
+    if (!result.ok) {
+      statusType.value = 'err'
+      statusMsg.value = result.msg || '保存失败'
+      ui.showToast(result.msg || '保存失败', 'error')
+      return false
+    }
+    clearPendingBooking()
+    showPanel.value = false
+    statusType.value = 'ok'
+    statusMsg.value = ''
     updateFab()
-    alert('已添加到「我的预定」')
-  } else {
-    alert(result.msg || '添加失败')
+    const msg = result.deduped
+      ? '已在收藏中，已更新信息'
+      : (linkType === 'product' ? '已保存商品链接' : '已保存搜索入口')
+    ui.showToast(msg, 'success')
+    ui.openDrawer('bookings')
+    return true
+  } finally {
+    saving.value = false
+    saveMode.value = ''
   }
+}
+
+async function saveSearchLink() {
+  if (!pending.url) {
+    statusType.value = 'err'
+    statusMsg.value = '缺少搜索链接，请重新从地图跳转'
+    ui.showToast(statusMsg.value, 'error')
+    return
+  }
+  if (!isAllowedBookingUrl(pending.url)) {
+    statusType.value = 'err'
+    statusMsg.value = '搜索链接无效，请改用粘贴商品链接'
+    ui.showToast(statusMsg.value, 'error')
+    return
+  }
+  saveMode.value = 'search'
+  await persistIntent({ url: pending.url, linkType: 'search' })
+}
+
+async function saveProductLink() {
+  urlError.value = validateProductUrl(form.productUrl)
+  if (urlError.value) return
+  saveMode.value = 'product'
+  await persistIntent({
+    url: form.productUrl.trim(),
+    linkType: 'product'
+  })
 }
 
 onMounted(() => {
   document.addEventListener('visibilitychange', onVisibilityChange)
-  // 页面加载时如果存在待确认记录也检查一下
-  if (document.visibilityState === 'visible' && checkPendingBooking()) {
-    showAsk.value = true
+  if (document.visibilityState === 'visible') {
+    autoOpenOnce()
+  } else {
+    updateFab()
   }
-  updateFab()
 })
 
 onUnmounted(() => {
@@ -311,47 +364,149 @@ onUnmounted(() => {
   border-radius: 20px;
   padding: 28px;
   width: 100%;
-  max-width: 420px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-}
-
-.result-card {
   max-width: 460px;
+  max-height: min(90vh, 720px);
+  overflow: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
 }
 
 .modal-card h3 {
   font-size: 18px;
   font-weight: 700;
-  color: #1A1A2E;
+  color: #1a1a2e;
   margin: 0 0 12px;
 }
 
 .modal-desc {
   font-size: 14px;
-  color: #5C5C6E;
+  color: #5c5c6e;
   line-height: 1.6;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .modal-desc strong {
-  color: #0D6B5C;
+  color: #0d6b5c;
 }
 
 .keyword {
-  color: #C23B22;
+  color: #c23b22;
   font-weight: 600;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label,
+.path-label {
+  display: block;
+  font-size: 13px;
+  color: #5c5c6e;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.form-group input,
+.url-row input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e5e0d6;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.url-row input:focus {
+  border-color: #0d6b5c;
+}
+
+.url-row input.invalid {
+  border-color: #c23b22;
+}
+
+.url-row input.valid {
+  border-color: #0d6b5c;
+}
+
+.path-block {
+  margin-top: 8px;
+}
+
+.path-hint {
+  font-size: 12px;
+  color: #8b8b9e;
+  line-height: 1.5;
+  margin: 0 0 10px;
+}
+
+.path-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  color: #b8b8c5;
+  font-size: 12px;
+}
+
+.path-divider::before,
+.path-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #ebe6de;
+}
+
+.url-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.url-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-error {
+  color: #c23b22;
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+
+.field-ok {
+  color: #0d6b5c;
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+
+.status-msg {
+  margin: 12px 0 0;
+  font-size: 13px;
+}
+
+.status-msg.ok {
+  color: #0d6b5c;
+}
+
+.status-msg.err {
+  color: #c23b22;
 }
 
 .modal-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
-  margin-top: 24px;
+  margin-top: 20px;
 }
 
 .btn-cancel,
-.btn-confirm {
-  padding: 10px 20px;
+.btn-confirm,
+.btn-secondary,
+.btn-ghost {
+  padding: 10px 18px;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
@@ -360,81 +515,55 @@ onUnmounted(() => {
   transition: all 0.2s;
 }
 
-.btn-cancel {
-  background: #F0EDE6;
-  color: #5C5C6E;
+.btn-block {
+  width: 100%;
+  margin-top: 4px;
 }
 
-.btn-cancel:hover {
-  background: #E5E0D6;
+.btn-cancel {
+  background: #f0ede6;
+  color: #5c5c6e;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: #e5e0d6;
 }
 
 .btn-confirm {
-  background: #1A3A2E;
+  background: #1a3a2e;
   color: #fff;
 }
 
 .btn-confirm:hover:not(:disabled) {
-  background: #0D6B5C;
+  background: #0d6b5c;
 }
 
-.btn-confirm:disabled {
+.btn-confirm:disabled,
+.btn-secondary:disabled,
+.btn-ghost:disabled,
+.btn-cancel:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.upload-area {
-  border: 2px dashed #D4C8B8;
-  border-radius: 12px;
-  padding: 24px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.2s;
+.btn-secondary {
+  flex-shrink: 0;
+  background: #e8f4f1;
+  color: #0d6b5c;
 }
 
-.upload-area:hover {
-  border-color: #0D6B5C;
-  background: rgba(13,107,92,0.02);
+.btn-secondary:hover:not(:disabled) {
+  background: #d5ebe5;
 }
 
-.upload-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  color: #8B8B9E;
-  font-size: 14px;
+.btn-ghost {
+  background: transparent;
+  color: #5c5c6e;
+  border: 1px solid #e5e0d6;
 }
 
-.preview-box img {
-  max-width: 100%;
-  max-height: 240px;
-  border-radius: 8px;
-}
-
-.form-group {
-  margin-bottom: 14px;
-}
-
-.form-group label {
-  display: block;
-  font-size: 13px;
-  color: #5C5C6E;
-  margin-bottom: 6px;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid #E5E0D6;
-  border-radius: 10px;
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.form-group input:focus {
-  border-color: #0D6B5C;
+.btn-ghost:hover:not(:disabled) {
+  background: #f7f4ef;
 }
 
 .fade-enter-active,
@@ -447,7 +576,6 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-/* 浮动上传入口 */
 .booking-fab {
   position: fixed;
   right: 24px;
@@ -455,11 +583,11 @@ onUnmounted(() => {
   z-index: 900;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 18px;
+  gap: 10px;
+  padding: 12px 16px;
   border: none;
   border-radius: 28px;
-  background: linear-gradient(135deg, #0D6B5C 0%, #1A8A7A 100%);
+  background: linear-gradient(135deg, #0d6b5c 0%, #1a8a7a 100%);
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -467,6 +595,7 @@ onUnmounted(() => {
   box-shadow: 0 6px 20px rgba(13, 107, 92, 0.35);
   font-family: 'Noto Sans SC', sans-serif;
   transition: all 0.25s ease;
+  max-width: min(72vw, 260px);
 }
 
 .booking-fab:hover {
@@ -474,8 +603,29 @@ onUnmounted(() => {
   box-shadow: 0 8px 26px rgba(13, 107, 92, 0.45);
 }
 
-.booking-fab svg {
-  flex-shrink: 0;
+.fab-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.fab-text strong {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.fab-text em {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.88;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .fab-slide-enter-active,
@@ -493,11 +643,15 @@ onUnmounted(() => {
   .booking-fab {
     right: 16px;
     bottom: 80px;
-    padding: 10px 14px;
-    font-size: 13px;
+    padding: 10px 12px;
   }
-  .booking-fab span {
-    display: none;
+
+  .fab-text em {
+    max-width: 120px;
+  }
+
+  .url-row {
+    flex-direction: column;
   }
 }
 </style>

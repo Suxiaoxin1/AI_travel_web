@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>星际行者 · 途径点标记风格方案</title>
+  <style>
+    :root {
+      --ink: #1a2e24;
+      --muted: #5c6b62;
+      --paper: #f3efe6;
+      --panel: #fffdf8;
+      --line: #e2ddd2;
+      --c1: #0D6B5C;
+      --c2: #D4A84B;
+      --c3: #C23B22;
+      --c4: #4ECDC4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse at 20% 0%, #e8f2ee 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 10%, #f5ecd8 0%, transparent 45%),
+        var(--paper);
+      min-height: 100vh;
+      padding: 32px 24px 64px;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.65rem;
+      letter-spacing: 0.02em;
+    }
+    .sub {
+      margin: 0 0 28px;
+      color: var(--muted);
+      line-height: 1.6;
+      max-width: 52rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+    @media (max-width: 860px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 10px 28px rgba(26, 46, 36, 0.06);
+    }
+    .card-head {
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+    }
+    .card-head h2 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+    .tag {
+      font-size: 0.72rem;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 3px 10px;
+      white-space: nowrap;
+    }
+    .desc {
+      margin: 0;
+      padding: 10px 18px 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.55;
+    }
+    .stage {
+      margin: 14px 18px 18px;
+      border-radius: 14px;
+      min-height: 168px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      position: relative;
+      overflow: hidden;
+      background:
+        linear-gradient(rgba(13,107,92,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(13,107,92,0.05) 1px, transparent 1px),
+        #dfe8e4;
+      background-size: 28px 28px, 28px 28px, auto;
+    }
+    .stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.55), transparent 55%);
+      pointer-events: none;
+    }
+    .row { display: flex; gap: 18px; align-items: center; position: relative; z-index: 1; }
+
+    /* ===== A 科技风 ===== */
+    .mk-tech {
+      width: 34px; height: 34px;
+      position: relative;
+      display: grid; place-items: center;
+      color: #fff;
+      font: 700 11px/1 "Bahnschrift", "Segoe UI", sans-serif;
+      cursor: default;
+    }
+    .mk-tech .core {
+      width: 22px; height: 22px;
+      background: var(--mk);
+      clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+      display: grid; place-items: center;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.55), 0 0 14px color-mix(in srgb, var(--mk) 70%, transparent);
+    }
+    .mk-tech::before,
+    .mk-tech::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border: 1.5px solid color-mix(in srgb, var(--mk) 80%, #fff);
+      clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+      opacity: 0.55;
+    }
+    .mk-tech::after {
+      inset: -4px;
+      opacity: 0.28;
+      animation: pulse-ring 2.2s ease-out infinite;
+    }
+    .mk-tech .corner {
+      position: absolute; width: 6px; height: 6px;
+      border: 1.5px solid color-mix(in srgb, var(--mk) 85%, #9ff);
+    }
+    .mk-tech .corner.tl { left: 1px; top: 1px; border-right: 0; border-bottom: 0; }
+    .mk-tech .corner.tr { right: 1px; top: 1px; border-left: 0; border-bottom: 0; }
+    .mk-tech .corner.bl { left: 1px; bottom: 1px; border-right: 0; border-top: 0; }
+    .mk-tech .corner.br { right: 1px; bottom: 1px; border-left: 0; border-top: 0; }
+
+    /* ===== B 艺术风 ===== */
+    .mk-art {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      display: grid; place-items: center;
+      color: #fffaf0;
+      font: 700 12px/1 "Palatino Linotype", "Songti SC", serif;
+      position: relative;
+      background:
+        radial-gradient(circle at 35% 28%, rgba(255,255,255,0.35), transparent 40%),
+        radial-gradient(circle at 70% 75%, rgba(0,0,0,0.18), transparent 45%),
+        var(--mk);
+      box-shadow:
+        0 0 0 2px color-mix(in srgb, var(--mk) 45%, #f5efe2),
+        0 4px 10px rgba(40, 30, 20, 0.22);
+      filter: contrast(1.05) saturate(0.92);
+    }
+    .mk-art::before {
+      content: "";
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      border: 1.5px dashed color-mix(in srgb, var(--mk) 55%, #8a7a5c);
+      opacity: 0.7;
+      transform: rotate(-8deg);
+    }
+    .mk-art::after {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.28);
+      box-shadow: inset 0 0 8px rgba(0,0,0,0.12);
+    }
+
+    /* ===== C 炫酷特效风 ===== */
+    .mk-fx {
+      width: 36px; height: 36px;
+      position: relative;
+      display: grid; place-items: center;
+      color: #fff;
+      font: 800 11px/1 "Segoe UI", sans-serif;
+      text-shadow: 0 0 8px rgba(255,255,255,0.55);
+    }
+    .mk-fx .gem {
+      width: 20px; height: 20px;
+      border-radius: 6px;
+      transform: rotate(45deg);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.75), transparent 40%),
+        linear-gradient(320deg, rgba(0,0,0,0.25), transparent 45%),
+        var(--mk);
+      box-shadow:
+        0 0 0 2px rgba(255,255,255,0.75),
+        0 0 18px color-mix(in srgb, var(--mk) 80%, #fff),
+        0 6px 14px rgba(0,0,0,0.28);
+    }
+    .mk-fx .num {
+      position: absolute;
+      z-index: 2;
+    }
+    .mk-fx .aura,
+    .mk-fx .aura2 {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid color-mix(in srgb, var(--mk) 70%, #fff);
+      opacity: 0.45;
+      animation: aura 1.8s ease-out infinite;
+    }
+    .mk-fx .aura2 {
+      animation-delay: 0.7s;
+      opacity: 0.25;
+    }
+
+    /* ===== D 卡通动漫风 ===== */
+    .mk-cartoon {
+      width: 28px;
+      height: 36px;
+      position: relative;
+      display: grid;
+      place-items: start center;
+    }
+    .mk-cartoon .bubble {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 30% 26%, rgba(255,255,255,0.85) 0 18%, transparent 19%),
+        var(--mk);
+      border: 2.5px solid #fff;
+      box-shadow:
+        0 3px 0 color-mix(in srgb, var(--mk) 65%, #000),
+        0 6px 12px rgba(0,0,0,0.2);
+      display: grid; place-items: center;
+      color: #fff;
+      font: 800 12px/1 "Comic Sans MS", "Segoe UI", sans-serif;
+      letter-spacing: -0.02em;
+    }
+    .mk-cartoon .tip {
+      width: 10px; height: 10px;
+      background: var(--mk);
+      border-right: 2.5px solid #fff;
+      border-bottom: 2.5px solid #fff;
+      transform: rotate(45deg);
+      margin-top: -8px;
+      box-shadow: 2px 2px 0 color-mix(in srgb, var(--mk) 65%, #000);
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.92); opacity: 0.4; }
+      100% { transform: scale(1.18); opacity: 0; }
+    }
+    @keyframes aura {
+      0% { transform: scale(0.75); opacity: 0.5; }
+      100% { transform: scale(1.35); opacity: 0; }
+    }
+
+    .legend {
+      margin-top: 22px;
+      padding: 16px 18px;
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.45);
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.65;
+    }
+    .legend strong { color: var(--ink); }
+    .current {
+      display: inline-flex; align-items: center; gap: 10px;
+      margin: 0 0 22px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+    .mk-now {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--c1); color: #fff;
+      display: grid; place-items: center;
+      font: 700 10px/1 sans-serif;
+      border: 2.5px solid #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>途径点标记 · 四风格方案</h1>
+    <p class="sub">
+      面向「行程路线」地图上的途经点编号标记。四种方案都保留现有按天配色
+      （青绿 / 金 / 朱红 / 青碧），便于对照路线色带。当前线上为纯色圆点，下方为替换候选。
+      打开本文件即可预览；选定风格后再接入 <code>TripRoutes.vue</code>。
+    </p>
+
+    <div class="current">
+      <span class="mk-now">1</span>
+      当前线上样式：白边实心圆 + 序号
+    </div>
+
+    <div class="grid">
+      <!-- 科技风 -->
+      <section class="card">
+        <div class="card-head">
+          <h2>A · 科技风</h2>
+          <span class="tag">HUD / 六边形</span>
+        </div>
+        <p class="desc">六边形芯片核心 + 外圈扫描环 + 四角准星，贴合「星际行者」科幻叙事，地图上识别度高。</p>
+        <div class="stage">
+          <div class="row">
+            <div class="mk-tech" style="--mk:var(--c1)"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="core">1</span></div>
+            <div class="mk-tech" style="--mk:var(--c2)"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="core">2</span></div>
+            <div class="mk-tech" style="--mk:var(--c3)"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="core">3</span></div>
+            <div class="mk-tech" style="--mk:var(--c4)"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="core">4</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 艺术风 -->
+      <section class="card">
+        <div class="card-head">
+          <h2>B · 艺术风</h2>
+          <span class="tag">印章 / 水墨</span>
+        </div>
+        <p class="desc">印章圆斑 + 虚线外环 + 衬线数字，偏手作质感，适合文化旅行氛围，动效克制。</p>
+        <div class="stage">
+          <div class="row">
+            <div class="mk-art" style="--mk:var(--c1)">1</div>
+            <div class="mk-art" style="--mk:var(--c2)">2</div>
+            <div class="mk-art" style="--mk:var(--c3)">3</div>
+            <div class="mk-art" style="--mk:var(--c4)">4</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 炫酷特效 -->
+      <section class="card">
+        <div class="card-head">
+          <h2>C · 炫酷特效风</h2>
+          <span class="tag">晶体 / 光晕</span>
+        </div>
+        <p class="desc">菱形晶体高光 + 双层扩散光环，视觉冲击最强；密集景点时需注意光晕重叠。</p>
+        <div class="stage">
+          <div class="row">
+            <div class="mk-fx" style="--mk:var(--c1)"><span class="aura"></span><span class="aura2"></span><span class="gem"></span><span class="num">1</span></div>
+            <div class="mk-fx" style="--mk:var(--c2)"><span class="aura"></span><span class="aura2"></span><span class="gem"></span><span class="num">2</span></div>
+            <div class="mk-fx" style="--mk:var(--c3)"><span class="aura"></span><span class="aura2"></span><span class="gem"></span><span class="num">3</span></div>
+            <div class="mk-fx" style="--mk:var(--c4)"><span class="aura"></span><span class="aura2"></span><span class="gem"></span><span class="num">4</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 卡通 -->
+      <section class="card">
+        <div class="card-head">
+          <h2>D · 卡通动漫风</h2>
+          <span class="tag">气泡水滴钉</span>
+        </div>
+        <p class="desc">厚描边水滴定位钉 + 高光点，亲切活泼，更像常见地图 App，亲和力最好。</p>
+        <div class="stage">
+          <div class="row" style="align-items:flex-end; gap:26px;">
+            <div class="mk-cartoon" style="--mk:var(--c1)"><div class="bubble">1</div><div class="tip"></div></div>
+            <div class="mk-cartoon" style="--mk:var(--c2)"><div class="bubble">2</div><div class="tip"></div></div>
+            <div class="mk-cartoon" style="--mk:var(--c3)"><div class="bubble">3</div><div class="tip"></div></div>
+            <div class="mk-cartoon" style="--mk:var(--c4)"><div class="bubble">4</div><div class="tip"></div></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="legend">
+      <strong>选型建议：</strong>
+      品牌一致性优先选 <strong>A 科技风</strong>；
+      旅行手账气质选 <strong>B 艺术风</strong>；
+      想强化「哇」感选 <strong>C 炫酷特效</strong>（建议默认关动画、仅悬停亮起）；
+      大众友好选 <strong>D 卡通</strong>。
+      回复选用编号（可多选做皮肤切换）后，我再接入地图 <code>createDayMarker</code>。
+    </div>
+  </div>
+</body>
+</html>
