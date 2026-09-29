@@ -2,7 +2,7 @@
 
 星际行者是一个基于 Vue 3、Vite、Pinia、FastAPI 与 PostgreSQL 的旅行 Web 平台，覆盖地图探索、旅行偏好、AI 行程规划、真实路线规划、旅行记忆（手账）、旅行分享与后台内容运营。
 
-> 当前基线：`v0.11.0-test`。旅行记忆已部署到临时 IP HTTPS 环境并完成人工点验；账号、景点库与内容审核此前已在测试链路验证。正式域名、对象存储生产策略、监控告警与生产验收仍未完成。
+> 当前基线：`v0.11.0-test`（提交 `d7bcbf3`，2026-09-29；分支 `master`，远端 `master` 已一致；标签 `v0.11.0-test` 已推送）。旅行记忆已部署到临时 IP HTTPS 环境并完成人工点验；账号、景点库与内容审核此前已在测试链路验证。正式域名、对象存储生产策略、监控告警与生产验收仍未完成。
 >
 > 临时访问入口：`https://111.230.144.219/`（主机 Nginx → 应用 `:8001`；手账页 `/journal`）。
 
@@ -129,7 +129,7 @@ npm run dev
 
 ## 数据库设计
 
-> 结构来源：`backend/app/models.py` 与 Alembic 迁移（核对时间 2026-09-27）。临时环境迁移头已确认到 `h2i3j4k5l6m7`；**本次未做线上全表 `\d` 扫库**。工作区另有媒体库、预定意图、应用设置等迁移，完整字段以迁移文件与 ORM 为准。数据库变更核对：手账表仍以 `journals.layout_json` 承载排版（可含 `diaryNextLayout`）；无新增手账专用表。
+> 结构来源：`backend/app/models.py` 与 Alembic 迁移（核对时间 2026-09-29）。临时环境迁移头已确认到 `h2i3j4k5l6m7`；**本次未做线上全表 `\d` 扫库**。工作区另有预定意图、订单明细等迁移，完整字段以迁移文件与 ORM 为准。数据库变更核对：较 2026-09-27 版新增 `media_gallery_items`（标签悬停图库缓存，迁移 `b1c2d3e4f5a6`）、`app_settings`（运行时配置，迁移 `h2i3j4k5l6m7`）两表；`bookings` 扩展预定意图/订单字段（迁移 `g1h2i3j4k5l6`、`a5a5ce9cd3f8`）；手账表仍以 `journals.layout_json` 承载排版（可含 `diaryNextLayout`），无新增手账专用表。
 
 标记：`PK` 主键、`UQ` 唯一、`IDX` 索引、`FK` 外键；未标“必填”的字段允许为空；时间默认值为应用侧 UTC 当前时间。
 
@@ -143,13 +143,15 @@ npm run dev
 | `admin_audit_logs` | `id` Integer PK IDX；`actor_id`/`target_user_id` Integer IDX FK→`users.id` SET NULL；`target_type` String(50) IDX；`target_id` Integer IDX；`action` String(100) 必填；`metadata_json` JSON；`ip_address` String(64)；`created_at` DateTime 默认当前时间 | 管理操作审计 |
 | `attractions` | `id` Integer PK IDX；`name` String(160) 必填 IDX；`province` String(80) 必填 IDX；`city` String(80) IDX；`short_desc`/`description` Text；`cover_image_url` Text；`images` Text[]；`tags` String(100)[]；`rating` Float；`best_season` String(120)；`recommended_duration` String(60)；`opening_hours`/`ticket_hint` String(255)；`longitude`/`latitude` Float；`amap_poi_id` String(120) UQ；`sort_order` Integer 必填 默认 0；`is_hot` Boolean 必填 默认 true；`status` String(20) 必填 IDX 默认 `draft`；`created_by`/`updated_by` Integer FK→`users.id` SET NULL；`created_at`/`updated_at` DateTime 默认当前时间 | 景点运营库 |
 | `favorites` | `id` Integer PK IDX；`user_id` Integer 必填 FK→`users.id` CASCADE；`type` String(50) 必填；`name` String(255) 必填；`description`/`image_url`/`external_url` Text；`plan_json` JSON；`created_at` DateTime 默认当前时间 | 用户收藏 |
-| `bookings` | `id` Integer PK IDX；`user_id` Integer 必填 FK→`users.id` CASCADE；`province` String(100)；`keyword` String(255)；`platform` String(50)；`url` Text 必填；`order_no` String(100)；`travel_date` DateTime；`amount` Integer；`created_at` DateTime 默认当前时间 | 用户预定链接/记录 |
+| `bookings` | `id` Integer PK IDX；`user_id` Integer 必填 FK→`users.id` CASCADE；`kind` String(20) 必填 IDX 默认 `intent`（intent 收藏链接 / order 正式订单）；`title` String(255)；`note` Text；`source_type` String(20)（province/spot）；`source_name` String(100)；`link_type` String(20)（search/product）；`province` String(100)；`keyword` String(255)；`platform` String(50)；`url` Text 必填；`order_no` String(100)；`travel_date` DateTime；`amount` Integer；`created_at`/`updated_at` DateTime 默认当前时间 | 用户预定意图收藏与订单记录 |
 | `travel_plans` | `id` Integer PK IDX；`user_id` Integer 必填 FK→`users.id` CASCADE；`title` String(255)；`preference_text`/`input_text` Text；`content_json` JSON 必填；`input_images` Text[]；`style`/`people`/`budget` String(50)；`days` Integer；`start_date` Date；`created_at`/`updated_at` DateTime 默认当前时间 | AI 行程 |
 | `routes` | `id` Integer PK IDX；`user_id` Integer 必填 FK→`users.id` CASCADE；`plan_id` Integer FK→`travel_plans.id` SET NULL；`title` String(255)；`strategy` String(50)；`days_json` JSON 必填；`created_at`/`updated_at` DateTime 默认当前时间 | 行程路线 |
 | `posts` | `id` Integer PK IDX；`user_id` Integer 必填 FK→`users.id` CASCADE；`title` String(255)；`content` Text 必填；`images` Text[]；`rating` Integer；`tags` String(100)[]；`location` String(255)；`likes_count`/`comments_count` Integer 默认 0；`status` String(20) 必填 IDX 默认 `published`；`moderated_by` Integer FK→`users.id` SET NULL；`moderated_at`/`deleted_at` DateTime；`moderation_reason` String(300)；`created_at`/`updated_at` DateTime 默认当前时间 | 旅行分享与审核 |
 | `comments` | `id` Integer PK IDX；`post_id` Integer 必填 FK→`posts.id` CASCADE；`user_id` Integer 必填 FK→`users.id` CASCADE；`content` Text 必填；`status` String(20) 必填 IDX 默认 `published`；`moderated_by` Integer FK→`users.id` SET NULL；`moderated_at`/`deleted_at` DateTime；`moderation_reason` String(300)；`created_at` DateTime 默认当前时间 | 分享评论与审核 |
 | `likes` | `id` Integer PK IDX；`post_id` Integer 必填 FK→`posts.id` CASCADE；`user_id` Integer 必填 FK→`users.id` CASCADE；`created_at` DateTime 默认当前时间；联合唯一约束 `post_id + user_id` | 游记点赞 |
 | `journals` | `id` Integer PK IDX；`user_id` Integer 必填 FK→`users.id` CASCADE；`title` String(255)；`style` String(50)；`location` String(255)；`travel_date` Date；`mood` Text；`photos` Text[]；`layout_json` JSON（可含 `diaryNextLayout`）；`content_html`/`video_url` Text；`created_at`/`updated_at` DateTime 默认当前时间 | 旅行记忆（手账）存取 |
+| `media_gallery_items` | `id` Integer PK IDX；`cache_key` String(255) 必填 UQ IDX；`label` String(160) 必填；`tag_type` String(40) 必填 默认 `experience`；`city` String(80)；`image_url` Text 必填；`source` String(40) 必填 默认 `remote`；`source_page` Text；`attribution` String(255)；`hit_count` Integer 必填 默认 0；`created_at`/`updated_at` DateTime 默认当前时间 | 标签悬停图库缓存（本地优先，缺失时远端拉取落地） |
+| `app_settings` | `key` String(80) PK；`value` Text 必填 默认空串；`updated_at` DateTime 默认当前时间（更新时刷新） | 管理员可改的运行时配置（密钥类字段优先于 `.env`） |
 
 ## 迁移与部署
 

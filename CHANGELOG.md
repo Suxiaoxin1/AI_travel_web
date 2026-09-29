@@ -28,7 +28,8 @@
 - HTTPS 探测：`/health`、`/journal`、渲染脚本与风格预览图、`/film-api/api/health` 返回正常；入口 `https://111.230.144.219/`。
 - 人工点验：手账页与主流程已通过（2026-09-27，Master 确认）。
 - 说明：VOLO 万相（Bailian）密钥未配置时成片能力不可用；旧手账若无 `diaryNextLayout` 可能无法重合成新预览。
-- 本版本功能与文档尚未形成 Git 提交或标签，提交前需再次复核差异。
+- Git 提交与标签：`d7bcbf3`（2026-09-29，分支 `master`，远端 `master` 已一致）；标签 `v0.11.0-test` 已推送远端，三次推送均为 `Everything up-to-date`。
+- 本轮文档核查未重跑前端构建与后端 pytest，以本地/历史基线为准。
 
 ## [v0.10.0-test] - 2026-08-30
 
