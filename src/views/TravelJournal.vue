@@ -118,6 +118,16 @@
             <label>旅行心情（可选）</label>
             <textarea v-model="form.mood" class="info-textarea" placeholder="记录一下旅途中的心情与故事…" rows="3"></textarea>
           </div>
+          <div class="info-group full">
+            <label>IP 贴纸</label>
+            <select v-model="form.ipSticker" class="info-input" :disabled="isGenerating || ipStickerLoading">
+              <option value="auto">自动（按地点/心情匹配）</option>
+              <option value="none">不使用</option>
+              <option v-for="ip in ipStickerOptions" :key="ip.id" :value="ip.id">
+                {{ ip.name }}（{{ (ip.stickers || []).length }} 枚）
+              </option>
+            </select>
+          </div>
         </div>
 
         <div class="form-actions form-actions-row">
@@ -131,8 +141,21 @@
             <svg v-else class="spin-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/><polyline points="21 3 21 9 15 9"/></svg>
             {{ isGenerating ? '排版中…' : '生成手帐日记' }}
           </button>
+          <button
+            class="action-btn action-ghost"
+            type="button"
+            @click="generateTemplateInstant"
+            :disabled="isGenerating"
+            title="不调 AI，后端无 Key/离线也能出图（模板默认文案）"
+          >
+            本地模板秒出
+          </button>
         </div>
         <p class="action-hint">流程：选风格 → 上传照片（3—9 张）→ 填写信息 → 生成排版。</p>
+        <label class="cutout-toggle" title="AI 识别照片主体并抠成贴纸；失败时自动跳过，不影响出图">
+          <input type="checkbox" v-model="form.enableCutout" :disabled="isGenerating" />
+          主体贴纸（AI 抠图，约多花 10—60 秒）
+        </label>
       </div>
 
       <!-- 右侧：预览区 -->
@@ -214,7 +237,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { normalizeMediaUrl } from '../utils/mediaUrl.js'
-import { generateJournalPage } from '../utils/journalGenerate.js'
+import { generateJournalPage, generateTemplatePreview } from '../utils/journalGenerate.js'
 import { normalizeVisionAnalysis } from '../utils/journalCopy.js'
 import { useAuthStore } from '../stores/authStore.js'
 import { useJournalStore } from '../stores/journalStore.js'
@@ -234,6 +257,8 @@ const uiStore = useUiStore()
 const form = reactive({
   style: 'retro',
   location: '',
+  ipSticker: 'auto',
+  enableCutout: true,
   date: '',
   mood: ''
 })
@@ -248,6 +273,8 @@ const journalStyles = [
 ]
 
 const photos = ref([])
+const ipStickerOptions = ref([])
+const ipStickerLoading = ref(true)
 const creationMode = ref('journal') // journal | volo
 const voloWorkspaceRef = ref(null)
 const isDragging = ref(false)
@@ -257,11 +284,13 @@ const generateProgress = ref({ stage: '', percent: 0, label: '' })
 const generateProgressSteps = [
   { stage: 'aspects', label: '分析照片', doneAt: 14 },
   { stage: 'layout', label: 'AI 排版', doneAt: 70 },
+  { stage: 'cutout', label: '主体抠图', doneAt: 77 },
   { stage: 'skin', label: '风格素材', doneAt: 84 },
   { stage: 'render', label: '合成预览', doneAt: 96 }
 ]
 const diaryNextPreviewUrl = ref('')
 const diaryNextLayout = ref(null)
+const layoutEngine = ref('diary-layout') // diary-layout（AI 排版）| diary-template（本地模板秒出）
 const activeHero = computed(() => {
   if (creationMode.value === 'volo') {
     return {
@@ -287,6 +316,25 @@ const styleLabels = { retro: '复古胶片', clean: '简约清新', vivid: '多�
 
 function triggerUpload() { fileInput.value.click() }
 
+// IP 贴纸下拉：页面加载时读清单，失败则只剩 自动/不使用 两项
+async function loadIpStickerOptions() {
+  try {
+    const { loadIpManifest, listIps } = await import('../modules/journal/ip-stickers.js')
+    await loadIpManifest()
+    ipStickerOptions.value = listIps()
+    if (form.ipSticker !== 'auto' && form.ipSticker !== 'none'
+      && !ipStickerOptions.value.some((ip) => ip.id === form.ipSticker)) {
+      form.ipSticker = 'auto'
+    }
+  } catch (e) {
+    console.warn('[Diary] IP 清单加载失败:', e?.message || e)
+    ipStickerOptions.value = []
+  } finally {
+    ipStickerLoading.value = false
+  }
+}
+loadIpStickerOptions()
+
 function selectStyle(key) {
   form.style = key
 }
@@ -296,6 +344,7 @@ async function startNewJournal() {
   if (hasDraft && !window.confirm('当前手账内容尚未清空，确定新建一份手账吗？')) return
   form.style = 'retro'
   form.location = ''
+  form.ipSticker = 'auto'
   form.date = ''
   form.mood = ''
   photos.value = []
@@ -305,6 +354,7 @@ async function startNewJournal() {
   visionAnalysis.value = null
   diaryNextPreviewUrl.value = ''
   diaryNextLayout.value = null
+  layoutEngine.value = 'diary-layout'
   savedJournalId.value = null
   journalGenerated.value = false
   if (fileInput.value) fileInput.value.value = ''
@@ -314,8 +364,9 @@ async function startNewJournal() {
 function serializeLayout() {
   return {
     version: 3,
-    engine: 'diary-layout',
+    engine: layoutEngine.value,
     template: form.style,
+    ipSticker: form.ipSticker,
     diaryNextLayout: diaryNextLayout.value || null,
     visionAnalysis: visionAnalysis.value || null
   }
@@ -323,10 +374,12 @@ function serializeLayout() {
 
 function restoreLayout(record) {
   const layoutData = record.layout_json || {}
+  layoutEngine.value = layoutData.engine || 'diary-layout'
   form.style = layoutData.template || record.style || 'retro'
   form.location = record.location || ''
   form.date = record.travel_date || ''
   form.mood = record.mood || ''
+  form.ipSticker = layoutData.ipSticker || 'auto'
   photos.value = Array.isArray(record.photos)
     ? record.photos.map((src) => normalizeMediaUrl(src) || src)
     : []
@@ -430,6 +483,17 @@ async function exportJournal() {
  * 手账生成入口：始终走 diary-layout 排版引擎。
  */
 async function generateJournal() {
+  await runGenerate('diary-layout', '开始生成手帐…', generateJournalPage)
+}
+
+/**
+ * 本地模板秒出：不调后端，buildLayout 直接合成（无 Key/离线可出图）。
+ */
+async function generateTemplateInstant() {
+  await runGenerate('diary-template', '本地模板排版中…', generateTemplatePreview)
+}
+
+async function runGenerate(engine, startLabel, task) {
   if (!ensureLoggedIn('生成手账')) return
   if (!photos.value.length) { alert('请先上传照片'); return }
   if (photos.value.length < 3 || photos.value.length > 9) {
@@ -437,20 +501,23 @@ async function generateJournal() {
     return
   }
   isGenerating.value = true
-  generateProgress.value = { stage: 'prepare', percent: 4, label: '开始生成手帐…' }
+  generateProgress.value = { stage: 'prepare', percent: 4, label: startLabel }
   journalGenerated.value = true
-  journalContent.value = '正在请求排版方案…'
+  journalContent.value = engine === 'diary-template' ? '本地模板排版中…' : '正在请求排版方案…'
   visionAnalysis.value = null
   diaryNextPreviewUrl.value = ''
   diaryNextLayout.value = null
+  layoutEngine.value = engine
 
   try {
-    const result = await generateJournalPage({
+    const result = await task({
       style: form.style,
       location: form.location,
       date: form.date,
       mood: form.mood,
       photos: photos.value,
+      ipSticker: form.ipSticker,
+      enableCutout: form.enableCutout !== false,
       onProgress: (progress) => {
         generateProgress.value = {
           stage: progress.stage || '',
@@ -780,11 +847,15 @@ async function saveJournal() {
 .action-purple { background: linear-gradient(135deg, #0D6B5C, #1A8A7A); color: #fff; box-shadow: 0 5px 14px rgba(13,107,92,0.18); }
 .action-purple:hover:not(:disabled) { box-shadow: 0 4px 16px rgba(13,107,92,0.28); transform: translateY(-1px); }
 .action-volo { background: #F7F4EE; color: #9C5A3D; border: 1px solid #E7D8CA; }
+.action-ghost { background: transparent; color: #0D6B5C; border: 1px solid #BFD9D2; flex: 0 1 auto; min-width: 120px; }
+.action-ghost:hover:not(:disabled) { background: #EFF6F3; transform: translateY(-1px); }
 .action-volo:hover:not(:disabled) { background: #FFF8F0; border-color: #D7AE91; box-shadow: 0 4px 16px rgba(194,59,34,0.15); transform: translateY(-1px); }
 .action-volo:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .spin-icon { animation: spin 1s linear infinite; }
 .action-hint { margin: 10px 0 0; color: #9BA89D; font-size: 11px; text-align: center; }
+.cutout-toggle { margin: 8px 0 0; display: flex; align-items: center; justify-content: center; gap: 6px; color: #6B7B6E; font-size: 12px; cursor: pointer; }
+.cutout-toggle input { accent-color: #0D6B5C; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ===== 右侧预览 ===== */

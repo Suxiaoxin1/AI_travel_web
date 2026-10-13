@@ -7,6 +7,9 @@
 import apiClient from './apiClient.js'
 import { buildFallbackVisionAnalysis } from './journalCopy.js'
 import { composeDiaryNextPreview, loadPhotoAspects } from './diaryNextBridge.js'
+import { applyIpStickersToLayout, loadIpManifest } from '../modules/journal/ip-stickers.js'
+
+export { loadIpManifest }
 
 /** 前端风格 key → layout-next 预设 id */
 export const STYLE_TO_DIARY_ID = {
@@ -16,6 +19,58 @@ export const STYLE_TO_DIARY_ID = {
   dark: 'dark',
   watercolor: 'watercolor',
   magazine: 'magazine'
+}
+
+/**
+ * IP 贴纸规划：读面板选择（auto/none/指定 IP），把贴纸摆进 layout.library。
+ * 'none' 或未命中时静默返回，不阻塞出图。
+ */
+export async function planIpStickers(layout, input, onProgress) {
+  const sel = input?.ipSticker || 'auto'
+  if (sel === 'none' || !layout) return { placed: 0, ipName: '' }
+  const descText = [input?.location || '', input?.mood || '', input?.description || '']
+    .filter(Boolean)
+    .join(' ')
+  try {
+    const r = await applyIpStickersToLayout(layout, { selection: sel, descText })
+    if (r.placed) emitProgress(onProgress, 'ip', 70, `已贴${r.ipName}${r.placed} 枚贴纸`)
+    return r
+  } catch (err) {
+    console.warn('[Diary] IP 贴纸失败，无贴纸继续出图:', err?.message || err)
+    return { placed: 0, ipName: '' }
+  }
+}
+
+/**
+ * 主体抠图贴纸规划：默认开启（旧版常开行为），失败/无主体时返回 {}，
+ * 调用方无抠图继续出图。照片全覆盖校验 항상 执行（AI 排版可能漏照片）。
+ * @returns {Promise<object>} cutoutSrcs {photoIndex: 透明PNG dataURL}
+ */
+export async function planCutoutStickers(layout, input, diaryStyle, onProgress) {
+  const photos = Array.isArray(input?.photos) ? input.photos : []
+  try {
+    const sprites = await import('../modules/journal/cutout-sprites.js')
+    // 照片全覆盖校验 항상 执行（AI 排版可能漏照片）：缺的自动补矩形位
+    sprites.ensureAllPhotosPlaced(layout, photos.length)
+    // IP 贴纸：在抠图之前先摆（抠图主体贴纸会避让 library），失败静默跳过
+    await planIpStickers(layout, input, onProgress)
+    if (input?.enableCutout === false || !photos.length) return {}
+    emitProgress(onProgress, 'cutout', 72, '识别照片主体并抠图…')
+    const run =
+      diaryStyle === 'magazine'
+        ? sprites.magazineCutoutStickers(layout, { photos })
+        : sprites.buildCutoutSprites(layout, {
+            style: diaryStyle,
+            photos,
+            onTrace: (msg) => emitProgress(onProgress, 'cutout', 74, String(msg).slice(0, 60)),
+          })
+    const r = await run
+    if (r.placed) emitProgress(onProgress, 'cutout', 76, `已抠出 ${r.placed} 枚主体贴纸`)
+    return r.cutoutSrcs || {}
+  } catch (err) {
+    console.warn('[Diary] 抠图编排失败，无抠图继续出图:', err?.message || err)
+    return {}
+  }
 }
 
 const STYLE_LABELS = {
@@ -160,7 +215,8 @@ export async function requestDiaryLayout(input) {
   // 先加载渲染器/皮肤脚本，再套专属素材库后合成（勿在脚本未就绪时提前套皮肤）
   emitProgress(onProgress, 'render', 88, '合成手账预览…')
   const { previewUrl, layout } = await composeDiaryNextPreview(data.layout, input.photos, {
-    styleId: diaryStyle
+    styleId: diaryStyle,
+    cutoutSrcs: await planCutoutStickers(data.layout, input, diaryStyle, onProgress),
   })
   emitProgress(onProgress, 'done', 100, '完成')
   return {
@@ -169,6 +225,51 @@ export async function requestDiaryLayout(input) {
     previewUrl,
     visionAnalysis: visionFromLayout(layout, input),
     contentHtml: contentHtmlFromLayout(layout, input)
+  }
+}
+
+/**
+ * 本地模板秒出：不调后端，buildLayout → DiaryNextRenderer 直接合成。
+ * 用于无 Key/离线/只想快速看版式时；文案为模板默认（可随后走 /diary/template-texts 做 AI 配字）。
+ * @param {JournalGenerateInput} input
+ * @returns {Promise<JournalGenerateResult>}
+ */
+export async function generateTemplatePreview(input) {
+  const photos = Array.isArray(input.photos) ? input.photos : []
+  if (photos.length < 3 || photos.length > 9) {
+    throw new Error(`模板排版需要 3—9 张照片，当前 ${photos.length} 张`)
+  }
+  const onProgress = input.onProgress
+  const diaryStyle = STYLE_TO_DIARY_ID[input.style] || input.style || 'vintage'
+
+  emitProgress(onProgress, 'template', 20, '本地模板排版中…')
+  const { ensureDiaryNextRenderer, composeDiaryNextPreview } = await import('./diaryNextBridge.js')
+  await ensureDiaryNextRenderer()
+  const Templates = window.DiaryTemplates
+  if (!Templates || typeof Templates.buildLayout !== 'function') {
+    throw new Error('本地模板未就绪，请刷新页面后重试')
+  }
+  const layout = Templates.buildLayout(diaryStyle, photos.length)
+  if (!layout) {
+    throw new Error(`未知模板风格：${input.style}`)
+  }
+  if (typeof Templates.bakeDateToken === 'function') {
+    try { Templates.bakeDateToken(layout) } catch { /* 日期 token 失败不阻塞出图 */ }
+  }
+
+  emitProgress(onProgress, 'render', 70, '合成手账预览…')
+  // 模板自带底色/装饰，不走 layout-next 的皮肤管线
+  const { previewUrl, layout: finalLayout } = await composeDiaryNextPreview(layout, photos, {
+    skipSkin: true,
+    cutoutSrcs: await planCutoutStickers(layout, input, diaryStyle, onProgress),
+  })
+  emitProgress(onProgress, 'done', 100, '完成')
+  return {
+    engine: 'diary-template',
+    diaryNextLayout: finalLayout,
+    previewUrl,
+    visionAnalysis: visionFromLayout(finalLayout, input),
+    contentHtml: contentHtmlFromLayout(finalLayout, input)
   }
 }
 
