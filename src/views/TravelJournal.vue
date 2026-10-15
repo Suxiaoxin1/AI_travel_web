@@ -267,9 +267,9 @@ const journalStyles = [
   { key: 'retro', label: '复古胶片', hint: '胶片齿孔 · 牛皮纸渍', preview: '/images/journal-styles/preview-retro.jpg' },
   { key: 'clean', label: '简约清新', hint: '活页孔 · 横线便签', preview: '/images/journal-styles/preview-clean.jpg' },
   { key: 'vivid', label: '多彩活泼', hint: '和纸胶带 · 彩色纸屑', preview: '/images/journal-styles/preview-vivid.jpg' },
-  { key: 'dark', label: '暗黑质感', hint: '金线框 · 皮革底' },
-  { key: 'watercolor', label: '水彩手绘', hint: '淡彩晕染 · 毛边纸' },
-  { key: 'magazine', label: '杂志排版', hint: '新闻纸 · 裁切角' }
+  { key: 'dark', label: '暗黑质感', hint: '金线框 · 皮革底', preview: '/images/journal-styles/preview-dark.jpg' },
+  { key: 'watercolor', label: '水彩手绘', hint: '淡彩晕染 · 毛边纸', preview: '/images/journal-styles/preview-watercolor.jpg' },
+  { key: 'magazine', label: '杂志排版', hint: '新闻纸 · 裁切角', preview: '/images/journal-styles/preview-magazine.jpg' }
 ]
 
 const photos = ref([])

@@ -1,6 +1,100 @@
 /* migrated diary skin pipeline excerpt from page-video.js */
 function _v3Trace() {}
 
+/* ---------- v3.54 水彩手绘「钢笔淡彩」皮肤常量 ---------- */
+const WC_BG_COLOR = '#F7F3EA'                                 // 水彩纸米白（背景图兜底色）
+const WC_BG_IMAGE = '/journal/assets/bg/watercolor/paper_01.jpg'
+const WC_INK = '#3A3630'                                      // 细钢笔墨色（主标题）
+const WC_TEXT_COLORS = ['#5C5A52', '#7C97A8', '#B08968', '#6E7F6B']
+const WC_SPARKLE = '#8FA6B2'                                  // 钢笔小星（白 sparkle 在米白纸上隐形）
+const WC_BORDER = 'rect_border'
+const WC_BORDER_COLOR = '#3A3630'
+const WC_BORDER_W = 3
+const WC_FONT = 'wc'                                          // 渲染器 FONT_STACK.wc
+
+/** v3.51 人脸保护区：① layout._faceZones（抠图主体上部，最准）；② 兜底为照片上部 42% 头带 */
+function faceZones(layout, pad) {
+  const W = (layout && layout.canvas_width) || 1080
+  const H = (layout && layout.canvas_height) || 1440
+  const m = pad == null ? 14 : pad
+  const out = []
+  const clipPush = (x, y, w, h) => {
+    if (!(w > 0 && h > 0)) return
+    const x0 = Math.max(0, x - m)
+    const y0 = Math.max(0, y - m)
+    const x1 = Math.min(W, x + w + m)
+    const y1 = Math.min(H, y + h + m)
+    if (x1 > x0 && y1 > y0) out.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 })
+  }
+  const pf = layout && layout._faceZones
+  if (Array.isArray(pf) && pf.length) {
+    for (const z of pf) if (z) clipPush(z.x, z.y, z.w, z.h)
+    return out
+  }
+  ;(layout.items || []).forEach((it) => {
+    const w = it.width != null ? it.width : it.w
+    const h = it.height != null ? it.height : it.h
+    if (!(w > 80 && h > 80)) return
+    clipPush(it.x, it.y, w, h * 0.42)
+  })
+  return out
+}
+
+/** 估文字宽度（中文按整字宽，其余按 0.52 倍） */
+function estimateTextWidth(t, fs) {
+  const s = String((t && t.content) || '')
+  let w = 0
+  for (let i = 0; i < s.length; i++) {
+    w += /[\u3400-\u9FFF\uF900-\uFAFF\u3000-\u303F\uFF00-\uFFEF]/.test(s[i]) ? fs : fs * 0.52
+  }
+  return w
+}
+
+/** v3.61 把拆成两行的标题并回一行 */
+function mergeTitleLines(layout) {
+  const H = (layout && layout.canvas_height) || 1440
+  const texts = (layout && Array.isArray(layout.texts)) ? layout.texts : []
+  const tops = texts.filter((t) => t && t.content && (Number(t.y) || 0) < H * 0.16)
+  if (tops.length < 2) return
+  tops.sort((a, b) => (Number(b.font_size) || 0) - (Number(a.font_size) || 0))
+  const A = tops[0]
+  const fsA = Number(A.font_size) || 24
+  const ax = Number(A.x) || 0
+  const cont = tops.filter((t) => {
+    if (t === A) return false
+    const dy = (Number(t.y) || 0) - (Number(A.y) || 0)
+    return dy > 0 && dy < fsA * 1.7 && (Number(t.x) || 0) < ax + estimateTextWidth(A, fsA)
+  })
+  if (!cont.length) return
+  const parts = [A].concat(cont).sort((a, b) => (Number(a.x) || 0) - (Number(b.x) || 0))
+  A.content = parts.map((p) => String(p.content)).join('')
+  cont.forEach((t) => { t.content = '' })
+}
+
+/** v3.54 右上角文字放大（右上一句太小），并左移避免放大后出血 */
+function enlargeTopRightText(layout) {
+  mergeTitleLines(layout)
+  const W = (layout && layout.canvas_width) || 1080
+  const H = (layout && layout.canvas_height) || 1440
+  const texts = (layout && Array.isArray(layout.texts)) ? layout.texts : []
+  texts.forEach((t) => {
+    if (!t || !t.content) return
+    const fs0 = Number(t.font_size) || 24
+    const x0 = Number(t.x) || 0
+    const y0 = Number(t.y) || 0
+    const cx = x0 + estimateTextWidth(t, fs0) / 2
+    if (!(cx > W * 0.55 && y0 < H * 0.13)) return
+    const fs = Math.min(Math.round(fs0 * 1.5), 84)
+    if (fs <= fs0) return
+    const w = estimateTextWidth(t, fs)
+    let x = x0
+    if (x + w > W - 24) x = Math.max(16, W - 24 - w)
+    t.font_size = fs
+    t.x = Math.round(x)
+  })
+}
+
+
 /* ---- lines 1135-1310 ---- */
 function noteCoreRect(layout, protectRatio) {
   const n = layout && layout.note;
@@ -1112,6 +1206,582 @@ function buildColorfulStickers(layout, theme) {
 }
 
 /**
+ * v3.54 水彩手绘「钢笔淡彩」皮肤：水彩纸米白底 + 细钢笔勾轮廓 + 墨色手写。
+ * 只动皮肤层，不碰照片坐标。与两条生成路径共用。
+ */
+function applyWatercolorSkin(layout) {
+  if (!layout || typeof layout !== 'object') return layout
+
+  const hexLum = (hex) => {
+    const m = /^#?([0-9a-fA-F]{6})$/.exec(String(hex || '').trim())
+    if (!m) return 128
+    const v = parseInt(m[1], 16)
+    return 0.299 * ((v >> 16) & 255) + 0.587 * ((v >> 8) & 255) + 0.114 * (v & 255)
+  }
+
+  layout.style = 'watercolor'
+  layout.bg_color = WC_BG_COLOR
+  layout.bg_gradient = null
+  layout.bg_paper_lines = false
+  layout.bg_paper_aged = false
+  layout.grade = null
+  layout.bg_noise = true
+  layout.bg_image = Object.assign({}, layout.bg_image || {}, {
+    src: WC_BG_IMAGE, dim: 0, vignette: 0, fit: 'cover'
+  })
+
+  ;(Array.isArray(layout.items) ? layout.items : []).forEach((it) => {
+    if (!it) return
+    it.border = WC_BORDER
+    it.border_color = it.border_color || it.borderColor || WC_BORDER_COLOR
+    it.border_width = WC_BORDER_W
+  })
+
+  const texts = Array.isArray(layout.texts) ? layout.texts : []
+  let mainIdx = -1
+  let mainSize = -1
+  texts.forEach((t, i) => {
+    const s = Number(t && t.font_size) || 0
+    if (s > mainSize) { mainSize = s; mainIdx = i }
+  })
+  const hasCJK = (s) => /[\u3400-\u9FFF\uF900-\uFAFF\u3000-\u303F]/.test(String(s || ''))
+  texts.forEach((t, i) => {
+    if (!t) return
+    t.color = (i === mainIdx) ? WC_INK : WC_TEXT_COLORS[i % WC_TEXT_COLORS.length]
+    t.stroke = 0
+    if (hasCJK(t.content) || !t.font) t.font = WC_FONT
+  })
+  enlargeTopRightText(layout)
+
+  ;(Array.isArray(layout.doodles) ? layout.doodles : []).forEach((d) => {
+    if (!d) return
+    if (d.fill && hexLum(d.fill) > 200) d.fill = WC_SPARKLE
+    if (d.color && hexLum(d.color) > 200) d.color = WC_SPARKLE
+    if (d.color && hexLum(d.color) < 30) d.color = WC_INK
+  })
+  ;(Array.isArray(layout.pins) ? layout.pins : []).forEach((p) => {
+    if (p && typeof p.color === 'string' && hexLum(p.color) > 200) p.color = WC_SPARKLE
+  })
+  ;(Array.isArray(layout.widgets) ? layout.widgets : []).forEach((w) => {
+    if (!w || w.type !== 'sticky_note') return
+    if (typeof w.color === 'string' && hexLum(w.color) > 210) w.color = '#F5E7C8'
+    if (hasCJK(w.text) || hasCJK(w.content)) {
+      w.data = Object.assign({}, w.data || {}, { font: WC_FONT })
+    }
+  })
+
+  return layout
+}
+
+/**
+ * v3.61 水彩模板：照片垂直再平衡（上半挤成一团、下半大片空白时拉开到底部）。
+ * 只动 y，x/宽高不动；与文字/抠图冲突时整体放弃。
+ */
+function balanceWatercolorPhotoSpread(layout) {
+  try {
+    const items = (layout.items || []).filter((it) => it && it.width > 60 && it.height > 60)
+    if (items.length < 3) return
+    const canvasH = layout.canvas_height || 1440
+    const sorted = items.slice().sort((a, b) => a.y - b.y)
+
+    const linkGap = []
+    let crowded = false
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const a = sorted[i]
+      const b = sorted[i + 1]
+      const xOverlap = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)
+      const linked = xOverlap > Math.min(a.width, b.width) * 0.3
+      const g = linked ? (b.y - (a.y + a.height)) : 0
+      if (linked && g < 20) crowded = true
+      linkGap.push({ linked, gap: g })
+    }
+    if (!crowded) return
+
+    const targetBottom = canvasH - 64
+    const place = (minGap, stretch) => {
+      const newY = new Array(sorted.length)
+      let delta = 0
+      let prevBottom = -Infinity
+      let bottom = -Infinity
+      for (let i = 0; i < sorted.length; i++) {
+        const it = sorted[i]
+        if (i === 0) newY[i] = it.y
+        else if (linkGap[i - 1].linked) newY[i] = prevBottom + Math.max(linkGap[i - 1].gap, minGap) * stretch
+        else newY[i] = it.y + delta
+        delta = newY[i] - it.y
+        prevBottom = Math.max(prevBottom, newY[i] + it.height)
+        bottom = Math.max(bottom, newY[i] + it.height)
+      }
+      return { newY, bottom }
+    }
+
+    let lo = 8
+    let hi = 64
+    let best = 0
+    let bestY = null
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1
+      const r = place(mid, 1)
+      if (r.bottom <= targetBottom) { best = mid; bestY = r.newY; lo = mid + 1 }
+      else hi = mid - 1
+    }
+    if (!bestY) return
+
+    let bottom = 0
+    for (let i = 0; i < sorted.length; i++) bottom = Math.max(bottom, bestY[i] + sorted[i].height)
+    const extra = targetBottom - bottom
+    if (extra > 2) {
+      let sumG = 0
+      for (const lg of linkGap) if (lg.linked) sumG += Math.max(lg.gap, best)
+      if (sumG > 0) {
+        const r2 = place(best, (sumG + extra) / sumG)
+        let b2 = 0
+        for (let i = 0; i < sorted.length; i++) b2 = Math.max(b2, r2.newY[i] + sorted[i].height)
+        if (b2 <= targetBottom + 2) bestY = r2.newY
+      }
+    }
+
+    const willMove = new Map()
+    for (let i = 0; i < sorted.length; i++) {
+      const dy = Math.round(bestY[i] - sorted[i].y)
+      if (dy > 0.5) willMove.set(sorted[i], dy)
+    }
+    if (!willMove.size) return
+
+    const blocked = []
+    ;(layout.texts || []).forEach((t) => {
+      if (!t || !t.content) return
+      const fs = t.font_size || 24
+      let tw = 0
+      for (const ch of String(t.content)) tw += ch.charCodeAt(0) > 0x2e80 ? fs : fs * 0.56
+      blocked.push({ x: t.x - 8, y: t.y - 8, w: Math.min(tw, 960) + 16, h: fs * 1.5 + 16 })
+    })
+    if (Array.isArray(layout.cutouts)) {
+      for (const c of layout.cutouts) if (c && c.w > 0 && c.h > 0) blocked.push(c)
+    }
+    for (const [it, dy] of willMove) {
+      for (const b of blocked) {
+        if (it.x < b.x + b.w && b.x < it.x + it.width &&
+            it.y + dy < b.y + b.h && b.y < it.y + dy + it.height) {
+          return
+        }
+      }
+    }
+
+    for (const [it, dy] of willMove) it.y += dy
+  } catch (e) {
+    console.warn('[Diary] 照片再平衡失败（忽略）', e)
+  }
+}
+
+/**
+ * v3.24 暗黑贴纸库：照片边角（贴外圈）+ 空白区自适应填。
+ * 库来自 darkLibrary()（d1 黑物 / d2 黑白音乐拼贴 ×2，d3 黑底拼贴 ×1，均带白描边）。
+ */
+function buildDarkStickers(layout) {
+  const lib = (window.DiaryTemplates && window.DiaryTemplates.darkLibrary)
+    ? window.DiaryTemplates.darkLibrary() : []
+  if (!lib.length) return { placed: 0 }
+
+  const canvasW = layout.canvas_width || 1080
+  const canvasH = layout.canvas_height || 1440
+
+  const fillOccupied = collectVintageLibRects(layout)
+  const cornerOccupied = []
+  ;(layout.texts || []).forEach((t) => {
+    if (!t || !t.content) return
+    const fs = t.font_size || 24
+    let tw = 0
+    for (const ch of String(t.content)) tw += ch.charCodeAt(0) > 0x2e80 ? fs : fs * 0.56
+    cornerOccupied.push({ x: t.x - 10, y: t.y - 10, w: Math.min(tw, 960) + 20, h: fs * 1.4 + 20 })
+  })
+  ;(layout.widgets || []).forEach((w) => {
+    if (!w || w.type !== 'date_calendar' || !w.w) return
+    const r = { x: w.x - 16, y: w.y - 16, w: w.w + 32, h: w.h + 32 }
+    fillOccupied.push(r)
+    cornerOccupied.push(r)
+  })
+  if (Array.isArray(layout.cutouts)) {
+    for (const c of layout.cutouts) {
+      if (c && c.w > 0 && c.h > 0) fillOccupied.push({ x: c.x, y: c.y, w: c.w, h: c.h })
+    }
+    for (const c of layout.cutouts) {
+      if (c && c.w > 0 && c.h > 0) cornerOccupied.push({ x: c.x, y: c.y, w: c.w, h: c.h })
+    }
+  }
+  for (const z of faceZones(layout, 12)) { fillOccupied.push(z); cornerOccupied.push(z) }
+
+  const allPlaced = []
+  layout.library = layout.library || []
+
+  const pool = lib.slice()
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const tmp = pool[i]
+    pool[i] = pool[j]
+    pool[j] = tmp
+  }
+
+  let poolIdx = 0
+  const photoItems = (layout.items || []).filter((it) => it && it.width > 60 && it.height > 60)
+  for (const it of photoItems) {
+    const corners = [
+      { x: it.x, y: it.y },
+      { x: it.x + it.width, y: it.y },
+      { x: it.x, y: it.y + it.height },
+      { x: it.x + it.width, y: it.y + it.height },
+    ]
+    for (let i = corners.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      const t = corners[i]
+      corners[i] = corners[j]
+      corners[j] = t
+    }
+    const nCorner = 1 + Math.floor(Math.random() * 2)
+    for (let ci = 0; ci < Math.min(nCorner, corners.length); ci++) {
+      if (!pool.length) break
+      const s = pool[poolIdx % pool.length]
+      const sz = fitStickerSize(s, 66, 20, 1.5)
+      const w = sz.w
+      const h = sz.h
+      if (Math.max(w, h) < 46) continue
+      const c = corners[ci]
+      const dirX = c.x < it.x + it.width / 2 ? -1 : 1
+      const dirY = c.y < it.y + it.height / 2 ? -1 : 1
+      let sx = Math.round(c.x - w / 2 + dirX * w * 0.35)
+      let sy = Math.round(c.y - h / 2 + dirY * h * 0.35)
+      sx = Math.max(14, Math.min(sx, canvasW - w - 14))
+      sy = Math.max(14, Math.min(sy, canvasH - h - 14))
+      const r = { x: sx, y: sy, w, h }
+      if (coversNoteFully(r, layout)) continue
+      let hit = false
+      for (const o of cornerOccupied) if (rectsOverlap(r, o)) { hit = true; break }
+      if (!hit) for (const o of allPlaced) if (rectsOverlap(r, o)) { hit = true; break }
+      if (!hit) {
+        for (const o of photoItems) {
+          if (o === it) continue
+          const ox = Math.max(0, Math.min(r.x + r.w, o.x + o.width) - Math.max(r.x, o.x))
+          const oy = Math.max(0, Math.min(r.y + r.h, o.y + o.height) - Math.max(r.y, o.y))
+          if (ox * oy > r.w * r.h * 0.25) { hit = true; break }
+        }
+      }
+      if (hit) continue
+      poolIdx++
+      allPlaced.push({ x: sx - 10, y: sy - 10, w: w + 20, h: h + 20 })
+      layout.library.push({
+        file: s.f, x: sx, y: sy, w, h,
+        rotate: Math.round((Math.random() * 8 - 4) * 10) / 10, shadow: true, z: 24,
+      })
+    }
+  }
+
+  const totalArea = canvasW * canvasH
+  let occupiedArea = 0
+  for (const r of fillOccupied) {
+    const ox = Math.max(0, Math.min(r.x + r.w, canvasW) - Math.max(0, r.x))
+    const oy = Math.max(0, Math.min(r.y + r.h, canvasH) - Math.max(0, r.y))
+    occupiedArea += ox * oy
+  }
+  const freeRatio = Math.max(0, Math.min(1, (totalArea - occupiedArea) / totalArea))
+  const MAX_N = 20
+  const MIN_N = 9
+  let targetFill = Math.max(MIN_N, Math.min(MAX_N, Math.round(MIN_N + freeRatio * (MAX_N - MIN_N))))
+  if (freeRatio < 0.08) targetFill = 4
+
+  const anchors = [
+    { x: canvasW * 0.5, y: canvasH * 0.55 },
+    { x: canvasW * 0.8, y: canvasH * 0.3 },
+    { x: canvasW * 0.22, y: canvasH * 0.7 },
+    { x: canvasW * 0.78, y: canvasH * 0.8 },
+    { x: canvasW * 0.62, y: canvasH * 0.16 },
+    { x: canvasW * 0.5, y: canvasH * 0.85 },
+    { x: canvasW * 0.88, y: canvasH * 0.55 },
+    { x: canvasW * 0.2, y: canvasH * 0.45 },
+    { x: canvasW * 0.1, y: canvasH * 0.34 },
+    { x: canvasW * 0.9, y: canvasH * 0.72 },
+    { x: canvasW * 0.3, y: canvasH * 0.88 },
+  ]
+
+  let filled = 0
+  let missStreak = 0
+  for (let k = 0; k < targetFill; k++) {
+    if (!pool.length) break
+    const s = pool[poolIdx % pool.length]
+    const base = fitStickerSize(s, s.f.slice(0, 2) === 'd3' ? 130 : 150, 40, 1.5)
+    let sp = null
+    const anchor = anchors[k % anchors.length]
+    for (let t = 0; t < 3 && !sp; t++) {
+      sp = findFreeSpot(fillOccupied, { w: base.w, h: base.h }, allPlaced, canvasW, canvasH, {
+        minSide: 40,
+        scales: [1, 0.85, 0.72, 0.6, 0.5],
+        randomStart: true,
+        anchor,
+      })
+    }
+    if (!sp) { missStreak++; if (missStreak >= 3) break; continue }
+    if (coversNoteFully({ x: sp.x, y: sp.y, w: sp.w, h: sp.h }, layout)) { missStreak++; continue }
+    missStreak = 0
+    poolIdx++
+    allPlaced.push({ x: sp.x - 12, y: sp.y - 12, w: sp.w + 24, h: sp.h + 24 })
+    layout.library.push({
+      file: s.f, x: sp.x, y: sp.y, w: sp.w, h: sp.h,
+      rotate: Math.round((Math.random() * 8 - 4) * 10) / 10, shadow: true, z: 24,
+    })
+    filled++
+  }
+
+  return { placed: layout.library.length }
+}
+
+/**
+ * v3.54 水彩手绘贴纸库：照片边角 + 空白区填充，两阶段与 buildDarkStickers 同构。
+ * 库来自 watercolorLibrary()（w1 33 枚 / w2 12 枚），无白描边，旋转 ±5°。
+ * maxCount > 0 时限贴 N 枚（整洁模式）。
+ */
+function buildWatercolorStickers(layout, maxCount) {
+  const lib = (window.DiaryTemplates && window.DiaryTemplates.watercolorLibrary)
+    ? window.DiaryTemplates.watercolorLibrary() : []
+  if (!lib.length) return { placed: 0 }
+  const cap = Math.max(0, Number(maxCount) || 0)
+
+  const canvasW = layout.canvas_width || 1080
+  const canvasH = layout.canvas_height || 1440
+
+  const fillOccupied = collectVintageLibRects(layout)
+  const cornerOccupied = []
+  ;(layout.texts || []).forEach((t) => {
+    if (!t || !t.content) return
+    const fs = t.font_size || 24
+    let tw = 0
+    for (const ch of String(t.content)) tw += ch.charCodeAt(0) > 0x2e80 ? fs : fs * 0.56
+    cornerOccupied.push({ x: t.x - 10, y: t.y - 10, w: Math.min(tw, 960) + 20, h: fs * 1.4 + 20 })
+  })
+  if (Array.isArray(layout.cutouts)) {
+    for (const c of layout.cutouts) {
+      if (!c || !(c.w > 0 && c.h > 0)) continue
+      fillOccupied.push({ x: c.x, y: c.y, w: c.w, h: c.h })
+      cornerOccupied.push({ x: c.x, y: c.y, w: c.w, h: c.h })
+    }
+  }
+  for (const z of faceZones(layout, 12)) { fillOccupied.push(z); cornerOccupied.push(z) }
+
+  const allPlaced = []
+  layout.library = layout.library || []
+
+  const pool = lib.slice()
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const tmp = pool[i]
+    pool[i] = pool[j]
+    pool[j] = tmp
+  }
+  let poolIdx = 0
+
+  const photoItems = (layout.items || []).filter((it) => it && it.width > 60 && it.height > 60)
+  for (const it of photoItems) {
+    const corners = [
+      { x: it.x, y: it.y },
+      { x: it.x + it.width, y: it.y },
+      { x: it.x, y: it.y + it.height },
+      { x: it.x + it.width, y: it.y + it.height },
+    ]
+    for (let i = corners.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      const t = corners[i]
+      corners[i] = corners[j]
+      corners[j] = t
+    }
+    for (let ci = 0; ci < 1; ci++) {
+      if (!pool.length) break
+      const s = pool[poolIdx % pool.length]
+      const sz = fitStickerSize(s, 84, 26, 1.5)
+      const w = sz.w
+      const h = sz.h
+      if (Math.max(w, h) < 52) continue
+      const c = corners[ci]
+      const dirX = c.x < it.x + it.width / 2 ? -1 : 1
+      const dirY = c.y < it.y + it.height / 2 ? -1 : 1
+      let sx = Math.round(c.x - w / 2 + dirX * w * 0.35)
+      let sy = Math.round(c.y - h / 2 + dirY * h * 0.35)
+      sx = Math.max(14, Math.min(sx, canvasW - w - 14))
+      sy = Math.max(14, Math.min(sy, canvasH - h - 14))
+      const r = { x: sx, y: sy, w, h }
+      if (coversNoteFully(r, layout)) continue
+      let hit = false
+      for (const o of cornerOccupied) if (rectsOverlap(r, o)) { hit = true; break }
+      if (!hit) for (const o of allPlaced) if (rectsOverlap(r, o)) { hit = true; break }
+      if (!hit) {
+        for (const o of photoItems) {
+          if (o === it) continue
+          const ox = Math.max(0, Math.min(r.x + r.w, o.x + o.width) - Math.max(r.x, o.x))
+          const oy = Math.max(0, Math.min(r.y + r.h, o.y + o.height) - Math.max(r.y, o.y))
+          if (ox * oy > r.w * r.h * 0.25) { hit = true; break }
+        }
+      }
+      if (hit) continue
+      poolIdx++
+      allPlaced.push({ x: sx - 10, y: sy - 10, w: w + 20, h: h + 20 })
+      layout.library.push({
+        file: s.f, x: sx, y: sy, w, h,
+        rotate: Math.round((Math.random() * 10 - 5) * 10) / 10, shadow: true, z: 24,
+      })
+      if (cap && layout.library.length >= cap) return { placed: layout.library.length }
+    }
+  }
+
+  const TARGET_MIN = 8
+  const TARGET_MAX = 14
+  const totalArea = canvasW * canvasH
+  let occupiedArea = 0
+  for (const r of fillOccupied) {
+    const ox = Math.max(0, Math.min(r.x + r.w, canvasW) - Math.max(0, r.x))
+    const oy = Math.max(0, Math.min(r.y + r.h, canvasH) - Math.max(0, r.y))
+    occupiedArea += ox * oy
+  }
+  const freeRatio = Math.max(0, Math.min(1, (totalArea - occupiedArea) / totalArea))
+  let targetFill = Math.round((TARGET_MIN + Math.floor(Math.random() * (TARGET_MAX - TARGET_MIN + 1)))
+    * (0.55 + freeRatio))
+  targetFill = Math.max(4, Math.min(TARGET_MAX, targetFill))
+  const anchors = [
+    { x: canvasW * 0.5, y: canvasH * 0.55 },
+    { x: canvasW * 0.8, y: canvasH * 0.3 },
+    { x: canvasW * 0.22, y: canvasH * 0.7 },
+    { x: canvasW * 0.78, y: canvasH * 0.8 },
+    { x: canvasW * 0.62, y: canvasH * 0.16 },
+    { x: canvasW * 0.5, y: canvasH * 0.85 },
+    { x: canvasW * 0.88, y: canvasH * 0.55 },
+    { x: canvasW * 0.2, y: canvasH * 0.45 },
+    { x: canvasW * 0.1, y: canvasH * 0.34 },
+    { x: canvasW * 0.9, y: canvasH * 0.72 },
+    { x: canvasW * 0.3, y: canvasH * 0.88 },
+  ]
+
+  let filled = 0
+  let missStreak = 0
+  for (let k = 0; k < targetFill; k++) {
+    if (!pool.length) break
+    const s = pool[poolIdx % pool.length]
+    const base = fitStickerSize(s, 165, 46, 1.5)
+    let sp = null
+    const anchor = anchors[Math.floor(Math.random() * anchors.length)]
+    for (let t = 0; t < 3 && !sp; t++) {
+      sp = findFreeSpot(fillOccupied, { w: base.w, h: base.h }, allPlaced, canvasW, canvasH, {
+        minSide: 46,
+        scales: [1, 0.85, 0.72, 0.6, 0.5, 0.42],
+        randomStart: true,
+        anchor,
+      })
+    }
+    if (!sp) { missStreak++; if (missStreak >= 5) break; continue }
+    if (coversNoteFully({ x: sp.x, y: sp.y, w: sp.w, h: sp.h }, layout)) { missStreak++; continue }
+    missStreak = 0
+    poolIdx++
+    allPlaced.push({ x: sp.x - 12, y: sp.y - 12, w: sp.w + 24, h: sp.h + 24 })
+    layout.library.push({
+      file: s.f, x: sp.x, y: sp.y, w: sp.w, h: sp.h,
+      rotate: Math.round((Math.random() * 10 - 5) * 10) / 10, shadow: true, z: 24,
+    })
+    filled++
+    if (cap && layout.library.length >= cap) break
+  }
+
+  return { placed: layout.library.length }
+}
+
+/**
+ * v3.63 杂志排版防重叠：照片矩形 + 主体贴纸先大后小落位，不压装饰/文字，
+ * 放不下先缩小再螺旋平移，宁可轻叠也不丢照片。必须在路线节点生成之前调用。
+ */
+function resolveMagazineOverlaps(layout) {
+  try {
+    if (!layout) return
+    const W = layout.canvas_width || 1080
+    const H = layout.canvas_height || 1440
+
+    const obstacles = []
+    const pushO = (x, y, w, h, pad) => {
+      if (w > 0 && h > 0) obstacles.push({ x: x - pad, y: y - pad, w: w + pad * 2, h: h + pad * 2 })
+    }
+    ;(layout.doodles || []).forEach((d) => {
+      if (!d || d.underPhotos) return
+      pushO(d.x, d.y, d.width || d.w || 0, d.height || d.h || 0, 8)
+    })
+    ;(layout.widgets || []).forEach((wg) => {
+      if (wg) pushO(wg.x, wg.y, wg.w || wg.width || 0, wg.h || wg.height || 0, 10)
+    })
+    ;(layout.texts || []).forEach((t) => {
+      if (!t || !t.content) return
+      const fs = t.font_size || 24
+      let tw = 0
+      for (const ch of String(t.content)) tw += ch.charCodeAt(0) > 0x2e80 ? fs : fs * 0.56
+      pushO(t.x, t.y, Math.min(tw, 960), fs * 1.4, 10)
+    })
+
+    const ents = []
+    ;(layout.items || []).forEach((it) => {
+      const w = it.width != null ? it.width : it.w
+      const h = it.height != null ? it.height : it.h
+      if (it && w > 0 && h > 0) ents.push({ ref: it, isItem: true, w0: w, h0: h, x0: it.x, y0: it.y })
+    })
+    ;(layout.cutouts || []).forEach((c) => {
+      const w = c.w != null ? c.w : c.width
+      const h = c.h != null ? c.h : c.height
+      if (c && w > 0 && h > 0) ents.push({ ref: c, isItem: false, w0: w, h0: h, x0: c.x, y0: c.y })
+    })
+    ents.sort((a, b) => b.w0 * b.h0 - a.w0 * a.h0)
+
+    const placed = []
+    const hitsAny = (x, y, w, h) => {
+      if (x < 6 || y < 6 || x + w > W - 6 || y + h > H - 6) return true
+      for (let i = 0; i < placed.length; i++) if (rectsOverlap({ x, y, w, h }, placed[i])) return true
+      for (let i = 0; i < obstacles.length; i++) if (rectsOverlap({ x, y, w, h }, obstacles[i])) return true
+      return false
+    }
+
+    for (const e of ents) {
+      const cx = e.x0 + e.w0 / 2
+      const cy = e.y0 + e.h0 / 2
+      let fx = e.x0
+      let fy = e.y0
+      let fw = e.w0
+      let fh = e.h0
+      let ok = false
+      if (!hitsAny(fx, fy, fw, fh)) ok = true
+      if (!ok) {
+        outer:
+        for (const sc of [0.94, 0.88, 0.82, 0.76, 0.7, 0.64, 0.58, 0.52]) {
+          const w = Math.round(e.w0 * sc)
+          const h = Math.round(e.h0 * sc)
+          for (let dy = 0; dy <= H; dy += 26) {
+            for (const sy of [1, -1]) {
+              const ny = Math.max(6, Math.min(Math.round(cy - h / 2) + sy * dy, H - 6 - h))
+              for (let dx = 0; dx <= W; dx += 26) {
+                for (const sx of [1, -1]) {
+                  const nx = Math.max(6, Math.min(Math.round(cx - w / 2) + sx * dx, W - 6 - w))
+                  if (!hitsAny(nx, ny, w, h)) { fx = nx; fy = ny; fw = w; fh = h; ok = true; break outer }
+                }
+              }
+            }
+          }
+        }
+      }
+      e.ref.x = Math.round(fx)
+      e.ref.y = Math.round(fy)
+      if (e.isItem) {
+        if (e.ref.width != null) { e.ref.width = fw; e.ref.height = fh } else { e.ref.w = fw; e.ref.h = fh }
+      } else {
+        e.ref.w = fw
+        e.ref.h = fh
+        if (e.ref.width != null) { e.ref.width = fw; e.ref.height = fh }
+      }
+      placed.push({ x: e.ref.x, y: e.ref.y, w: fw, h: fh })
+    }
+  } catch (e) {
+    console.warn('[Diary] 杂志排版防重叠失败（忽略）', e)
+  }
+}
+
+/**
  * 生成后套皮肤 + 专属贴纸库（不含抠图）。
  * styleId: vintage | minimal | colorful | dark | watercolor | magazine
  */
@@ -1130,6 +1800,16 @@ function applyDiarySkin(layout, styleId) {
     } else if (style === 'vintage') {
       layout.style = 'vintage';
       if (typeof buildVintageStickers === 'function') buildVintageStickers(layout);
+    } else if (style === 'dark') {
+      layout.style = 'dark';
+      if (typeof buildDarkStickers === 'function') buildDarkStickers(layout);
+    } else if (style === 'watercolor') {
+      if (typeof applyWatercolorSkin === 'function') applyWatercolorSkin(layout);
+      if (typeof balanceWatercolorPhotoSpread === 'function') balanceWatercolorPhotoSpread(layout);
+      if (typeof buildWatercolorStickers === 'function') buildWatercolorStickers(layout, 0);
+    } else if (style === 'magazine') {
+      layout.style = 'magazine';
+      if (typeof resolveMagazineOverlaps === 'function') resolveMagazineOverlaps(layout);
     }
     // 专属素材库已铺上时，去掉 AI 的 OpenMoji decor_stickers，避免公网 CDN 失败拖垮观感
     if (Array.isArray(layout.library) && layout.library.length) {
