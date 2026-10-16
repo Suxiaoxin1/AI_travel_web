@@ -10,7 +10,6 @@ from app.config import settings
 from app.dependencies import get_current_user
 from app.diary_cutout import cutout_images
 from app.diary_layout_next import request_diary_layout_next
-from app.diary_text_fill import request_diary_texts
 from app.runtime_secrets import get_secret
 
 router = APIRouter()
@@ -70,57 +69,6 @@ async def diary_layout_next(
             detail=result.get("error") or "排版失败",
         )
     return {"success": True, "layout": result["layout"]}
-
-
-@router.post("/template-texts")
-async def diary_template_texts(
-    payload: schemas.DiaryTemplateTextsRequest,
-    current_user: models.User = Depends(get_current_user),
-):
-    """固定模板槽位 AI 配字：只填文字 + photoScale，布局/照片/颜色不动。"""
-    del current_user  # auth gate only
-    api_key = _require_key(get_secret("DEEPSEEK_API_KEY"), "文本 AI")
-
-    hints = None
-    if payload.photoHints:
-        hints = [h.model_dump(exclude_none=True) for h in payload.photoHints]
-
-    try:
-        result = await request_diary_texts(
-            api_key=api_key,
-            base_url=settings.DEEPSEEK_API_BASE.rstrip("/"),
-            model=settings.DEEPSEEK_MODEL,
-            style_name=payload.styleName or payload.style or "",
-            context=payload.context or "",
-            photo_count=payload.photoCount,
-            slots=[s.model_dump(exclude_none=True) for s in payload.slots],
-            photo_hints=hints,
-        )
-    except httpx.TimeoutException as exc:
-        raise HTTPException(status_code=504, detail="AI 服务请求超时，请稍后重试") from exc
-    except httpx.HTTPError as exc:
-        detail = "AI 服务暂时不可用，请稍后重试"
-        response = getattr(exc, "response", None)
-        if response is not None:
-            try:
-                err = response.json()
-                message = (
-                    (err.get("error") or {}).get("message")
-                    if isinstance(err.get("error"), dict)
-                    else err.get("message") or err.get("detail")
-                )
-                if isinstance(message, str) and message.strip():
-                    detail = message.strip()[:240]
-            except (ValueError, TypeError):
-                pass
-        raise HTTPException(status_code=502, detail=detail) from exc
-
-    if not result.get("success"):
-        raise HTTPException(
-            status_code=400,
-            detail=result.get("error") or "配字失败",
-        )
-    return {"success": True, "texts": result["texts"], "photoScale": result["photoScale"]}
 
 
 @router.post("/cutout")

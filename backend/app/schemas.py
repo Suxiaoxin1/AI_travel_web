@@ -628,33 +628,8 @@ class DiaryLayoutNextRequest(BaseModel):
     aspects: Optional[List[DiaryPhotoAspect]] = Field(default=None, max_length=20)
 
 
-class DiaryTextSlot(BaseModel):
-    key: str = Field(..., min_length=1, max_length=80)
-    kind: Optional[str] = Field(default=None, max_length=40)
-    role: Optional[str] = Field(default=None, max_length=500)
-    lang: Optional[str] = Field(default=None, max_length=10)
-    max: Optional[int] = Field(default=None, ge=1, le=200)
-
-
-class DiaryPhotoHint(BaseModel):
-    index: int = Field(..., ge=0, le=20)
-    when: Optional[str] = Field(default=None, max_length=120)
-    shape: Optional[str] = Field(default=None, max_length=120)
-    subject: Optional[str] = Field(default=None, max_length=200)
-    tone: Optional[str] = Field(default=None, max_length=120)
-
-
 class DiaryCutoutRequest(BaseModel):
     images: List[str] = Field(..., min_length=1, max_length=6)
-
-
-class DiaryTemplateTextsRequest(BaseModel):
-    style: Optional[str] = Field(default="", max_length=40)
-    styleName: Optional[str] = Field(default="", max_length=80)
-    context: Optional[str] = Field(default="", max_length=2000)
-    photoCount: int = Field(default=0, ge=0, le=20)
-    slots: List[DiaryTextSlot] = Field(..., min_length=1, max_length=60)
-    photoHints: Optional[List[DiaryPhotoHint]] = Field(default=None, max_length=20)
 
 
 # ==================== 媒体图库 ====================

@@ -229,51 +229,6 @@ export async function requestDiaryLayout(input) {
 }
 
 /**
- * 本地模板秒出：不调后端，buildLayout → DiaryNextRenderer 直接合成。
- * 用于无 Key/离线/只想快速看版式时；文案为模板默认（可随后走 /diary/template-texts 做 AI 配字）。
- * @param {JournalGenerateInput} input
- * @returns {Promise<JournalGenerateResult>}
- */
-export async function generateTemplatePreview(input) {
-  const photos = Array.isArray(input.photos) ? input.photos : []
-  if (photos.length < 3 || photos.length > 9) {
-    throw new Error(`模板排版需要 3—9 张照片，当前 ${photos.length} 张`)
-  }
-  const onProgress = input.onProgress
-  const diaryStyle = STYLE_TO_DIARY_ID[input.style] || input.style || 'vintage'
-
-  emitProgress(onProgress, 'template', 20, '本地模板排版中…')
-  const { ensureDiaryNextRenderer, composeDiaryNextPreview } = await import('./diaryNextBridge.js')
-  await ensureDiaryNextRenderer()
-  const Templates = window.DiaryTemplates
-  if (!Templates || typeof Templates.buildLayout !== 'function') {
-    throw new Error('本地模板未就绪，请刷新页面后重试')
-  }
-  const layout = Templates.buildLayout(diaryStyle, photos.length)
-  if (!layout) {
-    throw new Error(`未知模板风格：${input.style}`)
-  }
-  if (typeof Templates.bakeDateToken === 'function') {
-    try { Templates.bakeDateToken(layout) } catch { /* 日期 token 失败不阻塞出图 */ }
-  }
-
-  emitProgress(onProgress, 'render', 70, '合成手账预览…')
-  // 模板自带底色/装饰，不走 layout-next 的皮肤管线
-  const { previewUrl, layout: finalLayout } = await composeDiaryNextPreview(layout, photos, {
-    skipSkin: true,
-    cutoutSrcs: await planCutoutStickers(layout, input, diaryStyle, onProgress),
-  })
-  emitProgress(onProgress, 'done', 100, '完成')
-  return {
-    engine: 'diary-template',
-    diaryNextLayout: finalLayout,
-    previewUrl,
-    visionAnalysis: visionFromLayout(finalLayout, input),
-    contentHtml: contentHtmlFromLayout(finalLayout, input)
-  }
-}
-
-/**
  * 统一生成入口。
  * @param {JournalGenerateInput} input
  * @returns {Promise<JournalGenerateResult>}

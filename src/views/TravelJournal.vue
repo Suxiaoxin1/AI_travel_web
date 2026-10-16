@@ -141,15 +141,6 @@
             <svg v-else class="spin-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/><polyline points="21 3 21 9 15 9"/></svg>
             {{ isGenerating ? '排版中…' : '生成手帐日记' }}
           </button>
-          <button
-            class="action-btn action-ghost"
-            type="button"
-            @click="generateTemplateInstant"
-            :disabled="isGenerating"
-            title="不调 AI，后端无 Key/离线也能出图（模板默认文案）"
-          >
-            本地模板秒出
-          </button>
         </div>
         <p class="action-hint">流程：选风格 → 上传照片（3—9 张）→ 填写信息 → 生成排版。</p>
         <label class="cutout-toggle" title="AI 识别照片主体并抠成贴纸；失败时自动跳过，不影响出图">
@@ -237,7 +228,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { normalizeMediaUrl } from '../utils/mediaUrl.js'
-import { generateJournalPage, generateTemplatePreview } from '../utils/journalGenerate.js'
+import { generateJournalPage } from '../utils/journalGenerate.js'
 import { normalizeVisionAnalysis } from '../utils/journalCopy.js'
 import { useAuthStore } from '../stores/authStore.js'
 import { useJournalStore } from '../stores/journalStore.js'
@@ -290,7 +281,7 @@ const generateProgressSteps = [
 ]
 const diaryNextPreviewUrl = ref('')
 const diaryNextLayout = ref(null)
-const layoutEngine = ref('diary-layout') // diary-layout（AI 排版）| diary-template（本地模板秒出）
+const layoutEngine = ref('diary-layout') // diary-layout（AI 排版）
 const activeHero = computed(() => {
   if (creationMode.value === 'volo') {
     return {
@@ -486,13 +477,6 @@ async function generateJournal() {
   await runGenerate('diary-layout', '开始生成手帐…', generateJournalPage)
 }
 
-/**
- * 本地模板秒出：不调后端，buildLayout 直接合成（无 Key/离线可出图）。
- */
-async function generateTemplateInstant() {
-  await runGenerate('diary-template', '本地模板排版中…', generateTemplatePreview)
-}
-
 async function runGenerate(engine, startLabel, task) {
   if (!ensureLoggedIn('生成手账')) return
   if (!photos.value.length) { alert('请先上传照片'); return }
@@ -503,7 +487,7 @@ async function runGenerate(engine, startLabel, task) {
   isGenerating.value = true
   generateProgress.value = { stage: 'prepare', percent: 4, label: startLabel }
   journalGenerated.value = true
-  journalContent.value = engine === 'diary-template' ? '本地模板排版中…' : '正在请求排版方案…'
+  journalContent.value = '正在请求排版方案…'
   visionAnalysis.value = null
   diaryNextPreviewUrl.value = ''
   diaryNextLayout.value = null
