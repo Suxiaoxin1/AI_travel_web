@@ -29,7 +29,23 @@ const isAdminRoute = computed(() => route.path.startsWith('/admin'))
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;scroll-padding-top:84px;-webkit-font-smoothing:antialiased}
-body{font-family:'Noto Sans SC','Inter',sans-serif;background:#F8F6F0;color:#1A1A2E;line-height:1.5;overflow-x:hidden}
+/* ===== 全站基础 token（手帐 / VOLO 共用；各页只覆写自家主题色） ===== */
+:root{
+  --font-sans:'Noto Sans SC','Inter',sans-serif;
+  --page-bg:#F8F6F0;
+  --ink:#1A1A2E;
+  --ink-soft:#5C5C6E;
+  --ink-mute:#9BA89D;
+  --card-bg:rgba(255,255,255,0.9);
+  --card-border:#E5E0D6;
+  --card-radius:22px;
+  --input-bg:#F8F6F0;
+  --input-border:#E5E0D6;
+  --input-radius:10px;
+  --accent:#0D6B5C;
+  --accent-strong:#1A8A7A;
+}
+body{font-family:var(--font-sans);background:var(--page-bg);color:var(--ink);line-height:1.5;overflow-x:hidden}
 ::selection{background:rgba(13,107,92,0.2);color:#1A1A2E}
 .app{min-height:100vh;display:flex;flex-direction:column}
 .app.admin-mode{min-height:100dvh}

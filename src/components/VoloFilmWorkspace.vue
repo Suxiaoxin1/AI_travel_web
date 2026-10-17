@@ -755,7 +755,18 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.volo-workspace { margin-top: 4px; }
+.volo-workspace {
+  margin-top: 4px;
+  font-family: var(--font-sans);
+  /* VOLO 棕调主题：在共享 token 上覆写自家值 */
+  --card-bg: #FFFCF7;
+  --card-border: #EFE5D8;
+  --card-radius: 20px;
+  --input-bg: #fff;
+  --input-border: #E7D8CA;
+  --accent: #9C5A3D;
+  --accent-strong: #8A4E34;
+}
 .volo-steps {
   display: flex; align-items: center; justify-content: center; gap: 12px;
   margin: 0 auto 24px; color: #A39A90;
@@ -777,9 +788,9 @@ onBeforeUnmount(() => {
   align-items: start;
 }
 .volo-form, .volo-preview {
-  background: #FFFCF7;
-  border: 1px solid #E7D8CA;
-  border-radius: 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--card-radius);
   padding: 20px;
 }
 .volo-preview {
@@ -912,8 +923,8 @@ onBeforeUnmount(() => {
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; font-size: 12px; color: #5C4E42; }
 .field.full { width: 100%; }
 .field input, .field textarea {
-  width: 100%; box-sizing: border-box; border: 1px solid #E7D8CA; border-radius: 10px;
-  padding: 10px 12px; font: 13px/1.5 'Noto Sans SC', sans-serif; color: #2F2A24; background: #fff;
+  width: 100%; box-sizing: border-box; border: 1px solid var(--input-border); border-radius: 10px;
+  padding: 10px 12px; font: 13px/1.5 var(--font-sans); color: #2F2A24; background: var(--input-bg);
 }
 .field input:focus, .field textarea:focus { outline: none; border-color: #C48A66; box-shadow: 0 0 0 3px rgba(156,90,61,.12); }
 
@@ -921,8 +932,8 @@ onBeforeUnmount(() => {
 .param-label { margin: 0 0 8px; font-size: 12px; color: #5C4E42; font-weight: 600; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
-  border: 1px solid #E7D8CA; background: #fff; color: #6B5B4D; border-radius: 999px;
-  padding: 7px 12px; font: 600 12px 'Noto Sans SC', sans-serif; cursor: pointer;
+  border: 1px solid var(--input-border); background: #fff; color: #6B5B4D; border-radius: 999px;
+  padding: 7px 12px; font: 600 12px var(--font-sans); cursor: pointer;
 }
 .chip:disabled { opacity: 0.45; cursor: not-allowed; }
 .chip em { font-style: normal; margin-left: 4px; color: #9C5A3D; font-size: 10px; }
@@ -937,14 +948,14 @@ onBeforeUnmount(() => {
 }
 .stepper button:disabled { opacity: 0.45; cursor: not-allowed; }
 .stepper input {
-  width: 56px; height: 36px; border: none; border-left: 1px solid #E7D8CA; border-right: 1px solid #E7D8CA;
-  text-align: center; font: 600 13px 'Noto Sans SC', sans-serif;
+  width: 56px; height: 36px; border: none; border-left: 1px solid var(--input-border); border-right: 1px solid var(--input-border);
+  text-align: center; font: 600 13px var(--font-sans);
 }
 .stepper input:disabled { color: #9A9086; background: #F5F0EA; }
 .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .switch {
   min-width: 52px; height: 28px; border-radius: 999px; border: none; background: #D8CFC4; color: #fff;
-  padding: 0 10px; font: 700 11px 'Noto Sans SC', sans-serif; cursor: pointer;
+  padding: 0 10px; font: 700 11px var(--font-sans); cursor: pointer;
 }
 .switch.on { background: #9C5A3D; }
 .narration-actions { margin: -4px 0 12px; }
@@ -952,7 +963,7 @@ onBeforeUnmount(() => {
 .form-actions { margin-top: 18px; }
 .primary-btn, .ghost-btn, a.primary-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  border-radius: 999px; padding: 11px 18px; font: 700 13px 'Noto Sans SC', sans-serif; cursor: pointer;
+  border-radius: 999px; padding: 11px 18px; font: 700 13px var(--font-sans); cursor: pointer;
   text-decoration: none; box-sizing: border-box;
 }
 .primary-btn {
