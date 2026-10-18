@@ -1781,6 +1781,49 @@ function resolveMagazineOverlaps(layout) {
   }
 }
 
+const MAG_BG_LIST = ['#F2EFE6', '#EDE8DC', '#E8E4D8', '#F5F2EA', '#E9E6DE'];
+
+/**
+ * 杂志排版皮肤：新闻纸/牛皮纸暖底 + AI 给太少编排元素时兜底补齐。
+ * 不动照片坐标（resolveMagazineOverlaps 负责防重叠），只补底色与页面骨架元素。
+ */
+function applyMagazineSkin(layout) {
+  if (!layout || typeof layout !== 'object') return layout;
+  layout.style = 'magazine';
+
+  // ① 底色：AI 常给 #FFFFFF 纯白，显得单薄；换成新闻纸暖灰（同色系随机）
+  const cur = String(layout.bg_color || '').toUpperCase();
+  const isPlain = !cur || cur === '#FFFFFF' || cur === '#F5F5F5' || cur === '#F8F8F4';
+  if (isPlain) layout.bg_color = MAG_BG_LIST[Math.floor(Math.random() * MAG_BG_LIST.length)];
+  layout.bg_gradient = null;
+  layout.bg_noise = true;           // 纸颗粒，避免大面积死平
+  layout.bg_paper_lines = false;     // 杂志不用草稿线
+  layout.grade = null;               // 不做复古调色
+
+  // ② 兜底编排：AI 漏给长尾夹/页码/便签时补上（编辑感的关键锚点）
+  layout.widgets = Array.isArray(layout.widgets) ? layout.widgets : [];
+  const has = (t) => layout.widgets.some((w) => w && w.type === t);
+  if (!has('page_tag')) {
+    layout.widgets.push({ type: 'page_tag', x: 880, y: 96, w: 84, h: 40, text: '2/5', color: '#8A8A8A' });
+  }
+  if (!has('binder_clip')) {
+    layout.widgets.push({ type: 'binder_clip', x: 505, y: 28, w: 74, h: 84, color: '#D9443A' });
+  }
+
+  // ③ 底层内页卡：米色网格纸大卡托住照片栏，杂志的「版面」感来自它
+  layout.cards = Array.isArray(layout.cards) ? layout.cards : [];
+  if (!layout.cards.length) {
+    layout.cards.push({
+      x: 52, y: 60, width: 976, height: 1330,
+      fill: '#FAF1E1', grid: true, gridV: true,
+      lineColor: '#E2D5B8', lineSpacing: 34, colSpacing: 44,
+      round: 10, shadow: true,
+    });
+  }
+
+  return layout;
+}
+
 /**
  * 生成后套皮肤 + 专属贴纸库（不含抠图）。
  * styleId: vintage | minimal | colorful | dark | watercolor | magazine
@@ -1808,7 +1851,7 @@ function applyDiarySkin(layout, styleId) {
       if (typeof balanceWatercolorPhotoSpread === 'function') balanceWatercolorPhotoSpread(layout);
       if (typeof buildWatercolorStickers === 'function') buildWatercolorStickers(layout, 0);
     } else if (style === 'magazine') {
-      layout.style = 'magazine';
+      if (typeof applyMagazineSkin === 'function') applyMagazineSkin(layout);
       if (typeof resolveMagazineOverlaps === 'function') resolveMagazineOverlaps(layout);
     }
     // 专属素材库已铺上时，去掉 AI 的 OpenMoji decor_stickers，避免公网 CDN 失败拖垮观感
