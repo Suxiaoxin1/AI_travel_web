@@ -182,7 +182,6 @@
                   <div class="masonry-footer">
                     <span class="masonry-date">{{ j.location }}</span>
                     <div class="masonry-actions">
-                    <button class="masonry-link" @click="openJournal(j)">继续编辑 →</button>
                       <button class="masonry-delete-btn" @click.stop="confirmRemoveJournal(j)">删除</button>
                     </div>
                   </div>
@@ -335,19 +334,18 @@ import { useUiStore } from '../stores/uiStore.js'
 import { useBookingStore } from '../stores/bookingStore.js'
 import { useFavoriteStore } from '../stores/favoriteStore.js'
 import { useJournalStore } from '../stores/journalStore.js'
-import { useRouter } from 'vue-router'
 import {
   isAllowedBookingUrl,
   platformLabel,
   resolveBookingCoverImage,
   sourceSubtitle
 } from '../utils/bookingLinks.js'
+import { resolveDisplayMediaUrl } from '../utils/mediaUrl.js'
 
 const ui = useUiStore()
 const bookingStore = useBookingStore()
 const favoriteStore = useFavoriteStore()
 const journalStore = useJournalStore()
-const router = useRouter()
 
 const planModal = ref(null)
 const editBooking = ref(null)
@@ -392,11 +390,6 @@ const favorites = computed(() => favoriteStore.favorites || [])
 const intentBookings = computed(() => bookingStore.intentBookings || [])
 const orderBookings = computed(() => bookingStore.orderBookings || [])
 const journals = computed(() => journalStore.journals || [])
-
-async function openJournal(journal) {
-  await router.push({ name: 'TravelJournal', query: { journalId: journal.id } })
-  ui.closeDrawer()
-}
 
 async function confirmRemoveFavorite(item) {
   const name = item?.name || '该收藏'
@@ -641,10 +634,14 @@ function getCardImage(item) {
 }
 
 function getJournalImage(j) {
-  if (j.photos && j.photos.length) return `url(${j.photos[0]})`
-  if (j.image) return `url(${j.image})`
+  // photos 存的是相对路径 /uploads/xxx，生产同源可直接用；
+  // 本地 Vite(:5173) 必须拼后端 origin，否则封面 404 变成空白卡。
+  const first = Array.isArray(j.photos) ? resolveDisplayMediaUrl(j.photos[0]) : ''
+  if (first) return `url(${first})`
+  const image = resolveDisplayMediaUrl(j.image)
+  if (image) return `url(${image})`
   if (j.color) return j.color
-  return 'linear-gradient(135deg, #4A90E2, #357ABD)'
+  return 'linear-gradient(135deg, #0D6B5C, #1A8A7A)'
 }
 </script>
 

@@ -89,7 +89,7 @@
           </div>
           <div class="photo-list" v-if="photos.length">
             <div v-for="(p, i) in photos" :key="i" class="photo-thumb">
-              <img :src="p" alt="" />
+              <img :src="p" alt="" @error="onPhotoError(i)" />
               <button class="photo-remove" @click.stop="removePhoto(i)">×</button>
             </div>
           </div>
@@ -227,9 +227,8 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { normalizeMediaUrl } from '../utils/mediaUrl.js'
+import { normalizeMediaUrl, resolveDisplayMediaUrl } from '../utils/mediaUrl.js'
 import { generateJournalPage } from '../utils/journalGenerate.js'
-import { normalizeVisionAnalysis } from '../utils/journalCopy.js'
 import { useAuthStore } from '../stores/authStore.js'
 import { useJournalStore } from '../stores/journalStore.js'
 import { useShareStore } from '../stores/shareStore.js'
@@ -301,7 +300,6 @@ const journalContent = ref('')
 const journalGenerated = ref(false)
 const videoUrl = ref('')
 const visionAnalysis = ref(null)
-const savedJournalId = ref(null)
 
 const styleLabels = { retro: '复古胶片', clean: '简约清新', vivid: '多彩活泼', dark: '暗黑质感', watercolor: '水彩手绘', magazine: '杂志排版' }
 
@@ -346,7 +344,6 @@ async function startNewJournal() {
   diaryNextPreviewUrl.value = ''
   diaryNextLayout.value = null
   layoutEngine.value = 'diary-layout'
-  savedJournalId.value = null
   journalGenerated.value = false
   if (fileInput.value) fileInput.value.value = ''
   await router.replace({ name: 'TravelJournal', query: {} })
@@ -363,55 +360,6 @@ function serializeLayout() {
   }
 }
 
-function restoreLayout(record) {
-  const layoutData = record.layout_json || {}
-  layoutEngine.value = layoutData.engine || 'diary-layout'
-  form.style = layoutData.template || record.style || 'retro'
-  form.location = record.location || ''
-  form.date = record.travel_date || ''
-  form.mood = record.mood || ''
-  form.ipSticker = layoutData.ipSticker || 'auto'
-  photos.value = Array.isArray(record.photos)
-    ? record.photos.map((src) => normalizeMediaUrl(src) || src)
-    : []
-  journalContent.value = record.content_html || ''
-  videoUrl.value = record.video_url || ''
-  visionAnalysis.value = layoutData.visionAnalysis
-    ? normalizeVisionAnalysis(layoutData.visionAnalysis, {
-        photoCount: Array.isArray(record.photos) ? record.photos.length : 0,
-        location: record.location || '',
-        mood: record.mood || '',
-        style: form.style
-      })
-    : null
-  diaryNextLayout.value = layoutData.diaryNextLayout || null
-  diaryNextPreviewUrl.value = ''
-  journalGenerated.value = Boolean(journalContent.value || videoUrl.value || photos.value.length || diaryNextLayout.value)
-  creationMode.value = videoUrl.value ? 'volo' : (String(route.query.mode || '').toLowerCase() === 'volo' ? 'volo' : 'journal')
-}
-
-async function loadSavedJournal() {
-  const id = Number(route.query.journalId)
-  if (!id) return
-  const result = await journalStore.getJournal(id)
-  if (!result.ok) {
-    alert(result.msg || '手账加载失败')
-    return
-  }
-  savedJournalId.value = id
-  restoreLayout(result.record)
-  if (diaryNextLayout.value && photos.value.length) {
-    try {
-      const { composeDiaryNextPreview } = await import('../utils/diaryNextBridge.js')
-      const composed = await composeDiaryNextPreview(diaryNextLayout.value, photos.value, { skipSkin: true })
-      diaryNextPreviewUrl.value = composed.previewUrl
-      diaryNextLayout.value = composed.layout
-    } catch (err) {
-      console.warn('恢复排版预览失败:', err)
-    }
-  }
-}
-
 function handleFiles(e) {
   visionAnalysis.value = null
   diaryNextPreviewUrl.value = ''
@@ -423,6 +371,19 @@ function handleFiles(e) {
     r.onload = ev => photos.value.push(ev.target.result)
     r.readAsDataURL(f)
   })
+}
+
+function onPhotoError(index) {
+  // 缩略图加载失败（过期 URL / 404）：自动剔除坏条目，不留灰块占位，
+  // 也避免坏条目被计入照片数、混进生成链路。
+  if (index >= 0 && index < photos.value.length) {
+    photos.value.splice(index, 1)
+    visionAnalysis.value = null
+    diaryNextPreviewUrl.value = ''
+    diaryNextLayout.value = null
+    journalGenerated.value = false
+    journalContent.value = ''
+  }
 }
 
 function removePhoto(index) {
@@ -448,7 +409,6 @@ function handleDrop(e) {
   isDragging.value = false
 }
 
-watch(() => route.query.journalId, loadSavedJournal, { immediate: true })
 watch(() => route.query.mode, syncCreationModeFromRoute, { immediate: true })
 
 function ensureLoggedIn(action = '继续操作') {
@@ -537,7 +497,6 @@ function resetModeWorkspace() {
   diaryNextPreviewUrl.value = ''
   diaryNextLayout.value = null
   generateProgress.value = { stage: '', percent: 0, label: '' }
-  savedJournalId.value = null
   journalGenerated.value = false
   if (fileInput.value) fileInput.value.value = ''
 }
@@ -571,7 +530,6 @@ function setCreationMode(mode) {
   const nextQuery = { ...route.query }
   if (mode === 'volo') nextQuery.mode = 'volo'
   else delete nextQuery.mode
-  delete nextQuery.journalId
   router.replace({ query: nextQuery }).catch(() => {})
 }
 
@@ -654,11 +612,8 @@ async function saveJournal() {
       contentHtml: journalContent.value,
       videoUrl: videoUrl.value
     }
-    const result = savedJournalId.value
-      ? await journalStore.updateJournal(savedJournalId.value, journalData)
-      : await journalStore.saveJournal(journalData)
+    const result = await journalStore.saveJournal(journalData)
     if (result.ok) {
-      savedJournalId.value = result.record?.id || savedJournalId.value
       alert(creationMode.value === 'volo' ? '成片已保存' : '手账已保存')
     } else {
       alert(result.msg || '保存失败')
