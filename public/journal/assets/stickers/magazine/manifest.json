@@ -1,0 +1,65 @@
+{
+  "count": 12,
+  "items": [
+    {
+      "file": "m_barcode",
+      "w": 180,
+      "h": 70
+    },
+    {
+      "file": "m_cut_corner",
+      "w": 90,
+      "h": 90
+    },
+    {
+      "file": "m_dot_grid",
+      "w": 120,
+      "h": 120
+    },
+    {
+      "file": "m_film_strip",
+      "w": 260,
+      "h": 80
+    },
+    {
+      "file": "m_kraft_tag",
+      "w": 110,
+      "h": 180
+    },
+    {
+      "file": "m_page_tag",
+      "w": 150,
+      "h": 60
+    },
+    {
+      "file": "m_photo_corner",
+      "w": 70,
+      "h": 70
+    },
+    {
+      "file": "m_quote",
+      "w": 140,
+      "h": 110
+    },
+    {
+      "file": "m_red_rule",
+      "w": 520,
+      "h": 24
+    },
+    {
+      "file": "m_run_head",
+      "w": 300,
+      "h": 46
+    },
+    {
+      "file": "m_section_no",
+      "w": 90,
+      "h": 90
+    },
+    {
+      "file": "m_star_mark",
+      "w": 54,
+      "h": 54
+    }
+  ]
+}

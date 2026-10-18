@@ -1268,6 +1268,34 @@
     return WATERCOLOR_LIBRARY;
   }
 
+  /* ============ 杂志排版专属素材库 ============
+   * 编辑杂志元素程序化绘制（backend/gen_magazine_stickers.py），透明 PNG 12 枚：
+   * 裁切角(m_cut_corner) / 页码牌(m_page_tag) / 红分隔线(m_red_rule) /
+   * 相角(m_photo_corner) / 条码(m_barcode) / 大引号(m_quote) /
+   * 栏目号(m_section_no) / 胶片条(m_film_strip) / 版头条(m_run_head) /
+   * 红星(m_star_mark) / 圆点阵(m_dot_grid) / 牛皮吊牌(m_kraft_tag)
+   * 无 die-cut 描边，干净编辑质感。
+   */
+  const MAGAZINE_LIBRARY = [
+    { f: 'm_cut_corner', w: 90, h: 90 },
+    { f: 'm_page_tag', w: 150, h: 60 },
+    { f: 'm_red_rule', w: 520, h: 24 },
+    { f: 'm_photo_corner', w: 70, h: 70 },
+    { f: 'm_barcode', w: 180, h: 70 },
+    { f: 'm_quote', w: 140, h: 110 },
+    { f: 'm_section_no', w: 90, h: 90 },
+    { f: 'm_film_strip', w: 260, h: 80 },
+    { f: 'm_run_head', w: 300, h: 46 },
+    { f: 'm_star_mark', w: 54, h: 54 },
+    { f: 'm_dot_grid', w: 120, h: 120 },
+    { f: 'm_kraft_tag', w: 110, h: 180 }
+  ];
+
+  /** 杂志专属素材库：编辑编排元素，每次洗牌取用 */
+  function magazineLibrary() {
+    return MAGAZINE_LIBRARY;
+  }
+
   window.DiaryTemplates = {
     buildLayout: buildLayout,
     describeSlots: describeSlots,
@@ -1278,6 +1306,7 @@
     colorfulTapePool: colorfulTapePool,
     darkLibrary: darkLibrary,
     watercolorLibrary: watercolorLibrary,
+    magazineLibrary: magazineLibrary,
     bakeDateToken: bakeDateToken,
     userDiaryDate: function () { return getDateParts().md; }, // 旧 API 兼容：返回 "9月9日"
     getDateParts: getDateParts,

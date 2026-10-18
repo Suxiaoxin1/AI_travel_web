@@ -106,12 +106,14 @@ PRESETS: list[dict[str, Any]] = [
         "name": "杂志排版",
         "bg_color_list": ["#F2EFE6", "#EDE8DC", "#E8E4D8", "#F5F2EA", "#E9E6DE"],
         "border_types": ["rect_border"],
-        "rotate_range": [0, 0],
+        "rotate_range": [-1.2, 1.2],
         "sticker_ids": ["sticker_03", "sticker_04", "sticker_02", "sticker_01", "sticker_05", "sticker_06"],
         "text_color_list": ["#222222", "#1A1A1A", "#C8281C", "#5A5148"],
         "guide": (
             "编辑式杂志排版：在硬朗网格基础上做出层次，不要空白得像没排完。"
-            "布局 grid_2x2 或 grid_3，照片 rotate=0、border=rect_border 保持不变。"
+            "布局 grid_2x2 或 grid_3，border=rect_border 保持不变。"
+            "照片允许 rotate 在 -1.2~1.2 微旋转（让画面不死板），同栏照片允许 ±8px 错位，"
+            "栏与栏可高低差（配页式），但禁止 2×2 等距对齐。"
             "背景取新闻纸/牛皮纸暖灰，禁止纯白 #FFFFFF（会显得单薄）。"
             "贴纸 3~6 枚（黑方块/红圆点/白圆点/菱形/图钉等几何），要分布到栏间空隙与页面四角，"
             "不能只挤在角落。胶带 1~2 条细的（宽 60~120，压在照片窄边做分区）。"
@@ -234,8 +236,10 @@ SCHEMA_V3 = """画布固定 1080(宽) × 1440(高)，原点在左上角，x 向�
 规则：
 1. items 的数量必须恰好等于照片总数 N；photo_index 取 0..N-1，每个下标必须出现且只出现一次，禁止漏用、重复。
 2. 照片 w:h 尽量贴近请求给出的自然宽高比（0.8~1.3 倍），保证只做等比缩放、不做明显裁切。
-3. 照片【禁止排成整齐网格】，必须错落堆叠、互相轻微重叠（覆盖率 10~30%），否则没有手帐感。
-   rotate 必须在风格旋转范围内（magazine 必须全部为 0）。
+3. 错位排布（除 magazine 外）：照片【禁止排成整齐网格】，必须错落堆叠、互相轻微重叠
+   （覆盖率 10~30%），否则没有手帐感；rotate 必须在风格旋转范围内。
+   magazine 例外：允许干净的栏式排版，但同一栏内的照片之间允许 ±1° 微旋转
+   与 ±8px 错位，栏与栏允许高低差（配页式），禁止 2×2 等距死板对齐。
 4. 画面主体（照片画面区域）应完整在画布内（0≤x，x+width≤1080，0≤y，y+height≤1440）；边框外扩可略微越界。
 5. 贴纸 2~8 枚、胶带 0~4 条、图钉 0~3 枚、涂鸦 0~5 个；
    胶带应横贴/斜贴在照片边角、像在「粘」着照片；图钉钉在照片角上；涂鸦放在空隙/边角做点缀。
@@ -284,7 +288,7 @@ def build_system_prompt() -> str:
 【布局范式（按风格选用）】
 - staggered 错落拼贴：默认。照片全部有 rotate、互相重叠、贴纸/胶带散落。
 - hero_center 中心大图：1 张主图占画布中上部 70%，2~3 张小图散布在下方/侧边。
-- grid_2x2 严格网格：仅限 magazine 风格用。所有照片 rotate=0、border=rect_border、贴纸 3~6 枚，背景必须用新闻纸/暖灰不用纯白。
+- grid_2x2 严格网格：仅限 magazine 风格用。所有照片 border=rect_border、rotate 限 -1.2~1.2 微旋转、贴纸 3~6 枚，背景必须用新闻纸/暖灰不用纯白。
 - grid_3 三栏：3 张照片垂直三栏并排（横长形），可被 colorful/vintage/watercolor 选用做变体。
 - cluster_organic 群组聚集：5~7 张照片扎堆在画布中央，周围大量留白（适合 minimal/korean_cream/forest）。
 - diagonal_line 对角线斜排：照片沿对角线由大到小排列，胶带/图钉贯穿（适合 jp_film/vintage）。

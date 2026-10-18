@@ -1689,6 +1689,92 @@ function buildWatercolorStickers(layout, maxCount) {
 }
 
 /**
+ * 杂志专属素材库：照片栏间缝隙 + 页面四角落位，栏位锚点优先。
+ * 素材来自 magazineLibrary()（12 枚编辑杂志元素 PNG）。
+ * 与 dark 两阶段区别：杂志不压照片边角，只走栏间空位；数量上限 10 防止过满。
+ */
+function buildMagazineStickers(layout, maxCount) {
+  const lib = (window.DiaryTemplates && window.DiaryTemplates.magazineLibrary)
+    ? window.DiaryTemplates.magazineLibrary() : []
+  if (!lib.length) return { placed: 0 }
+  const cap = Math.max(0, Number(maxCount) || 10)
+
+  const canvasW = layout.canvas_width || 1080
+  const canvasH = layout.canvas_height || 1440
+
+  const fillOccupied = collectVintageLibRects(layout)
+  ;(layout.texts || []).forEach((t) => {
+    if (!t || !t.content) return
+    const fs = t.font_size || 24
+    let tw = 0
+    for (const ch of String(t.content)) tw += ch.charCodeAt(0) > 0x2e80 ? fs : fs * 0.56
+    fillOccupied.push({ x: t.x - 10, y: t.y - 10, w: Math.min(tw, 960) + 20, h: fs * 1.4 + 20 })
+  })
+  if (Array.isArray(layout.cutouts)) {
+    for (const c of layout.cutouts) {
+      if (c && c.w > 0 && c.h > 0) fillOccupied.push({ x: c.x, y: c.y, w: c.w, h: c.h })
+    }
+  }
+  for (const z of faceZones(layout, 12)) { fillOccupied.push(z) }
+
+  const allPlaced = []
+  layout.library = layout.library || []
+
+  // 洗牌：每次生成取不同组合；红分隔线/条码这类长条只放一条
+  const pool = lib.slice()
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const tmp = pool[i]
+    pool[i] = pool[j]
+    pool[j] = tmp
+  }
+  let poolIdx = 0
+  let longBarUsed = false
+
+  // 栏间锚点：照片栏的左右缝隙与页面四角（杂志编排感的核心落位）
+  const items = (layout.items || []).filter((it) => it && it.width > 60 && it.height > 60)
+  const anchors = []
+  for (const it of items) {
+    anchors.push({ x: Math.max(14, it.x - 100), y: it.y + Math.round(it.height / 2) - 40 })
+    anchors.push({ x: it.x + it.width + 12, y: it.y + Math.round(it.height / 2) - 40 })
+  }
+  anchors.push({ x: 24, y: 24 }, { x: canvasW - 134, y: 24 },
+               { x: 24, y: canvasH - 200 }, { x: canvasW - 134, y: canvasH - 200 },
+               { x: canvasW / 2 - 60, y: canvasH - 120 })
+  for (let i = anchors.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    const t = anchors[i]
+    anchors[i] = anchors[j]
+    anchors[j] = t
+  }
+
+  for (const anchor of anchors) {
+    if (!pool.length || layout.library.length >= cap) break
+    const s = pool[poolIdx % pool.length]
+    const isLong = s.f === 'm_red_rule' || s.f === 'm_barcode' || s.f === 'm_film_strip' || s.f === 'm_run_head'
+    if (isLong && longBarUsed) { poolIdx++; continue }
+    // 杂志素材保持原比例、只等比缩小（最大宽 300）
+    const k = Math.min(1, 300 / (s.w || 300))
+    const w = Math.round((s.w || 80) * k)
+    const h = Math.round((s.h || 80) * k)
+    let sx = Math.max(10, Math.min(Math.round(anchor.x), canvasW - w - 10))
+    let sy = Math.max(10, Math.min(Math.round(anchor.y), canvasH - h - 10))
+    const r = { x: sx, y: sy, w, h }
+    if (coversNoteFully(r, layout)) { poolIdx++; continue }
+    let hit = false
+    for (const o of fillOccupied) if (rectsOverlap(r, o)) { hit = true; break }
+    if (!hit) for (const o of allPlaced) if (rectsOverlap(r, o)) { hit = true; break }
+    if (hit) { poolIdx++; continue }
+    poolIdx++
+    if (isLong) longBarUsed = true
+    allPlaced.push({ x: sx - 8, y: sy - 8, w: w + 16, h: h + 16 })
+    layout.library.push({ file: s.f, x: sx, y: sy, w, h, rotate: 0, shadow: true, z: 24 })
+  }
+
+  return { placed: layout.library.length }
+}
+
+/**
  * v3.63 杂志排版防重叠：照片矩形 + 主体贴纸先大后小落位，不压装饰/文字，
  * 放不下先缩小再螺旋平移，宁可轻叠也不丢照片。必须在路线节点生成之前调用。
  */
@@ -1853,6 +1939,7 @@ function applyDiarySkin(layout, styleId) {
     } else if (style === 'magazine') {
       if (typeof applyMagazineSkin === 'function') applyMagazineSkin(layout);
       if (typeof resolveMagazineOverlaps === 'function') resolveMagazineOverlaps(layout);
+      if (typeof buildMagazineStickers === 'function') buildMagazineStickers(layout, 10);
     }
     // 专属素材库已铺上时，去掉 AI 的 OpenMoji decor_stickers，避免公网 CDN 失败拖垮观感
     if (Array.isArray(layout.library) && layout.library.length) {
