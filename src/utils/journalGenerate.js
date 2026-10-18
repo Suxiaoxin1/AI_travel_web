@@ -211,6 +211,13 @@ export async function requestDiaryLayout(input) {
     throw new Error(data?.error || '排版生成失败')
   }
 
+  // 把用户填的地点/日期/心情挂到 layout，供皮肤层兜底文案使用（如杂志刊期行）
+  data.layout._userMeta = {
+    location: input.location || '',
+    date: input.date || '',
+    mood: input.mood || '',
+  }
+
   emitProgress(onProgress, 'skin', 78, '套用风格素材…')
   // 先加载渲染器/皮肤脚本，再套专属素材库后合成（勿在脚本未就绪时提前套皮肤）
   emitProgress(onProgress, 'render', 88, '合成手账预览…')

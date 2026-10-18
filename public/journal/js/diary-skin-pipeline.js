@@ -1907,6 +1907,42 @@ function applyMagazineSkin(layout) {
     });
   }
 
+  // ④ 多文案兜底：AI 常只给主标题（1~2 条）， magazine 要的是 5~8 条编排文案。
+  //    这里只补「结构性文案」（刊期行/页码/引语），不臆造随笔内容。
+  layout.texts = Array.isArray(layout.texts) ? layout.texts : [];
+  const hasBigTitle = layout.texts.some((t) => t && (Number(t.font_size) || 0) >= 70);
+  const txtCount = layout.texts.filter((t) => t && t.content).length;
+  const meta = layout._userMeta || {};
+  // 日期格式化：2026-10-01 → 2026.10（杂志式）；无效则原样
+  let dateStr = String(meta.date || '').trim();
+  const dm = dateStr.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$/);
+  if (dm) dateStr = dm[1] + '.' + dm[2].replace(/^0+(?=\d)/, '');
+  const locStr = String(meta.location || '').trim();
+  const W = layout.canvas_width || 1080;
+  const H = layout.canvas_height || 1440;
+
+  if (txtCount < 4) {
+    // 刊期行：地点 + 日期（用户填了就必须出现）
+    if (locStr || dateStr) {
+      layout.texts.push({
+        content: (locStr || '旅途') + (dateStr ? ' · ' + dateStr : ''),
+        x: 96, y: 232, font_size: 28, color: '#5A5148', font: 'print',
+      });
+    }
+    // 页码行（右下角）
+    layout.texts.push({
+      content: 'P.08 / 12',
+      x: W - 220, y: H - 132, font_size: 24, color: '#8A8A8A', font: 'print',
+    });
+  }
+  if (txtCount < 3 && !hasBigTitle) {
+    // 栏眉小字（顶部）
+    layout.texts.push({
+      content: 'EDITORIAL · 旅行志',
+      x: 96, y: 78, font_size: 24, color: '#C8281C', font: 'print',
+    });
+  }
+
   return layout;
 }
 
