@@ -40,7 +40,8 @@ export const useJournalStore = defineStore('journal', () => {
         photos: journalData.photos || [],
         layout_json: journalData.layout_json || journalData.layoutJson || null,
         content_html: journalData.content_html || journalData.contentHtml || '',
-        video_url: journalData.video_url || journalData.videoUrl || ''
+        video_url: journalData.video_url || journalData.videoUrl || '',
+        cover_url: journalData.cover_url || journalData.coverUrl || ''
       }
       const { data } = await apiClient.post('/journals', payload)
       journals.value.unshift(data.data)
@@ -72,7 +73,8 @@ export const useJournalStore = defineStore('journal', () => {
         photos: journalData.photos || [],
         layout_json: journalData.layout_json || journalData.layoutJson || null,
         content_html: journalData.content_html || journalData.contentHtml || '',
-        video_url: journalData.video_url || journalData.videoUrl || ''
+        video_url: journalData.video_url || journalData.videoUrl || '',
+        cover_url: journalData.cover_url || journalData.coverUrl || ''
       }
       const { data } = await apiClient.put(`/journals/${id}`, payload)
       const index = journals.value.findIndex(item => item.id === id)

@@ -743,7 +743,44 @@ function resetAll() {
   if (fileInput.value) fileInput.value.value = ''
 }
 
-defineExpose({ resetAll, form, previewStatus, isComposeBusy })
+defineExpose({ resetAll, form, previewStatus, isComposeBusy, resultVideoUrl, resultMeta, captureFirstFrame })
+
+/** 抓取成片首帧为 PNG dataURL（用于日记卡片封面）；失败返回空串 */
+async function captureFirstFrame() {
+  const url = resultVideoUrl.value
+  if (!url) return ''
+  try {
+    const video = document.createElement('video')
+    video.crossOrigin = 'anonymous'
+    video.muted = true
+    video.playsInline = true
+    video.preload = 'auto'
+    video.src = url
+    await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('首帧加载超时')), 10000)
+      video.onloadeddata = () => { clearTimeout(timer); resolve() }
+      video.onerror = () => { clearTimeout(timer); reject(new Error('首帧读取失败')) }
+    })
+    // 跳到 0.1s，避开黑场
+    await new Promise((resolve) => {
+      const done = () => resolve()
+      video.onseeked = done
+      try { video.currentTime = Math.min(0.1, video.duration || 0.1) } catch { done() }
+      setTimeout(done, 3000)
+    })
+    const w = video.videoWidth || 720
+    const h = video.videoHeight || 1280
+    const scale = Math.min(1, 720 / Math.max(w, h))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(w * scale)
+    canvas.height = Math.round(h * scale)
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height)
+    return canvas.toDataURL('image/png')
+  } catch (err) {
+    console.warn('[VOLO] 首帧抓取失败:', err?.message || err)
+    return ''
+  }
+}
 
 onBeforeUnmount(() => {
   abortController?.abort()

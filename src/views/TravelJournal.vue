@@ -597,6 +597,41 @@ async function saveJournal() {
     }
     photos.value = persistedPhotos
 
+    // 卡片封面：手账用生成成图，VOLO 用视频首帧；统一上传成 URL 入库
+    let coverUrl = ''
+    try {
+      let coverData = ''
+      if (creationMode.value === 'volo') {
+        const cap = voloWorkspaceRef.value?.captureFirstFrame
+        coverData = typeof cap === 'function' ? await cap() : ''
+      } else if (diaryNextPreviewUrl.value) {
+        coverData = diaryNextPreviewUrl.value
+      }
+      if (coverData) {
+        const coverBlob = await (await fetch(coverData)).blob()
+        if (coverBlob.type.startsWith('image/')) {
+          const ext = coverBlob.type.split('/')[1] || 'png'
+          const coverUp = await shareStore.uploadImage(new File(
+            [coverBlob],
+            `journal-cover-${Date.now()}.${ext}`,
+            { type: coverBlob.type }
+          ))
+          if (coverUp.ok && coverUp.url) {
+            coverUrl = normalizeMediaUrl(coverUp.url) || coverUp.url
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('封面生成失败（不影响保存）:', err?.message || err)
+    }
+
+    // VOLO 成片地址随日记一起保存
+    if (creationMode.value === 'volo') {
+      const vu = voloWorkspaceRef.value?.resultVideoUrl
+      const resolved = vu && typeof vu === 'object' && 'value' in vu ? vu.value : vu
+      if (resolved) videoUrl.value = resolved
+    }
+
     const title = (visionAnalysis.value?.title || '').trim()
       || (creationMode.value === 'volo'
         ? `${form.location || '旅行'}相册成片`
@@ -610,7 +645,8 @@ async function saveJournal() {
       photos: persistedPhotos,
       layoutJson: serializeLayout(),
       contentHtml: journalContent.value,
-      videoUrl: videoUrl.value
+      videoUrl: videoUrl.value,
+      coverUrl
     }
     const result = await journalStore.saveJournal(journalData)
     if (result.ok) {

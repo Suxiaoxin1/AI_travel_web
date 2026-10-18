@@ -43,6 +43,7 @@ def create_journal(
         layout_json=payload.layout_json,
         content_html=payload.content_html,
         video_url=payload.video_url,
+        cover_url=payload.cover_url,
     )
     db.add(journal)
     db.commit()

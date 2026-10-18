@@ -290,6 +290,7 @@ class Journal(Base):
     layout_json = Column(JSON, nullable=True)
     content_html = Column(Text, nullable=True)
     video_url = Column(Text, nullable=True)
+    cover_url = Column(Text, nullable=True)
     created_at = Column(DateTime, default=now_utc)
     updated_at = Column(DateTime, default=now_utc, onupdate=now_utc)
 

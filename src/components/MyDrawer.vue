@@ -634,8 +634,10 @@ function getCardImage(item) {
 }
 
 function getJournalImage(j) {
-  // photos 存的是相对路径 /uploads/xxx，生产同源可直接用；
-  // 本地 Vite(:5173) 必须拼后端 origin，否则封面 404 变成空白卡。
+  // 优先用生成封面（手账成图 / VOLO 视频首帧），其次第一张照片，最后品牌渐变。
+  // cover_url / photos 存的是相对路径，本地 Vite 需拼后端 origin。
+  const cover = resolveDisplayMediaUrl(j.cover_url)
+  if (cover) return `url(${cover})`
   const first = Array.isArray(j.photos) ? resolveDisplayMediaUrl(j.photos[0]) : ''
   if (first) return `url(${first})`
   const image = resolveDisplayMediaUrl(j.image)

@@ -412,6 +412,7 @@ class JournalCreate(BaseModel):
     layout_json: Optional[dict] = None
     content_html: Optional[str] = None
     video_url: Optional[str] = None
+    cover_url: Optional[str] = None
 
 
 class JournalResponse(BaseModel):
@@ -425,6 +426,7 @@ class JournalResponse(BaseModel):
     layout_json: Optional[dict] = None
     content_html: Optional[str] = None
     video_url: Optional[str] = None
+    cover_url: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
